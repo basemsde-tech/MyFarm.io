@@ -102,7 +102,7 @@ function EraseDialog({ onClose }) {
 function Setup() {
   const { t, prefs, setPrefs, replaceFarm, lang } = useApp();
   const [step, setStep] = useState(1);
-  const [f, setF] = useState({ farmName: '', currency: 'USD', name: '', avatar: '👨‍🌾', code: '' });
+  const [f, setF] = useState({ farmName: '', currency: 'USD', name: '', code: '' });
   const [recovery] = useState(() => newRecoveryCode());
   const [restoring, setRestoring] = useState(false);
   const set = (p) => setF((x) => ({ ...x, ...p }));
@@ -110,7 +110,7 @@ function Setup() {
     const salt = newSalt();
     let farm = emptyFarm();
     const id = newId('pro');
-    const profile = { id, name: f.name.trim(), role: 'owner', avatar: f.avatar, color: '#CFE3DA', passHash: f.code ? await hashCode(f.code, salt) : null };
+    const profile = { id, name: f.name.trim(), role: 'owner', passHash: f.code ? await hashCode(f.code, salt) : null };
     farm = updateSettings(farm, { farmName: f.farmName.trim(), currency: f.currency, second: { code: f.currency === 'LBP' ? 'USD' : 'LBP', rate: f.currency === 'USD' ? 89500 : 0 }, salt, setupDone: true });
     farm = upsert(farm, 'profiles', profile, profile);
     farm = upsert(farm, 'people', { name: profile.name }, profile);
@@ -146,7 +146,7 @@ function Setup() {
             <h1>{t('su.you')}</h1>
             <p className="muted">{t('su.youHint')}</p>
             <TextInput label={t('name')} value={f.name} onChange={(v) => set({ name: v })} autoFocus />
-            <div className="chips">{['👨‍🌾', '👩‍🌾', '🧑‍💼', '🧔', '🧕', '👳'].map((a) => <button type="button" key={a} className={`chip emoji ${f.avatar === a ? 'on' : ''}`} onClick={() => set({ avatar: a })}>{a}</button>)}</div>
+            <div className="role-note"><Avatar p={{ role: 'owner' }} size={40} /><div><b>{t('role.owner')}</b><span>{t('role.owner.d')}</span></div></div>
             <TextInput label={`${t('set.passcode')} (${t('optional')})`} hint={t('su.passHint')} value={f.code} onChange={(v) => set({ code: v.replace(/\D/g, '') })} inputMode="numeric" type="password" error={f.code && !validPasscode(f.code) ? t('su.passHint') : null} />
             <div className="foot-btns"><Button onClick={() => setStep(2)}>{t('back')}</Button><Button variant="primary" disabled={!f.name.trim() || (f.code && !validPasscode(f.code))} onClick={() => setStep(4)}>{t('next')}</Button></div>
           </>
@@ -164,12 +164,44 @@ function Setup() {
   );
 }
 
+function PinPad({ value, onChange, onSubmit, error, max = 8 }) {
+  const { t } = useApp();
+  const press = (k) => {
+    if (k === 'del') return onChange(value.slice(0, -1));
+    if (value.length < max) onChange(value + k);
+  };
+  useEffect(() => {
+    const fn = (e) => {
+      if (/^[0-9٠-٩]$/.test(e.key)) { e.preventDefault(); press(String('٠١٢٣٤٥٦٧٨٩'.indexOf(e.key) >= 0 ? '٠١٢٣٤٥٦٧٨٩'.indexOf(e.key) : e.key)); }
+      else if (e.key === 'Backspace') { e.preventDefault(); press('del'); }
+      else if (e.key === 'Enter') { e.preventDefault(); onSubmit(); }
+    };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  });
+  return (
+    <div className={`pin ${error ? 'pin-err' : ''}`}>
+      <div className="pin-dots" aria-label={t('set.passcode')} aria-live="polite">
+        {Array.from({ length: Math.max(4, value.length) }).map((_, i) => <span key={i} className={i < value.length ? 'on' : ''} />)}
+      </div>
+      <div className="pin-msg">{error || '\u00a0'}</div>
+      <div className="pin-pad" dir="ltr">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => <button type="button" key={k} onClick={() => press(k)}>{k}</button>)}
+        <button type="button" className="pin-fn" onClick={() => press('del')} aria-label={t('pf.erase')}><Icon name="backspace" size={22} /></button>
+        <button type="button" onClick={() => press('0')}>0</button>
+        <button type="button" className="pin-go" onClick={onSubmit} disabled={value.length < 4} aria-label={t('open')}><Icon name="check" size={22} /></button>
+      </div>
+    </div>
+  );
+}
+
 function ProfileGate() {
-  const { farm, t, setPrefs, commit } = useApp();
+  const { farm, t, setPrefs, commit, lang } = useApp();
   const [pick, setPick] = useState(null);
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
   const [forgot, setForgot] = useState(false);
+  const [q, setQ] = useState('');
   const enter = async (p, c = code) => {
     if (!p.passHash) return setPrefs({ profileId: p.id });
     const h = await hashCode(c, p.salt != null ? p.salt : farm.settings.salt);
@@ -182,31 +214,107 @@ function ProfileGate() {
       setPrefs({ profileId: pick.id });
     } else setErr(t('pf.wrong'));
   };
+  const back = () => { setPick(null); setCode(''); setForgot(false); setErr(''); };
+  const order = { owner: 0, book: 1, health: 2, milker: 3, worker: 4 };
+  const people = [...farm.profiles].sort((a, b) => (order[a.role] ?? 9) - (order[b.role] ?? 9) || a.name.localeCompare(b.name))
+    .filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()));
+  const greet = (() => { const h = new Date().getHours(); return h < 12 ? 'pf.morning' : h < 18 ? 'pf.afternoon' : 'pf.evening'; })();
   return (
-    <div className="setup">
-      <div className="setup-card">
-        <div className="brand-lockup"><span className="brand-mark">م</span><div><div className="brand-name">{farm.settings.farmName || t('brand')}</div></div></div>
-        {!pick ? (
-          <>
-            <h1>{t('pf.who')}</h1>
-            <div className="profile-grid">
-              {farm.profiles.map((p) => <button type="button" key={p.id} className="profile-pick" onClick={() => (p.passHash ? setPick(p) : enter(p))}><Avatar p={p} size={52} /><b>{p.name}</b><small>{t(`role.${p.role}`)}</small>{p.passHash && <Icon name="lock" size={14} />}</button>)}
-            </div>
-          </>
-        ) : (
-          <>
-            <h1>{forgot ? t('pf.forgot') : t('pf.enterCode', { n: pick.name })}</h1>
-            {forgot && <p className="muted">{t('pf.forgotHint')}</p>}
-            <TextInput autoFocus value={code} onChange={(v) => { setErr(''); setCode(forgot ? v : v.replace(/\D/g, '')); if (!forgot && v.length >= 4 && v.length <= 8) { /* wait for enter */ } }}
-              type={forgot ? 'text' : 'password'} inputMode={forgot ? 'text' : 'numeric'} error={err} onKeyDown={(e) => e.key === 'Enter' && (forgot ? recover() : enter(pick))} />
-            <div className="foot-btns">
-              <Button onClick={() => { setPick(null); setCode(''); setForgot(false); setErr(''); }}>{t('back')}</Button>
-              {!forgot && <Button onClick={() => { setForgot(true); setCode(''); }}>{t('pf.forgot')}</Button>}
-              <Button variant="primary" onClick={() => (forgot ? recover() : enter(pick))}>{forgot ? t('pf.reset') : t('open')}</Button>
-            </div>
-          </>
-        )}
-      </div>
+    <div className="signin">
+      <aside className="signin-side">
+        <div className="brand-lockup"><span className="brand-mark">م</span><div><div className="brand-name">{t('brand')}</div><div className="signin-farm">{farm.settings.farmName}</div></div></div>
+        <div className="signin-pitch">
+          <h2>{t(greet)}</h2>
+          <p>{t('pf.pitch')}</p>
+        </div>
+        <div className="signin-foot">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      </aside>
+      <main className="signin-main">
+        <div className="signin-card" key={pick ? pick.id + forgot : 'list'}>
+          {!pick ? (
+            <>
+              <header className="signin-head">
+                <h1>{t('pf.who')}</h1>
+                <p className="muted">{t('pf.whoHint')}</p>
+              </header>
+              {farm.profiles.length > 6 && <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />}
+              <ul className="acct-list">
+                {people.map((p, i) => (
+                  <li key={p.id} style={{ animationDelay: `${i * 35}ms` }}>
+                    <button type="button" className="acct" onClick={() => (p.passHash ? (setPick(p), setErr('')) : enter(p))}>
+                      <Avatar p={p} size={42} />
+                      <span className="acct-text"><b>{p.name}</b><small>{t(`role.${p.role}`)}</small></span>
+                      {p.passHash ? <span className="acct-lock" title={t('pf.locked')}><Icon name="lock" size={15} /></span> : <span className="acct-open">{t('pf.noCode')}</span>}
+                      <Icon name="chev" size={18} className="flip-rtl acct-go" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <>
+              <button type="button" className="signin-back" onClick={back}><Icon name="back" size={16} className="flip-rtl" />{t('pf.otherAccount')}</button>
+              <div className="signin-who">
+                <Avatar p={pick} size={64} ring />
+                <b>{pick.name}</b>
+                <span className="muted">{t(`role.${pick.role}`)}</span>
+              </div>
+              {forgot ? (
+                <>
+                  <p className="muted center">{t('pf.forgotHint')}</p>
+                  <TextInput autoFocus value={code} onChange={(v) => { setErr(''); setCode(v); }} placeholder="XXXX-XXXX-XXXX-XXXX" error={err}
+                    onKeyDown={(e) => e.key === 'Enter' && recover()} className="recovery-in" />
+                  <div className="foot-btns center">
+                    <Button onClick={() => { setForgot(false); setCode(''); setErr(''); }}>{t('back')}</Button>
+                    <Button variant="primary" onClick={recover} disabled={code.trim().length < 8}>{t('pf.reset')}</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="muted center">{t('pf.enterCode', { n: pick.name })}</p>
+                  <PinPad value={code} onChange={(v) => { setErr(''); setCode(v); }} onSubmit={() => code.length >= 4 && enter(pick)} error={err} />
+                  <button type="button" className="link center" onClick={() => { setForgot(true); setCode(''); setErr(''); }}>{t('pf.forgot')}</button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/** Account chip in the sidebar and top bar: who is signed in, and a short menu. */
+function AccountMenu({ compact }) {
+  const { actor, t, setPrefs, nav, farm } = useApp();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const key = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', fn); window.addEventListener('keydown', key);
+    return () => { document.removeEventListener('mousedown', fn); window.removeEventListener('keydown', key); };
+  }, [open]);
+  return (
+    <div className={`acct-menu ${compact ? 'compact' : ''}`} ref={ref}>
+      <button type="button" className={compact ? 'me-mini' : 'me'} onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" title={actor?.name}>
+        <Avatar p={actor} size={compact ? 32 : 36} />
+        {!compact && <span><b>{actor?.name}</b><small>{t(`role.${actor?.role}`)}</small></span>}
+        {!compact && <Icon name="down" size={16} />}
+      </button>
+      {open && (
+        <div className="acct-pop" role="menu">
+          <div className="acct-pop-head">
+            <Avatar p={actor} size={44} />
+            <div><b>{actor?.name}</b><span>{t(`role.${actor?.role}`)}</span><small>{farm.settings.farmName}</small></div>
+          </div>
+          <p className="acct-pop-role">{t(`role.${actor?.role}.d`)}</p>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); nav('options'); }}><Icon name="people" size={17} />{t('pf.team')}</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); setPrefs({ profileId: null }); }}><Icon name="swap" size={17} />{t('pf.switch')}</button>
+          {actor?.passHash && <button type="button" role="menuitem" onClick={() => { setOpen(false); setPrefs({ profileId: null }); }}><Icon name="lock" size={17} />{t('pf.lockNow')}</button>}
+        </div>
+      )}
     </div>
   );
 }
@@ -263,9 +371,7 @@ function Shell() {
           ))}
         </nav>
         <div className="side-foot">
-          <button type="button" className="me" onClick={() => setPrefs({ profileId: null })} title={t('pf.switch')}>
-            <Avatar p={actor} /><span><b>{actor?.name}</b><small>{t(`role.${actor?.role}`)}</small></span><Icon name="swap" size={16} />
-          </button>
+          <AccountMenu />
         </div>
       </aside>
       <div className="main">
@@ -276,7 +382,7 @@ function Shell() {
             <span className="ccy-chip" title={farm.settings.second?.rate > 0 ? t('flip.hint') : undefined}>{farm.settings.currency}</span>
             <IconButton icon={theme === 'dark' ? 'sun' : 'moon'} label={t('set.theme')} onClick={() => setPrefs({ theme: theme === 'dark' ? 'light' : 'dark' })} />
             <button type="button" className="chip lang-toggle" onClick={() => setPrefs({ lang: prefs.lang === 'ar' ? 'en' : 'ar' })}>{prefs.lang === 'ar' ? 'EN' : 'ع'}</button>
-            <button type="button" className="me-mini" onClick={() => setPrefs({ profileId: null })} aria-label={t('pf.switch')}><Avatar p={actor} size={30} /></button>
+            <AccountMenu compact />
           </div>
         </header>
         <TabBar />

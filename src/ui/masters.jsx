@@ -246,31 +246,56 @@ export function ObligationSheet({ record, onClose }) {
   );
 }
 
-const AVATARS = ['👨‍🌾', '👩‍🌾', '🧑‍💼', '👨', '👩', '🧔', '👳', '🧕', '🐄', '🐐', '🐑', '🐓'];
-const COLORS = ['#CFE3DA', '#F1DFB4', '#E7D3D9', '#D3DDE7', '#E0E7CF', '#E8D8C8'];
 export function ProfileSheet({ record, onClose }) {
-  const { farm, t, commit, actor } = useApp();
-  const [f, setF] = useState(record ? { ...record, code: '' } : { name: '', role: 'worker', avatar: AVATARS[0], color: COLORS[0], code: '' });
+  const { farm, t, commit, actor, ui } = useApp();
+  const [f, setF] = useState(record ? { ...record, code: '' } : { name: '', role: 'worker', code: '' });
   const set = (p) => setF((x) => ({ ...x, ...p }));
+  const owners = farm.profiles.filter((p) => p.role === 'owner');
+  const lastOwner = record?.role === 'owner' && owners.length === 1;
   const err = !f.name.trim() ? t('e.name.required') : nameTaken(farm.profiles, f.name, record?.id) ? t('e.name.taken') : null;
   const codeErr = f.code && !validPasscode(f.code) ? t('su.passHint') : null;
   const save = async () => {
-    const { code, ...rest } = f;
+    const { code, avatar, color, ...rest } = f;
     const salt = farm.settings.salt || newSalt();
     const patch = { ...rest, name: f.name.trim() };
     if (code) { patch.passHash = await hashCode(code, salt); patch.salt = null; }
     const next = commit((x) => upsert({ ...x, settings: { ...x.settings, salt } }, 'profiles', patch, actor), { label: t('saved') });
     if (next) onClose();
   };
+  const remove = () => commit((x) => ({ ...x, rev: (x.rev || 0) + 1, profiles: x.profiles.filter((p) => p.id !== record.id) }), { label: t('deleted') }) && onClose();
   return (
-    <Sheet title={record ? `${t('edit')} · ${record.name}` : t('set.addProfile')} onClose={onClose}
-      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err || !!codeErr} onClick={save}>{t('save')}</Button></div>}>
-      <TextInput label={t('name')} value={f.name} onChange={(v) => set({ name: v })} error={f.name ? err : null} autoFocus />
-      <Select label={t('set.role')} value={f.role} onChange={(v) => set({ role: v })} options={ROLES.map((r) => ({ value: r, label: t(`role.${r}`) }))} />
-      <Field label={t('ani.photo')}><div className="chips">{AVATARS.map((a) => <button type="button" key={a} className={`chip emoji ${f.avatar === a ? 'on' : ''}`} onClick={() => set({ avatar: a })}>{a}</button>)}</div></Field>
-      <Field label=" "><div className="chips">{COLORS.map((c) => <button type="button" key={c} aria-label={c} className={`swatch ${f.color === c ? 'on' : ''}`} style={{ background: c }} onClick={() => set({ color: c })} />)}</div></Field>
-      <TextInput label={record?.passHash ? t('set.resetPass') : t('set.setPass')} hint={t('su.passHint')} value={f.code} onChange={(v) => set({ code: v.replace(/\D/g, '') })} inputMode="numeric" type="password" error={codeErr} />
-      {record?.passHash && <Button size="sm" onClick={() => set({ passHash: null })}>{t('set.removePass')}</Button>}
+    <Sheet title={record ? record.name : t('set.addProfile')} sub={record ? t(`role.${record.role}`) : t('pf.newHint')} onClose={onClose}
+      footer={<div className="foot-btns">
+        {record && record.id !== actor?.id && !lastOwner && <Button variant="danger" icon="trash" onClick={remove}>{t('delete')}</Button>}
+        <Button onClick={onClose}>{t('cancel')}</Button>
+        <Button variant="primary" disabled={!!err || !!codeErr} onClick={save}>{t('save')}</Button>
+      </div>}>
+      <div className="profile-preview">
+        <Avatar p={f} size={56} ring />
+        <div><b>{f.name.trim() || t('name')}</b><span>{t(`role.${f.role}`)}</span></div>
+      </div>
+      <TextInput label={t('name')} value={f.name} onChange={(v) => set({ name: v })} error={f.name ? err : null} autoFocus={!record} />
+      <Field label={t('set.role')}>
+        <div className="role-pick" role="radiogroup" aria-label={t('set.role')}>
+          {ROLES.map((r) => {
+            const locked = lastOwner && r !== 'owner';
+            return (
+              <button type="button" role="radio" aria-checked={f.role === r} key={r} disabled={locked} className={`role-opt ${f.role === r ? 'on' : ''}`} onClick={() => set({ role: r })}>
+                <Avatar p={{ role: r }} size={36} />
+                <span><b>{t(`role.${r}`)}</b><small>{t(`role.${r}.d`)}</small></span>
+              </button>
+            );
+          })}
+        </div>
+        {lastOwner && <div className="field-msg">{t('pf.lastOwner')}</div>}
+      </Field>
+      <div className="sub-sec">
+        <h3>{t('set.passcode')}</h3>
+        <TextInput label={record?.passHash ? t('set.resetPass') : t('set.setPass')} hint={t('su.passHint')} value={f.code} onChange={(v) => set({ code: v.replace(/\D/g, '') })} inputMode="numeric" type="password" error={codeErr} />
+        {record?.passHash && !f.code && (f.passHash
+          ? <Button size="sm" icon="lock" onClick={() => set({ passHash: null })}>{t('set.removePass')}</Button>
+          : <div className="note warn">{t('pf.codeRemoved')}</div>)}
+      </div>
     </Sheet>
   );
 }

@@ -95,6 +95,14 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Fields, segmented controls, chips and selectable rows have clear 1.5px outlines, a visible hover edge and a teal focus ring; selected rows are outlined, not only tinted.
 - Light mode offers four palettes chosen for long sessions: soft sage (default, low glare), warm sand, cool mist and classic white. Dark mode is unchanged.
 
+## 13. People and sign-in
+
+- No photos or emoji. Each profile shows a symbol for its role in a tinted tile: owner (crown, gold), bookkeeper (calculator, blue), milker (milk pail, teal), worker (pitchfork, earth), herd health (shield with cross, rose).
+- Sign-in is a two-part screen: a branded side panel with a time-of-day greeting and the date, and an account list ordered by role, each showing whether it has a passcode. Choosing a protected account shows a passcode step with dots and a keypad (physical keys and Arabic digits work too), a clear wrong-code state, and recovery by code.
+- The profile editor previews the person, picks the role from cards that state what each role can do, and manages the passcode. The last owner cannot be demoted or deleted.
+- The account chip in the sidebar (and top bar on phones) opens a menu: who is signed in, what the role allows, Team and roles, Switch user, Lock now.
+- Settings → Team shows people as cards with role, "You" marker and passcode status.
+
 ## 7. Engineering shape
 
 - Pure, tested core modules in `src/core/` (money, ledger, commands, validate, milk, statement, sync, backup, reports, species, catalog, security, sample). A new money rule never lives only in a click handler.

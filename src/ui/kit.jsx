@@ -32,6 +32,12 @@ const P = {
   lock: 'M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   archive: 'M3 4h18v4H3zM5 8v12h14V8M10 12h4',
+  'role-owner': 'M4 18.5h16M5.2 18.5 4 8l4.6 3.6L12 5l3.4 6.6L20 8l-1.2 10.5M12 14.2h.01',
+  'role-book': 'M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v15a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3zM8.5 6.5h7v3h-7zM8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01',
+  'role-milker': 'M5 9h14l-1.6 10.2a2 2 0 0 1-2 1.8H8.6a2 2 0 0 1-2-1.8zM8 9a4 4 0 0 1 8 0M9.5 13.5c1.2.8 3.8.8 5 0',
+  'role-worker': 'M12 21.5V11M7 3v4a5 5 0 0 0 10 0V3M12 3v8',
+  'role-health': 'M12 3l7 2.8v5.4c0 4.6-3 7.9-7 9.8-4-1.9-7-5.2-7-9.8V5.8zM12 9v6M9 12h6',
+  backspace: 'M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7zM12 9.5l5 5M17 9.5l-5 5',
   popout: 'M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   dock: 'M4 5h16v14H4zM4 9h16M9 14l3 3 3-3M12 17v-6',
   minus: 'M6 12h12',
@@ -421,8 +427,15 @@ export function Grouped({ rows, groupKey, renderGroup, renderRow, pageSize = 40,
   );
 }
 
-export function Avatar({ p, size = 32 }) {
-  return <span className="avatar" style={{ width: size, height: size, background: p?.color || 'var(--teal-soft)', fontSize: size * 0.5 }}>{p?.avatar || '🙂'}</span>;
+export const ROLE_TONE = { owner: 'gold', book: 'info', milker: 'teal', worker: 'earth', health: 'rose' };
+/** A role symbol in a soft tile. Profiles carry no photos; the symbol says what the person does. */
+export function Avatar({ p, size = 34, ring }) {
+  const role = ROLE_TONE[p?.role] ? p.role : 'worker';
+  return (
+    <span className={`role-badge rb-${ROLE_TONE[role]} ${ring ? 'ring' : ''}`} style={{ inlineSize: size, blockSize: size, borderRadius: Math.round(size * 0.3) }} aria-hidden="true">
+      <Icon name={`role-${role}`} size={Math.round(size * 0.56)} />
+    </span>
+  );
 }
 
 export function readImage(file, max = 640, quality = 0.72) {

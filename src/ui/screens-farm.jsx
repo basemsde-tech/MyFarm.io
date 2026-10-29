@@ -497,15 +497,18 @@ export function SettingsScreen() {
       </fieldset>
       <section className="panel">
         <div className="panel-head"><h2>{t('set.team')}</h2>{canSet && <Button size="sm" icon="plus" onClick={() => ui.open('profile')}>{t('set.addProfile')}</Button>}</div>
-        {farm.profiles.map((p) => (
-          <div className="row" key={p.id}>
-            <button type="button" className="row-main" onClick={() => canSet && ui.open('profile', { record: p })}>
-              <Avatar p={p} />
-              <span className="row-text"><span className="row-title">{p.name}{p.id === actor?.id && <Pill tone="info">{t('today')}</Pill>}</span><span className="row-sub">{t(`role.${p.role}`)}{p.passHash ? ` · ${t('set.passcode')}` : ''}</span></span>
-              {p.passHash && <Icon name="lock" size={16} />}
+        <div className="team-grid">
+          {farm.profiles.map((p) => (
+            <button type="button" key={p.id} className="team-card" onClick={() => canSet && ui.open('profile', { record: p })} disabled={!canSet}>
+              <Avatar p={p} size={44} />
+              <span className="team-text">
+                <b>{p.name}{p.id === actor?.id && <span className="you">{t('pf.you')}</span>}</b>
+                <span>{t(`role.${p.role}`)}</span>
+              </span>
+              <span className={`team-lock ${p.passHash ? 'on' : ''}`} title={p.passHash ? t('pf.locked') : t('pf.noCode')}><Icon name="lock" size={14} />{p.passHash ? t('pf.codeOn') : t('pf.codeOff')}</span>
             </button>
-          </div>
-        ))}
+          ))}
+        </div>
         {canSet && (
           <div className="sub-sec">
             <h3>{t('set.recovery')}</h3>

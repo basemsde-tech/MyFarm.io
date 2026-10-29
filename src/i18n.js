@@ -207,6 +207,12 @@ const ar = {
   'ws.maximize': 'كبّر', 'ws.restore': 'رجّع الحجم', 'ws.windows': 'النوافذ', 'ws.hint': 'اسحب النافذة لطرف الشاشة لتلزق، أو لفوق لتكبر.',
   'nav.open': 'افتح', 'nav.openAccount': 'افتح الحساب', 'drawer.related': 'مربوط بـ',
   'set.palette': 'ألوان الوضع الفاتح', 'set.paletteHint': 'اختار الألوان المريحة لعينك بالشغل الطويل.', 'pal.sage': 'أخضر هادي', 'pal.sand': 'رملي دافي', 'pal.mist': 'رمادي ضبابي', 'pal.white': 'أبيض كلاسيكي',
+  'role.owner.d': 'كل شي: المصاري والإعدادات والفريق والحذف النهائي.', 'role.book.d': 'كل الحسابات والإعدادات، بلا حذف نهائي.', 'role.milker.d': 'الحليب والإنتاج والبيع النقدي.',
+  'role.worker.d': 'شغل المزرعة اليومي والبيع النقدي.', 'role.health.d': 'القطيع والعلاجات والإنتاج.',
+  'pf.whoHint': 'اختار حسابك. كل حركة بتنحفظ باسمك.', 'pf.morning': 'صباح الخير', 'pf.afternoon': 'نهارك سعيد', 'pf.evening': 'مسا الخير',
+  'pf.pitch': 'مكتب واحد للمبيع والإنتاج والمصاريف والصندوق.', 'pf.locked': 'محمي برمز', 'pf.noCode': 'بلا رمز', 'pf.otherAccount': 'حساب تاني',
+  'pf.erase': 'امسح', 'pf.team': 'الفريق والأدوار', 'pf.lockNow': 'اقفل هلّق', 'pf.you': 'إنت', 'pf.codeOn': 'رمز', 'pf.codeOff': 'بلا رمز',
+  'pf.newHint': 'شخص جديد بيستعمل التطبيق على هالجهاز', 'pf.lastOwner': 'لازم يضل صاحب مزرعة واحد عالأقل.', 'pf.codeRemoved': 'الرمز رح ينشال لما تحفظ.',
   'flip.hint': 'وقّف الماوس على أي مبلغ ثانيتين لتشوفو بالليرة', 'cash.trend': 'رصيد الصندوق آخر ٣٠ يوم', 'printNote': 'الطباعة بتشتغل من التطبيق المنزّل أو المتصفح.',
 };
 
@@ -392,6 +398,12 @@ const en = {
   'ws.maximize': 'Maximise', 'ws.restore': 'Restore size', 'ws.windows': 'Windows', 'ws.hint': 'Drag a window to a side to snap it, or to the top to maximise.',
   'nav.open': 'Open', 'nav.openAccount': 'Open account', 'drawer.related': 'Linked to',
   'set.palette': 'Light mode colours', 'set.paletteHint': 'Pick the colours that are easiest on your eyes for long sessions.', 'pal.sage': 'Soft sage', 'pal.sand': 'Warm sand', 'pal.mist': 'Cool mist', 'pal.white': 'Classic white',
+  'role.owner.d': 'Everything: money, settings, team and permanent delete.', 'role.book.d': 'All accounts and settings, no permanent delete.', 'role.milker.d': 'Milk, production and cash sales.',
+  'role.worker.d': 'Daily farm work and cash sales.', 'role.health.d': 'Herd, treatments and production.',
+  'pf.whoHint': 'Choose your account. Every entry is saved under your name.', 'pf.morning': 'Good morning', 'pf.afternoon': 'Good afternoon', 'pf.evening': 'Good evening',
+  'pf.pitch': 'One desk for sales, production, expenses and cash.', 'pf.locked': 'Protected by passcode', 'pf.noCode': 'No passcode', 'pf.otherAccount': 'Another account',
+  'pf.erase': 'Erase', 'pf.team': 'Team and roles', 'pf.lockNow': 'Lock now', 'pf.you': 'You', 'pf.codeOn': 'Passcode', 'pf.codeOff': 'No passcode',
+  'pf.newHint': 'A new person using the app on this device', 'pf.lastOwner': 'The farm needs at least one owner.', 'pf.codeRemoved': 'The passcode is removed when you save.',
   'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 
