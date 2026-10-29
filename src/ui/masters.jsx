@@ -7,6 +7,7 @@ import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { partyLines, statement, periodRange } from '../core/statement.mjs';
 import { compute } from '../core/ledger.mjs';
+import { docNo, invoiceRegister } from '../core/accounts.mjs';
 import { hashCode, newSalt, validPasscode } from '../core/security.mjs';
 import { fmtQty } from '../core/money.mjs';
 
@@ -323,9 +324,14 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
     if (l.kind === 'sale') d += ` · ${l.record.lines.map((x) => `${t(`pr.${x.product}`)} ${fmtQty(x.qty)} ${t(`u.${x.unit}`)}`).join('، ')}`;
     return d;
   };
-  const no = (r) => `${s.doc.prefix || 'INV-'}${r.id.slice(-6).toUpperCase()}`;
+  const no = (r) => docNo(r, s) || `${s.doc.prefix || 'INV-'}${r.id.slice(-6).toUpperCase()}`;
+  const isPayment = sale?.type === 'payment';
+  const inv = !isStatement && !isPayment && sale ? invoiceRegister(farm, app.snap, { today, termsDays: s.termsDays }).find((x) => x.sale.id === sale.id) : null;
+  const cust = sale?.customerId ? farm.customers.find((c) => c.id === sale.customerId) : null;
+  const longDate = (d) => dayLabel(d, lang, { day: 'numeric', month: 'long', year: 'numeric' });
+  const docTitle = isStatement ? t('cust.statement') : isPayment ? t('doc.paymentReceipt') : kind === 'receipt' ? t('sale.receipt') : t('sale.invoice');
   return (
-    <Sheet title={isStatement ? t('cust.statement') : kind === 'receipt' ? t('sale.receipt') : t('sale.invoice')} onClose={onClose} wide
+    <Sheet title={docTitle} sub={!isStatement && sale ? no(sale) : undefined} onClose={onClose} wide
       footer={<div className="foot-btns">{inFrame ? <span className="muted small">{t('printNote')}</span> : <Button variant="primary" icon="print" onClick={() => window.print()}>{t('print')}</Button>}</div>}>
       {isStatement && (
         <div className="doc-controls">
@@ -355,11 +361,27 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
             <div><b>{s.farmName || t('brand')}</b><div>{[s.farmPhone, s.farmAddress].filter(Boolean).join(' · ')}</div>{s.tax.enabled && s.tax.number && <div>{t('set.taxNumber')}: {s.tax.number}</div>}</div>
           </div>
           <div className="doc-title">
-            <h1>{isStatement ? t('cust.statement') : kind === 'receipt' ? t('sale.receipt') : t('sale.invoice')}</h1>
-            <div className="num">{isStatement ? `${dayLabel(range.from, lang, { day: 'numeric', month: 'short', year: 'numeric' })} – ${dayLabel(range.to.startsWith('9999') ? today : range.to, lang, { day: 'numeric', month: 'short', year: 'numeric' })}` : `${no(sale)} · ${sale.day}`}</div>
+            <h1>{docTitle}</h1>
+            <div className="num">{isStatement ? `${dayLabel(range.from, lang, { day: 'numeric', month: 'short', year: 'numeric' })} – ${dayLabel(range.to.startsWith('9999') ? today : range.to, lang, { day: 'numeric', month: 'short', year: 'numeric' })}` : <b className="doc-no">{no(sale)}</b>}</div>
           </div>
         </header>
-        {s.doc.showParty !== false && <div className="doc-party"><span className="muted">{party === 'supplier' ? t('exp.supplier') : party === 'person' ? t('cap.person') : t('sale.customer')}</span> <b>{meta.partyName || pName}</b></div>}
+        {!isStatement && (
+          <div className="doc-meta">
+            <div className="doc-billto">
+              <span className="doc-lbl">{isPayment ? t('doc.receivedFrom') : t('doc.billTo')}</span>
+              <b>{meta.partyName || pName}</b>
+              {cust?.phone && <span className="num">{cust.phone}</span>}
+              {cust?.accountNo && <span className="num">{t('doc.account')} {cust.accountNo}</span>}
+            </div>
+            <dl className="doc-facts">
+              <dt>{isPayment ? t('doc.receiptNo') : t('doc.invoiceNo')}</dt><dd className="num">{no(sale)}</dd>
+              <dt>{t('doc.issued')}</dt><dd>{longDate(sale.day)}</dd>
+              {inv && sale.customerId && <><dt>{t('doc.due')}</dt><dd>{longDate(inv.dueDay)}</dd></>}
+              {isPayment && <><dt>{t('method')}</dt><dd>{sale.keptBy ? `${t('pay.keptBy')} ${names.person(sale.keptBy)}` : t(`m.${sale.method || 'cash'}`)}</dd></>}
+            </dl>
+          </div>
+        )}
+        {isStatement && s.doc.showParty !== false && <div className="doc-party"><span className="muted">{party === 'supplier' ? t('exp.supplier') : party === 'person' ? t('cap.person') : t('sale.customer')}</span> <b>{meta.partyName || pName}</b></div>}
         {isStatement ? (
           <table className="doc-table">
             <thead><tr><th>{t('date')}</th><th>{t('details')}</th><th className="num">{party === 'person' ? t('in') : party === 'supplier' ? t('sup.bill') : t('t.sale')}</th><th className="num">{party === 'person' ? t('out') : t('t.payment')}</th><th className="num">{t('balance')}</th><th className="no-print" /></tr></thead>
@@ -375,20 +397,37 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
             </tbody>
             <tfoot><tr><td colSpan={2}>{t('cash.closing')}</td><td className="num">{fmt(st.chargesC)}</td><td className="num">{fmt(st.creditsC)}</td><td className="num"><b>{fmt(st.closingC)}</b></td><td className="no-print" /></tr></tfoot>
           </table>
+        ) : isPayment ? (
+          <>
+            <table className="doc-table">
+              <thead><tr><th>{t('details')}</th><th className="num">{t('amount')}</th></tr></thead>
+              <tbody>
+                {sale.cashC > 0 && <tr><td>{t('doc.cashReceived')} · {t(`m.${sale.method || 'cash'}`)}</td><td className="num">{fmt(sale.cashC)}</td></tr>}
+                {(sale.offsets || []).map((o, i) => <tr key={i}><td>{t('doc.paidForUs')} · {t(`c.${o.category}`)}{o.desc ? ` · ${o.desc}` : ''}</td><td className="num">{fmt(o.amountC)}</td></tr>)}
+              </tbody>
+            </table>
+            <div className="doc-totals">
+              <div className="grand"><span>{t('doc.totalCredited')}</span><span className="num">{fmt((sale.cashC || 0) + (sale.offsets || []).reduce((a, o) => a + o.amountC, 0))}</span></div>
+              {sale.customerId && (() => { const c = compute(farm, { to: sale.day }).cust[sale.customerId] || {}; return <div><span>{t('doc.balanceAfter', { d: longDate(sale.day) })}</span><span className="num">{c.creditBalC ? `${t('st.credit')} ${fmt(c.creditBalC)}` : fmt(c.dueC || 0)}</span></div>; })()}
+            </div>
+            <div className="doc-stamp paid">{t('doc.received')}</div>
+          </>
         ) : (
           <>
             <table className="doc-table">
-              <thead><tr><th>{t('sale.product')}</th><th className="num">{t('qty')}</th><th className="num">{t('price')}</th><th className="num">{t('total')}</th></tr></thead>
-              <tbody>{sale.lines.map((l, i) => <tr key={i}><td>{t(`pr.${l.product}`)}</td><td className="num">{fmtQty(l.qty)} {t(`u.${l.unit}`)}</td><td className="num">{l.direct ? '' : fmt(l.priceC)}</td><td className="num">{fmt(l.amountC)}</td></tr>)}</tbody>
+              <thead><tr><th className="num">#</th><th>{t('sale.product')}</th><th className="num">{t('qty')}</th><th className="num">{t('price')}</th><th className="num">{t('total')}</th></tr></thead>
+              <tbody>{sale.lines.map((l, i) => <tr key={i}><td className="num muted">{i + 1}</td><td>{t(`pr.${l.product}`)}</td><td className="num">{fmtQty(l.qty)} {t(`u.${l.unit}`)}</td><td className="num">{l.direct ? '' : fmt(l.priceC)}</td><td className="num">{fmt(l.amountC)}</td></tr>)}</tbody>
             </table>
             <div className="doc-totals">
-              {sale.discountC > 0 && <div><span>{t('sale.discount')}</span><span className="num">−{fmt(sale.discountC)}</span></div>}
-              {sale.taxC > 0 && <div><span>{lang === 'ar' ? s.tax.labelAr : s.tax.label} {s.tax.rate}%</span><span className="num">{fmt(sale.taxC)}</span></div>}
+              <div><span>{t('doc.subtotal')}</span><span className="num">{fmt(sale.lines.reduce((a, l) => a + (l.amountC || 0), 0))}</span></div>
+              {sale.discountC > 0 && <div><span>{t('sale.discount')}{sale.discount?.reason ? ` · ${sale.discount.reason}` : ''}</span><span className="num">−{fmt(sale.discountC)}</span></div>}
+              {sale.taxC > 0 && <div><span>{lang === 'ar' ? s.tax.labelAr : s.tax.label} {s.tax.rate}%{s.tax.inclusive ? ` (${t('doc.included')})` : ''}</span><span className="num">{fmt(sale.taxC)}</span></div>}
               <div className="grand"><span>{t('total')}</span><span className="num">{fmt(sale.totalC)}</span></div>
-              <div><span>{t('sale.payNow')}</span><span className="num">{fmt(sale.paidNowC || 0)}</span></div>
+              {inv && <div><span>{t('doc.paidToDate')}</span><span className="num">{fmt(inv.paidC)}</span></div>}
               {sale.tenderC > sale.totalC && <div><span>{t('sale.change')}</span><span className="num">{fmt(sale.tenderC - sale.totalC)}</span></div>}
-              {sale.customerId && sale.totalC > (sale.paidNowC || 0) && <div><span>{t('sale.remains')}</span><span className="num">{fmt(sale.totalC - (sale.paidNowC || 0))}</span></div>}
+              {inv && inv.dueC > 0 && <div className="doc-due"><span>{t('doc.balanceDue')}</span><span className="num">{fmt(inv.dueC)}</span></div>}
             </div>
+            {inv && <div className={`doc-stamp ${inv.status}`}>{t(`st.${inv.status}`)}</div>}
           </>
         )}
         {isStatement && accountDue != null && range.to >= today && Math.abs(accountDue - st.closingC) > 0 && hidden.size === 0 && custom.length === 0 && <div className="note warn no-print">≠ {fmt(accountDue)}</div>}

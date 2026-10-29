@@ -110,6 +110,13 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Each screen remembers on this device whether its panel was left open.
 - Lists that had no sort options gained them: customers and suppliers by balance, name or latest activity; animals by tag, name or next birth.
 
+## 15. Accounting and invoicing
+- Every entry posts a balanced double-entry journal automatically; nobody types debits and credits. Accounts: cash box, bank, customer receivables, supplier payables, unpaid bills, managers & funders, tax payable, opening balances, adjustments, sales by product, expenses by item.
+- An **Accounts** department (office group) with plain-language tabs: Profit & loss (period, compared with the previous period, expenses grouped), Balance sheet ("what the farm owns / what it owes / net worth" as of any day, with a balanced check), Aging (customers owe us / we owe, in not-yet-due, 1–30, 31–60, 61–90, 90+ buckets; rows open the account), Journal with Trial balance, and Tax when tax is used. Each exports CSV.
+- Sales get sequential invoice numbers (INV-0001…) and customer payments sequential receipt numbers (RCT-0001…), prefixes set in Settings; numbers never reuse, old data is numbered by date on load.
+- Account sales carry a due date (default from payment terms). Sales → Invoices is an invoice register: number, customer, issued, due, total, balance, status (paid/partial/unpaid/overdue/voided), with invoiced/collected/outstanding/overdue totals, search, status filter, print and collect actions.
+- Printed invoices show bill-to, number, issue and due dates, subtotal, discount, tax, paid to date, balance due and a status stamp; payments print as a receipt with amount, offsets, total credited and balance after.
+
 ## 7. Engineering shape
 
 - Pure, tested core modules in `src/core/` (money, ledger, commands, validate, milk, statement, sync, backup, reports, species, catalog, security, sample). A new money rule never lives only in a click handler.
@@ -137,3 +144,5 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 17. Deleting a sale either returns its milk and eggs to stock or keeps them out with a write-off; restoring the sale removes the write-off.
 18. A customer with entries cannot be deleted alone; archiving or deleting with entries is reversible from Recently deleted.
 19. A page opened in a window navigates on its own, snaps, minimises and docks back into a tab without changing the main page.
+20. The trial balance and balance sheet balance on the sample farm and on a restored 2.x backup, and cash, bank, customer, supplier and people balances in Accounts equal the ones on their own pages.
+21. Every sale and customer payment has a unique number; the invoice register's outstanding total equals what customers owe.

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
+import { InvoiceRegister } from './screens-accounts.jsx';
 import { RecordRow, SelectionBar, describe } from './tx.jsx';
 import { customerInvoices, supplierBills, live } from '../core/ledger.mjs';
 import { partyLines } from '../core/statement.mjs';
@@ -224,9 +225,6 @@ function SalesHome({ tab, setTab }) {
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
   const [sort, setSort] = useState('due');
-  const per = usePeriod('month');
-  const [sel, setSel] = useState([]);
-  const sales = farm.records.filter((r) => live(r) && r.type === 'sale' && r.day >= per.range.from && r.day <= per.range.to).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
   const custs = farm.customers.filter((c) => !!c.archived === arch && (!q || `${c.name} ${c.phone} ${c.accountNo}`.toLowerCase().includes(q.toLowerCase())))
     .map((c) => {
       const last = farm.records.filter((r) => live(r) && (r.customerId === c.id)).reduce((m, r) => (r.day > m ? r.day : m), '');
@@ -234,7 +232,6 @@ function SalesHome({ tab, setTab }) {
       const status = snap.cust[c.id]?.creditBalC ? 'credit' : !snap.cust[c.id]?.dueC ? 'clear' : inv.some((i) => i.status === 'overdue') ? 'overdue' : 'owing';
       return { c, last, status, due: snap.cust[c.id]?.dueC || 0 };
     }).sort((a, b) => (sort === 'name' ? a.c.name.localeCompare(b.c.name) : sort === 'recent' ? (b.last || '').localeCompare(a.last || '') : b.due - a.due || a.c.name.localeCompare(b.c.name)));
-  const total = sales.filter((s) => !s.voided).reduce((s, r) => s + r.totalC, 0);
   return (
     <div className="screen">
       <PageHead title={t('nav.sales')} actions={<><Button icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button><Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button></>} />
@@ -261,18 +258,7 @@ function SalesHome({ tab, setTab }) {
             </div>
           ) : <Empty title={t('sales.noCustomers')} body={t('sales.noCustomersHint')} icon="people" action={<Button variant="primary" icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button>} />}
         </section>
-      ) : (
-        <section className="panel">
-          <FilterPanel id="invoices" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}>
-            <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
-          </FilterPanel>
-          <div className="statement-strip num"><span>{t('total')} <b>{fmt(total)}</b></span><span>{sales.length} {t('items')}</span></div>
-          {sales.length ? <Grouped rows={sales} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.filter((r) => !r.voided).reduce((s, r) => s + r.totalC, 0))}</span></>}
-            renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />} />
-            : <Empty title={t('sales.noSales')} icon="cart" action={<Button variant="primary" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
-          <SelectionBar selected={sel} clear={() => setSel([])} totalC={sales.filter((s) => sel.includes(s.id)).reduce((a, s) => a + s.totalC, 0)} />
-        </section>
-      )}
+      ) : <InvoiceRegister />}
     </div>
   );
 }

@@ -73,15 +73,40 @@ function checkPerm(actor, rec, op) {
   if (!can(actor.role, need)) throw new CommandError('forbidden', { need });
 }
 
+/* Document numbers: invoices (sales) and receipts (customer payments) get a sequential number
+   at creation that never changes and is never reused, even after a delete. */
+export const NUMBERED = { sale: 'inv', payment: 'rct' };
+
+/** Number every sale and payment that has none yet, oldest first, after the highest number in use. */
+export function ensureNumbers(farm) {
+  const seq = { inv: 0, rct: 0, ...(farm.settings?.seq || {}) };
+  for (const r of farm.records || []) { const k = NUMBERED[r.type]; if (k && r.no > seq[k]) seq[k] = r.no; }
+  const missing = (farm.records || []).filter((r) => NUMBERED[r.type] && !r.no);
+  if (!missing.length && farm.settings?.seq) return farm;
+  const order = [...missing].sort((a, b) => a.day.localeCompare(b.day) || String(a.createdAt).localeCompare(String(b.createdAt)));
+  const assigned = new Map();
+  for (const r of order) { const k = NUMBERED[r.type]; seq[k] += 1; assigned.set(r.id, seq[k]); }
+  return { ...farm, settings: { ...farm.settings, seq }, records: farm.records.map((r) => (assigned.has(r.id) ? { ...r, no: assigned.get(r.id) } : r)) };
+}
+
 export function addRecord(farm, rec, actor, now) {
   checkPerm(actor, rec, 'create');
   checkLock(farm, rec.day, actor);
-  const r = stampRecord(rec, actor, now);
-  if ((farm.records || []).some((x) => x.id === r.id)) throw new CommandError('duplicateId');
-  return bumpRev({ ...farm, records: [...farm.records, r] });
+  let base = farm;
+  let r = stampRecord(rec, actor, now);
+  if ((base.records || []).some((x) => x.id === r.id)) throw new CommandError('duplicateId');
+  const k = NUMBERED[r.type];
+  if (k && !r.no) {
+    base = ensureNumbers(base);
+    const seq = { inv: 0, rct: 0, ...base.settings.seq };
+    seq[k] += 1;
+    r = { ...r, no: seq[k] };
+    base = { ...base, settings: { ...base.settings, seq } };
+  }
+  return bumpRev({ ...base, records: [...base.records, r] });
 }
 
-const META = new Set(['id', 'type', 'createdAt', 'createdBy', 'createdByName', 'updatedAt', 'updatedBy', 'history', 'deletedAt', 'deletedBy', 'deletedByName', 'deleteReason']);
+const META = new Set(['no', 'id', 'type', 'createdAt', 'createdBy', 'createdByName', 'updatedAt', 'updatedBy', 'history', 'deletedAt', 'deletedBy', 'deletedByName', 'deleteReason']);
 
 /** Fields whose change needs a written reason. */
 export const MONEY_FIELDS = ['amountC', 'paidC', 'cashC', 'totalC', 'paidNowC', 'offsets', 'lines', 'costC', 'customerId', 'supplierId', 'personId', 'keptBy', 'source', 'liters', 'count', 'day'];

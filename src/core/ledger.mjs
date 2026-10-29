@@ -172,6 +172,14 @@ export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = 
  * the account-level credit pool is applied oldest-first for status only, so no
  * invoice can look overdue beyond the true account due.
  */
+/** An invoice is due on its own due date, or the payment terms after its day. */
+export function invoiceDueDay(sale, termsDays = 30) {
+  if (sale.dueDay) return sale.dueDay;
+  const d = new Date(sale.day + 'T12:00:00');
+  d.setDate(d.getDate() + Math.max(0, termsDays ?? 30));
+  return d.toISOString().slice(0, 10);
+}
+
 export function customerInvoices(farm, customerId, snap, { today, termsDays = 30 } = {}) {
   const c = snap.cust[customerId] || {};
   const sales = (farm.records || [])
@@ -184,11 +192,9 @@ export function customerInvoices(farm, customerId, snap, { today, termsDays = 30
     pool -= apply;
     const dueC = sale.totalC - apply;
     let status = dueC <= 0 ? 'paid' : apply > 0 ? 'partial' : 'unpaid';
-    if (dueC > 0 && today && termsDays >= 0) {
-      const age = (new Date(today) - new Date(sale.day)) / 86400000;
-      if (age > termsDays) status = 'overdue';
-    }
-    return { sale, paidC: apply, dueC, status };
+    const dueDay = invoiceDueDay(sale, termsDays);
+    if (dueC > 0 && today && dueDay < today) status = 'overdue';
+    return { sale, paidC: apply, dueC, status, dueDay };
   });
 }
 

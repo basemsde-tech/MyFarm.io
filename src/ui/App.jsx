@@ -18,7 +18,7 @@ import { sampleFarm } from '../core/sample.mjs';
 const NAV = [
   { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
   { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
-  { group: 'grp.office', items: [['sales', 'cart'], ['reports', 'chart'], ['options', 'gear'], ['trash', 'trash']] },
+  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['options', 'gear'], ['trash', 'trash']] },
 ];
 const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 

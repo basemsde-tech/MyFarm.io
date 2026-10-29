@@ -503,6 +503,7 @@ export function SettingsScreen() {
         <h2>{t('set.docs')}</h2>
         <div className="grid3">
           <TextInput label={t('set.prefix')} value={s.doc.prefix} onChange={(v) => set({ doc: { ...s.doc, prefix: v } })} />
+          <TextInput label={t('set.rctPrefix')} value={s.doc.rctPrefix ?? 'RCT-'} onChange={(v) => set({ doc: { ...s.doc, rctPrefix: v } })} />
           <TextInput label={t('set.thanks')} value={s.doc.thanks} onChange={(v) => set({ doc: { ...s.doc, thanks: v } })} />
           <TextInput label={t('set.footer')} value={s.doc.footer} onChange={(v) => set({ doc: { ...s.doc, footer: v } })} />
         </div>

@@ -6,6 +6,7 @@ import { validateRecord, findDuplicate } from '../core/validate.mjs';
 import { offsetsC } from '../core/ledger.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { can } from '../core/catalog.mjs';
+import { docNo } from '../core/accounts.mjs';
 import { removeRecords, produceOf, deleteMaster, setArchived, linkedRecords, herdRecords } from '../core/removal.mjs';
 
 /** One-line description of any record, for lists and drawers. */
@@ -164,7 +165,7 @@ export function RecordDrawer({ id, onClose }) {
   const status = r.deletedAt ? 'deleted' : r.voided ? 'voided' : r.editedAfterClose ? 'afterClose' : r.history?.length ? 'edited' : null;
   const fieldList = detailFields(r, app);
   return (
-    <Sheet title={d.kind} sub={`${dayLabel(r.day, lang, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}`} onClose={onClose}
+    <Sheet title={r.no ? `${d.kind} · ${docNo(r, farm.settings)}` : d.kind} sub={`${dayLabel(r.day, lang, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}`} onClose={onClose}
       footer={r.deletedAt ? (
         <div className="foot-btns">
           {can(actor?.role, 'purge') && <Button variant="danger" onClick={() => ui.open('purge', { ids: [r.id] })}>{t('ed.purge')}</Button>}
@@ -176,7 +177,8 @@ export function RecordDrawer({ id, onClose }) {
           {r.type === 'sale' && canDel && (r.voided
             ? <Button icon="undo" onClick={() => commit((f) => unvoidSale(f, r.id, actor), { label: t('sale.unvoid') })}>{t('sale.unvoid')}</Button>
             : <Button onClick={() => ui.open('void', { id: r.id })}>{t('sale.void')}</Button>)}
-          {r.type === 'sale' && <Button icon="print" onClick={() => ui.open('doc', { kind: 'invoice', id: r.id })}>{t('sale.invoice')}</Button>}
+          {r.type === 'sale' && <Button icon="print" onClick={() => ui.open('doc', { kind: r.customerId ? 'invoice' : 'receipt', id: r.id })}>{r.customerId ? t('sale.invoice') : t('sale.receipt')}</Button>}
+          {r.type === 'payment' && <Button icon="print" onClick={() => ui.open('doc', { kind: 'paymentReceipt', id: r.id })}>{t('sale.receipt')}</Button>}
           {canEdit && !r.voided && <Button variant="primary" icon="edit" onClick={() => { onClose(); ui.open(r.type, { record: r }); }}>{t('edit')}</Button>}
         </div>
       )}>
@@ -424,7 +426,7 @@ export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, di
         <span className="row-ico"><Icon name={d.icon} size={18} /></span>
         <span className="row-text">
           <span className="row-title">{hideParty ? (d.sub || d.kind) : d.title}{status && <Pill status={status}>{app.t(`st.${status}`)}</Pill>}{r.history?.length > 0 && !status && <span className="edited-dot" title={app.t('st.edited')} />}</span>
-          <span className="row-sub">{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
+          <span className="row-sub">{r.no && <span className="row-no num">{docNo(r, app.farm.settings)}</span>}{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
         </span>
         <span className={`row-amt num ${dir > 0 ? 'in' : dir < 0 ? 'out' : ''}`}>
           {right ?? (d.amountC != null ? `${dir > 0 ? '+' : dir < 0 ? '−' : ''}${app.fmt(d.amountC).replace('−', '')}` : d.qty)}

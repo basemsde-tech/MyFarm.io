@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useApp, useDraft } from './store.jsx';
 import { Button, Icon, MoneyInput, QtyInput, DateInput, Seg, Select, Picker, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton } from './kit.jsx';
 import { TxFooter, issuesFor } from './tx.jsx';
-import { saleTotals, offsetsC, supplierBills } from '../core/ledger.mjs';
+import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledger.mjs';
 import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, MILK_USE_REASONS, PERSON_PURPOSES, OUT_OF_POCKET_CATEGORIES, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
 import { deleteRecords, upsert } from '../core/commands.mjs';
@@ -36,8 +36,8 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
   const init = record ? {
     day: record.day, customerId: record.customerId || '', lines: record.lines, discKind: record.discount?.kind || 'amount', discValueC: record.discount?.valueC || 0,
     discPct: record.discount?.value || 0, discReason: record.discount?.reason || '', method: record.method || 'cash', paidNowC: record.paidNowC || 0,
-    tenderC: record.tenderC || 0, payMode: record.customerId ? (record.paidNowC >= record.totalC ? 'full' : record.paidNowC > 0 ? 'part' : 'none') : 'full', note: record.note || '', animalId: record.animalId || '',
-  } : { day: today, customerId: presetCustomer || '', lines: [presetAnimal ? { product: 'animal', qty: 1, unit: 'head', priceC: 0, direct: false, amountC: 0 } : blankLine(presetCustomer)], discKind: 'amount', discValueC: 0, discPct: 0, discReason: '', method: 'cash', paidNowC: 0, tenderC: 0, payMode: presetCustomer ? 'none' : 'full', note: '', animalId: presetAnimal || '' };
+    tenderC: record.tenderC || 0, payMode: record.customerId ? (record.paidNowC >= record.totalC ? 'full' : record.paidNowC > 0 ? 'part' : 'none') : 'full', note: record.note || '', animalId: record.animalId || '', dueDay: record.dueDay || '',
+  } : { day: today, customerId: presetCustomer || '', lines: [presetAnimal ? { product: 'animal', qty: 1, unit: 'head', priceC: 0, direct: false, amountC: 0 } : blankLine(presetCustomer)], discKind: 'amount', discValueC: 0, discPct: 0, discReason: '', method: 'cash', paidNowC: 0, tenderC: 0, payMode: presetCustomer ? 'none' : 'full', note: '', animalId: presetAnimal || '', dueDay: '' };
   const [f, setF, clearDraft, restored] = useDraft(`sale:${presetCustomer || ''}:${presetAnimal || ''}`, init, !record && !presetAnimal);
   const [done, setDone] = useState(null);
   const set = (p) => setF((x) => ({ ...x, ...p }));
@@ -51,7 +51,7 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
     type: 'sale', day: f.day, customerId: f.customerId || null,
     lines: f.lines.map((l, i) => ({ ...l, amountC: tot.lineAmounts[i] })),
     discount, discountC: tot.discountC, taxC: tot.taxC, totalC: tot.totalC,
-    paidNowC, tenderC, method: f.method, note: f.note, animalId: f.lines.some((l) => l.product === 'animal') ? f.animalId || null : null,
+    paidNowC, tenderC, method: f.method, note: f.note, dueDay: f.customerId && paidNowC < tot.totalC ? (f.dueDay || invoiceDueDay({ day: f.day }, s.termsDays)) : null, animalId: f.lines.some((l) => l.product === 'animal') ? f.animalId || null : null,
   };
   const issues = validateRecord(rec, { today, tax: s.tax });
   const ownMilk = record ? saleMilkL(record) : 0;
@@ -146,7 +146,12 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
         <>
           <Seg value={f.payMode} onChange={(v) => set({ payMode: v })} options={[{ value: 'none', label: t('sale.payNone') }, { value: 'part', label: t('exp.payPart') }, { value: 'full', label: t('sale.payFull') }]} />
           {f.payMode === 'part' && <MoneyInput label={t('sale.payNow')} cents={f.paidNowC} onCents={(c) => set({ paidNowC: c })} error={issuesFor(issues, 'paidNow', t)} />}
-          {tot.totalC - paidNowC > 0 && <div className="muted small">{t('sale.remains')}: <b className="num">{fmt(tot.totalC - paidNowC)}</b></div>}
+          {tot.totalC - paidNowC > 0 && (
+            <div className="grid2">
+              <div className="due-line">{t('sale.remains')}: <b className="num">{fmt(tot.totalC - paidNowC)}</b></div>
+              <DateInput label={t('doc.due')} value={f.dueDay || invoiceDueDay({ day: f.day }, s.termsDays)} min={f.day} onChange={(v) => set({ dueDay: v })} />
+            </div>
+          )}
         </>
       )}
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />

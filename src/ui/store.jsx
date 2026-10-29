@@ -9,7 +9,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4' };
-export const VERSION = { name: '3.4.0', season: { ar: 'الموسم التاني', en: 'Second Season' } };
+export const VERSION = { name: '3.5.0', season: { ar: 'الموسم التاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -200,14 +200,14 @@ export function AppProvider({ children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'reports', 'options', 'trash'];
+const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'accounts', 'reports', 'options', 'trash'];
 function parseHash() {
   const h = (typeof location !== 'undefined' ? location.hash.slice(1) : '') || 'cash';
   const parts = h.split('-');
   const name = ROUTES.includes(parts[0]) ? parts[0] : 'cash';
   // ids themselves contain dashes; the last part may be a tab name
   const rest = parts.slice(1);
-  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations'];
+  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations', 'pl', 'bs', 'aging', 'journal', 'tax'];
   let tab = null;
   if (rest.length && tabs.includes(rest[rest.length - 1])) tab = rest.pop();
   const id = rest.length ? rest.join('-') : null;

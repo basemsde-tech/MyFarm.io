@@ -6,7 +6,7 @@
 // cash-out is a supplierPay (expenseId), sometimes only implied. Here each cluster becomes
 // one 3.x record so cash, accounts and expenses can never drift apart.
 
-import { emptyFarm } from './commands.mjs';
+import { emptyFarm, ensureNumbers } from './commands.mjs';
 import { compute } from './ledger.mjs';
 import { SPECIES, statusesFor } from './species.mjs';
 import { PRODUCTS, EXPENSE_GROUPS, OFFSET_TYPES, MEDICINE_KINDS } from './catalog.mjs';
@@ -460,6 +460,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
   recs.sort((a, b) => a.day.localeCompare(b.day) || String(a.createdAt).localeCompare(String(b.createdAt)));
   farm.records = recs;
   farm.rev = 1;
+  Object.assign(farm, ensureNumbers(farm));
 
   /* Reconcile every balance against 2.x */
   const snap = compute(farm);
