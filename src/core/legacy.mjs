@@ -6,7 +6,7 @@
 // cash-out is a supplierPay (expenseId), sometimes only implied. Here each cluster becomes
 // one 3.x record so cash, accounts and expenses can never drift apart.
 
-import { emptyFarm, ensureNumbers } from './commands.mjs';
+import { emptyFarm, ensureNumbers, foldBank } from './commands.mjs';
 import { compute } from './ledger.mjs';
 import { SPECIES, statusesFor } from './species.mjs';
 import { PRODUCTS, EXPENSE_GROUPS, OFFSET_TYPES, MEDICINE_KINDS } from './catalog.mjs';
@@ -460,7 +460,8 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
   recs.sort((a, b) => a.day.localeCompare(b.day) || String(a.createdAt).localeCompare(String(b.createdAt)));
   farm.records = recs;
   farm.rev = 1;
-  Object.assign(farm, ensureNumbers(farm));
+  const hadBank = farm.records.some((r) => (r.method && r.method !== 'cash' && (r.type === 'sale' || r.type === 'payment')) || r.source === 'bank' || r.account === 'bank');
+  Object.assign(farm, foldBank(ensureNumbers(farm)));
 
   /* Reconcile every balance against 2.x */
   const snap = compute(farm);
@@ -478,7 +479,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
     check('supplier', names.sup.get(id) || id, v.bill - v.paid, (nv.dueC || 0) - (nv.creditBalC || 0), { id });
   }
   for (const [id, v] of Object.entries(ob.mgr)) check('person', names.mgr.get(id) || id, v, snap.people[id]?.owedC || 0, { id });
-  if (snap.bankC) report.warnings.push({ code: 'bankSplit', bankC: snap.bankC, cashC: snap.cashC });
+  if (hadBank) report.warnings.push({ code: 'bankFolded' });
   if (farm.profiles.some((p) => p.passHash)) report.warnings.push({ code: 'pinsKept' });
   if (snap.milk.issues.length) report.warnings.push({ code: 'milkShort', n: snap.milk.issues.length });
   report.counts = {

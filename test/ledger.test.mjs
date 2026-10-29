@@ -304,3 +304,18 @@ test('reproduction timeline for a cow', () => {
   assert.equal(t.next, 'pregCheck');
   assert.equal(reproTimeline('cow', '2026-01-01', '2026-02-20', 'pregnant').next, 'dryOff');
 });
+
+test('no bank: older bank entries fold into the cash box and transfers drop', async () => {
+  const { foldBank } = await import('../src/core/commands.mjs');
+  const { normalise } = await import('../src/core/backup.mjs');
+  const f = normalise({ ...emptyFarm(), records: [
+    { id: 'a', type: 'capital', kind: 'inject', purpose: 'capital', personId: 'p', amountC: 1000, account: 'bank', day: '2026-01-01', createdAt: '1' },
+    { id: 'b', type: 'transfer', fromAccount: 'bank', amountC: 400, day: '2026-01-02', createdAt: '2' },
+    { id: 'c', type: 'expense', category: 'fuel', amountC: 300, paidC: 300, source: 'bank', day: '2026-01-03', createdAt: '3' },
+  ], people: [{ id: 'p', name: 'P' }] });
+  assert.equal(f.records.some((r) => r.type === 'transfer'), false);
+  const s = compute(f);
+  assert.equal(s.bankC, 0);
+  assert.equal(s.cashC, 700);
+  assert.equal(foldBank(f), f, 'already folded farms are returned unchanged');
+});

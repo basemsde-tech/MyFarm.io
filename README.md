@@ -15,7 +15,7 @@ Deploy the contents of `dist/` to any static host (GitHub Pages works as-is: `in
 ## What changed from 2.9.59
 
 **Transactions: one entry path for create, edit and delete**
-- Every money record (sale, customer payment, expense, supplier payment, capital movement, medicine cost, transfer) opens in the same sheet for create and edit.
+- Every money record (sale, customer payment, expense, supplier payment, capital movement, medicine cost) opens in the same sheet for create and edit.
 - An edit replaces the whole record in one commit. Because each record holds its full cluster (a payment carries its expense offsets; a sale carries its pay-now cash), cash, accounts and expenses can never half-update.
 - Live "What will change" preview before every save, edit, delete or void, computed by diffing the ledger before and after.
 - Changing a money field needs a written reason. The old values are kept in the record's edit history with who and when.

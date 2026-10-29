@@ -14,7 +14,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 
 1. Every balance is derived from records in integer cents. No stored balance that can drift. Money is parsed straight to cents (Arabic digits accepted).
 2. One record is one complete money cluster: a sale carries its pay-now cash; a customer payment carries its expense offsets; an expense carries its paid part and source. Create, edit, delete and restore act on the whole cluster in one atomic commit.
-3. Only drawer cash moves the cash box. Card and transfer move the bank. Expense offsets, manager out-of-pocket spending, manager supplier payments and retained collections never move the drawer.
+3. No banks: the farm works in cash only, and every payment in or out goes through the cash box. Only drawer cash moves the cash box. Expense offsets, manager out-of-pocket spending, manager supplier payments and retained collections never move the drawer.
 4. A customer payment is one amount on the account, never auto-split across invoices. Invoice status (paid/partial/unpaid/overdue) is shown by applying the account pool oldest-first, capped so no invoice can look more overdue than the real account due.
 5. Supplier payments go to a bill only when the user picks one; otherwise oldest-first. Opening supplier debt is a bill like any other.
 6. Manager/funder is one person. Purposes post into real departments: capital in, cash out for the farm, out-of-pocket expense, supplier paid from pocket, customer money kept, personal use/advance.
@@ -26,7 +26,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 ## 3. Transactions: input, editing and deletion
 
 - One sheet per transaction type for both create and edit; edit opens pre-filled.
-- Live "What will change" preview on every create, edit, void and delete (cash, bank, capital, each customer/supplier/person balance, open bills, milk and egg stock).
+- Live "What will change" preview on every create, edit, void and delete (cash, capital, each customer/supplier/person balance, open bills, milk and egg stock).
 - Changing any money field requires a written reason; the record keeps a revision history (who, when, reason, old values), shown in the record's detail drawer.
 - Blocked changes explain why (oversell, locked period, permission, overpayment without the credit option).
 - Deletes are soft: Recently deleted keeps rows 30 days, restorable; the confirmation lists every balance that changes. Permanent delete is owner-only and leaves a tombstone. Undo toast after every action and Ctrl+Z.
@@ -72,7 +72,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Settings → Restore from backup, and on the welcome screen of a new install, accept a JSON backup from Mazraati 2.x or 3.x (file picker or drag and drop).
 - Nothing is replaced until the person reviews the file: farm name, save date, what will be restored (customers, suppliers, people, animals, workers, obligations, users, sales, payments, expenses, milk records) and a balance check.
 - The 2.x importer rebuilds each linked group as one 3.x record: a sale with its counter payment; a payment with the customer-paid costs it carried; supplier bills with every payment, including the cash-out 2.x implied for older paid bills; owner capital in and out; manager out-of-pocket costs, supplier payments and kept collections; cash taken from the drawer by a named person.
-- Every balance is recomputed with the 2.x rules and compared with the restored farm: cash box, owner capital, each customer, each supplier and each manager. Card and transfer receipts move to the bank, with cash plus bank equal to the old drawer.
+- Every balance is recomputed with the 2.x rules and compared with the restored farm: cash box, owner capital, each customer, each supplier and each manager. Card and transfer receipts from the old app are counted as cash in the box (the app has no bank), with a note in the review.
 - Old passcodes keep working (same SHA-256 "salt:pin" scheme). History-only rows are kept in an archive, not dropped. The current farm can be downloaded first.
 
 ## 10. Smart deletion and archiving
@@ -111,7 +111,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Lists that had no sort options gained them: customers and suppliers by balance, name or latest activity; animals by tag, name or next birth.
 
 ## 15. Accounting and invoicing
-- Every entry posts a balanced double-entry journal automatically; nobody types debits and credits. Accounts: cash box, bank, customer receivables, supplier payables, unpaid bills, managers & funders, tax payable, opening balances, adjustments, sales by product, expenses by item.
+- Every entry posts a balanced double-entry journal automatically; nobody types debits and credits. Accounts: cash box, customer receivables, supplier payables, unpaid bills, managers & funders, tax payable, opening balances, adjustments, sales by product, expenses by item.
 - An **Accounts** department (office group) with plain-language tabs: Profit & loss (period, compared with the previous period, expenses grouped), Balance sheet ("what the farm owns / what it owes / net worth" as of any day, with a balanced check), Aging (customers owe us / we owe, in not-yet-due, 1–30, 31–60, 61–90, 90+ buckets; rows open the account), Journal with Trial balance, and Tax when tax is used. Each exports CSV.
 - Sales get sequential invoice numbers (INV-0001…) and customer payments sequential receipt numbers (RCT-0001…), prefixes set in Settings; numbers never reuse, old data is numbered by date on load.
 - Account sales carry a due date (default from payment terms). Sales → Invoices is an invoice register: number, customer, issued, due, total, balance, status (paid/partial/unpaid/overdue/voided), with invoiced/collected/outstanding/overdue totals, search, status filter, print and collect actions.
@@ -144,5 +144,6 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 17. Deleting a sale either returns its milk and eggs to stock or keeps them out with a write-off; restoring the sale removes the write-off.
 18. A customer with entries cannot be deleted alone; archiving or deleting with entries is reversible from Recently deleted.
 19. A page opened in a window navigates on its own, snaps, minimises and docks back into a tab without changing the main page.
-20. The trial balance and balance sheet balance on the sample farm and on a restored 2.x backup, and cash, bank, customer, supplier and people balances in Accounts equal the ones on their own pages.
+20. The trial balance and balance sheet balance on the sample farm and on a restored 2.x backup, and cash, customer, supplier and people balances in Accounts equal the ones on their own pages.
 21. Every sale and customer payment has a unique number; the invoice register's outstanding total equals what customers owe.
+22. Nothing in the app offers a bank, card or transfer option; restoring data that used them puts that money in the cash box and the totals still match.

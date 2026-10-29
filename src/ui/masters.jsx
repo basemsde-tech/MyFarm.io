@@ -377,7 +377,7 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
               <dt>{isPayment ? t('doc.receiptNo') : t('doc.invoiceNo')}</dt><dd className="num">{no(sale)}</dd>
               <dt>{t('doc.issued')}</dt><dd>{longDate(sale.day)}</dd>
               {inv && sale.customerId && <><dt>{t('doc.due')}</dt><dd>{longDate(inv.dueDay)}</dd></>}
-              {isPayment && <><dt>{t('method')}</dt><dd>{sale.keptBy ? `${t('pay.keptBy')} ${names.person(sale.keptBy)}` : t(`m.${sale.method || 'cash'}`)}</dd></>}
+              {isPayment && sale.keptBy && <><dt>{t('pay.keptBy')}</dt><dd>{names.person(sale.keptBy)}</dd></>}
             </dl>
           </div>
         )}
@@ -402,7 +402,7 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
             <table className="doc-table">
               <thead><tr><th>{t('details')}</th><th className="num">{t('amount')}</th></tr></thead>
               <tbody>
-                {sale.cashC > 0 && <tr><td>{t('doc.cashReceived')} · {t(`m.${sale.method || 'cash'}`)}</td><td className="num">{fmt(sale.cashC)}</td></tr>}
+                {sale.cashC > 0 && <tr><td>{t('doc.cashReceived')}</td><td className="num">{fmt(sale.cashC)}</td></tr>}
                 {(sale.offsets || []).map((o, i) => <tr key={i}><td>{t('doc.paidForUs')} · {t(`c.${o.category}`)}{o.desc ? ` · ${o.desc}` : ''}</td><td className="num">{fmt(o.amountC)}</td></tr>)}
               </tbody>
             </table>

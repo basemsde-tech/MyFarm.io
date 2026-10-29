@@ -89,6 +89,26 @@ export function ensureNumbers(farm) {
   return { ...farm, settings: { ...farm.settings, seq }, records: farm.records.map((r) => (assigned.has(r.id) ? { ...r, no: assigned.get(r.id) } : r)) };
 }
 
+/**
+ * The farm keeps no bank account: every payment is cash through the cash box.
+ * Older data is folded in — card/transfer methods and bank sources become cash,
+ * and cash↔bank transfers (which no longer move anything) are dropped.
+ */
+export function foldBank(farm) {
+  let changed = false;
+  const records = [];
+  for (const r of farm.records || []) {
+    if (r.type === 'transfer') { changed = true; continue; }
+    let n = r;
+    if ((n.type === 'sale' || n.type === 'payment') && n.method && n.method !== 'cash') n = { ...n, method: 'cash' };
+    if (n.source === 'bank') n = { ...n, source: 'cash' };
+    if (n.account === 'bank') n = { ...n, account: 'cash' };
+    if (n !== r) changed = true;
+    records.push(n);
+  }
+  return changed ? { ...farm, records } : farm;
+}
+
 export function addRecord(farm, rec, actor, now) {
   checkPerm(actor, rec, 'create');
   checkLock(farm, rec.day, actor);

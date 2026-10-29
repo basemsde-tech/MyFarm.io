@@ -268,12 +268,12 @@ function detailFields(r, { t, fmt, names }) {
     if (r.discountC) out.push([t('sale.discount'), `${fmt(r.discountC)}${r.discount?.reason ? ` · ${r.discount.reason}` : ''}`]);
     if (r.taxC) out.push([t('sale.tax'), fmt(r.taxC)]);
     out.push([t('total'), fmt(r.totalC)]);
-    out.push([t('sale.payNow'), `${fmt(r.paidNowC || 0)} · ${t(`m.${r.method || 'cash'}`)}`]);
+    out.push([t('sale.payNow'), fmt(r.paidNowC || 0)]);
     if (r.tenderC) out.push([t('sale.received'), fmt(r.tenderC)]);
     if (r.tenderC > r.totalC) out.push([t('sale.change'), fmt(r.tenderC - r.totalC)]);
     if (r.customerId && r.totalC > (r.paidNowC || 0)) out.push([t('sale.remains'), fmt(r.totalC - (r.paidNowC || 0))]);
   } else if (r.type === 'payment') {
-    out.push([t('pay.cash'), `${fmt(r.cashC || 0)} · ${t(`m.${r.method || 'cash'}`)}`]);
+    out.push([t('pay.cash'), fmt(r.cashC || 0)]);
     (r.offsets || []).forEach((o) => out.push([t(`c.${o.category}`), `${fmt(o.amountC)} · ${o.desc}`]));
     if (r.keptBy) out.push([t('pay.keptBy'), names.person(r.keptBy)]);
   } else if (r.type === 'expense') {

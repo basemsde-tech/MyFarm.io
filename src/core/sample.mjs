@@ -74,7 +74,7 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
       f = addRecord(f, { type: 'expense', day, category: 'feed', amountC: 62000, paidC: i % 14 === 3 ? 62000 : 30000, supplierId: 's-feed', source: 'cash', qty: 40, unit: 'bag', dueDay: addDays(day, 14) }, book, at(day, 14));
       f = addRecord(f, { type: 'expense', day, category: 'labour', amountC: 12000, paidC: 12000, source: 'cash', payroll: true, note: ar ? 'أجر سمير' : "Samir's wages" }, owner, at(day, 19));
     }
-    if (i % 7 === 6) f = addRecord(f, { type: 'payment', day, customerId: 'c-shams', cashC: 30000, method: 'transfer', offsets: [] }, book, at(day, 18));
+    if (i % 7 === 6) f = addRecord(f, { type: 'payment', day, customerId: 'c-shams', cashC: 30000, method: 'cash', offsets: [] }, book, at(day, 18));
     if (i % 9 === 4) f = addRecord(f, { type: 'payment', day, customerId: 'c-hanan', cashC: 10000, method: 'cash', offsets: [] }, book, at(day, 18));
     if (i % 10 === 2) f = addRecord(f, { type: 'expense', day, category: 'fuel', amountC: 3500, paidC: 3500, source: i === 22 ? 'person' : 'cash', personId: i === 22 ? 'm-khaled' : null, vendor: ar ? 'محطة الأمانة' : 'Amana station', qty: 20, unit: 'L' }, owner, at(day, 9));
     if (i === 15) f = addRecord(f, { type: 'medicine', day, animalId: 'a-102', kind: 'mastitis', name: 'Mastijet', costC: 1800 }, owner, at(day, 8));
@@ -82,7 +82,6 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     if (i === 25) f = addRecord(f, { type: 'supplierPay', day, supplierId: 's-feed', amountC: 40000, source: 'person', personId: 'm-khaled' }, owner, at(day, 12));
     if (i === 28) f = addRecord(f, { type: 'expense', day, category: 'electricity', amountC: 8500, paidC: 8500, source: 'cash', vendor: ar ? 'اشتراك المولّد' : 'Generator', obligationId: 'o-elec' }, book, at(day, 10));
     if (i === 30) f = addRecord(f, { type: 'capital', kind: 'withdraw', purpose: 'personal', personId: 'm-owner', amountC: 20000, account: 'cash', day, note: ar ? 'مصروف منزلي' : 'Household' }, owner, at(day, 20));
-    if (i === 33) f = addRecord(f, { type: 'transfer', day, fromAccount: 'cash', amountC: 150000 }, owner, at(day, 16));
   }
   f.rev = 1;
   return f;

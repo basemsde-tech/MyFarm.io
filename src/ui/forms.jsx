@@ -134,7 +134,6 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
         {tot.taxC > 0 && <div><span>{s.tax.inclusive ? `${t('sale.tax')} (${s.tax.rate}%)` : `${t('sale.tax')} ${s.tax.rate}%`}</span><span className="num">{fmt(tot.taxC)}</span></div>}
         <div className="grand"><span>{t('sale.totalDue')}</span><span className="num">{fmt(tot.totalC)}</span></div>
       </div>
-      <Seg value={f.method} onChange={(v) => set({ method: v })} options={opts(['cash', 'card', 'transfer'], t, 'm.')} />
       {walkin ? (
         f.method === 'cash' && (
           <div className="cashier">
@@ -195,7 +194,6 @@ export function PaymentSheet({ record, customerId, keptBy: presetKept, onClose }
       {f.customerId && <div className="due-line">{t('pay.dueNow', { a: '' })}<b className="num">{fmt(dueBefore)}</b></div>}
       <MoneyInput big autoFocus label={t('pay.cash')} cents={f.cashC} onCents={(c) => set({ cashC: c })} keypad
         chips={dueBefore > 0 ? [{ label: t('sale.payFull'), cents: Math.max(0, dueBefore - offsetsC(rec)) }] : []} error={issuesFor(issues, 'cash', t, f.cashC || f.offsets.length)} />
-      <Seg value={f.method} onChange={(v) => set({ method: v })} options={opts(['cash', 'card', 'transfer'], t, 'm.')} />
       <section className="sub-sec">
         <h3>{t('pay.offsets')}</h3>
         <p className="muted small">{t('pay.offsetHint')}</p>
@@ -267,7 +265,7 @@ export function ExpenseSheet({ record, supplierId: presetSup, personId: presetPe
             <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad error={issuesFor(issues, 'amount', t, f.amountC)} />
             <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
           </div>
-          <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'bank', 'person'], t, 'exp.src.')} />
+          <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'person'], t, 'exp.src.')} />
           {f.source === 'person' && <Select label={t('exp.person')} value={f.personId} onChange={(v) => set({ personId: v })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />}
           {f.source !== 'person' && (
             <>
@@ -326,7 +324,7 @@ export function SupplierPaySheet({ record, supplierId, billId, personId, onClose
         options={open.map((b) => ({ value: b.id, label: `${b.opening ? t('c.opening') : t(`c.${b.category}`)} · ${b.day.startsWith('0000') ? '' : b.day}`, sub: fmt(b.dueC) }))} />}
       <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad
         chips={[bill && { label: t('exp.payBill'), cents: bill.dueC }, dueC > 0 && { label: t('sale.payFull'), cents: dueC }].filter(Boolean)} error={issuesFor(issues, 'amount', t, f.amountC)} />
-      <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'bank', 'person'], t, 'exp.src.')} />
+      <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'person'], t, 'exp.src.')} />
       {f.source === 'person' && <Select label={t('exp.person')} value={f.personId} onChange={(v) => set({ personId: v })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />}
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
@@ -367,7 +365,6 @@ export function PersonSheet({ record, personId, purpose: presetPurpose, onClose 
         <MoneyInput big label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad error={issuesFor(issues, 'amount', t, f.amountC)} />
         <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
       </div>
-      <Seg value={f.account} onChange={(v) => set({ account: v })} options={opts(['cash', 'bank'], t, 'acc.')} />
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
   );
@@ -483,29 +480,11 @@ export function MedicineSheet({ record, animalId, onClose }) {
   );
 }
 
-export function TransferSheet({ record, onClose }) {
-  const { t, today, snap, fmt } = useApp();
-  const [f, setF] = useState(record ? { day: record.day, fromAccount: record.fromAccount, amountC: record.amountC, note: record.note || '' } : { day: today, fromAccount: 'cash', amountC: 0, note: '' });
-  const set = (p) => setF((x) => ({ ...x, ...p }));
-  const rec = { type: 'transfer', day: f.day, fromAccount: f.fromAccount, amountC: f.amountC, note: f.note };
-  return (
-    <Sheet title={t('tr.title')} onClose={onClose} footer={<TxFooter recs={[rec]} editing={record} saveAndNew={false} onDone={onClose} />}>
-      <Seg value={f.fromAccount} onChange={(v) => set({ fromAccount: v })} options={[{ value: 'cash', label: t('tr.boxToBank') }, { value: 'bank', label: t('tr.bankToBox') }]} />
-      <div className="muted small">{t('cash.inBox')}: <b className="num">{fmt(snap.cashC)}</b> · {t('cash.bank')}: <b className="num">{fmt(snap.bankC)}</b></div>
-      <div className="grid2">
-        <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} />
-        <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
-      </div>
-      <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
-    </Sheet>
-  );
-}
-
 export function NewMenu({ onClose }) {
   const { t, ui, actor } = useApp();
   const items = [
     ['sale', 'cart'], ['payment', 'cash'], ['expense', 'receipt'], ['milk', 'milk'], ['eggs', 'egg'],
-    ['supplierPay', 'truck'], ['person', 'people'], ['milkUse', 'milk'], ['medicine', 'cow'], ['transfer', 'swap'],
+    ['supplierPay', 'truck'], ['person', 'people'], ['milkUse', 'milk'], ['medicine', 'cow'],
   ];
   return (
     <Sheet title={t('new.title')} onClose={onClose}>

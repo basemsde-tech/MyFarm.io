@@ -134,12 +134,13 @@ test('every 2.x money path lands in the right place and reconciles', () => {
   assert.equal(rec('sale-w').tenderC, 2000);
   assert.equal(rec('pay-w'), undefined);
   assert.equal(farm.customers.some((c) => c.id === 'cust-walkin'), false);
-  // Card payment at the counter goes to the bank; the old single drawer equals cash + bank.
+  // No bank: a card payment at the counter is cash in the box; the old drawer equals the cash box.
   assert.equal(rec('sale-1').paidNowC, 500);
-  assert.equal(rec('sale-1').method, 'card');
+  assert.equal(rec('sale-1').method, 'cash');
+  assert.equal(s.bankC, 0);
   assert.equal(rec('sale-1').totalC, 1500);
   const cashCheck = report.checks.find((c) => c.key === 'cash');
-  assert.equal(cashCheck.oldC, s.cashC + s.bankC);
+  assert.equal(cashCheck.oldC, s.cashC);
   // Customer-paid diesel became an offset on the payment, not a drawer movement.
   assert.deepEqual(rec('pay-2').offsets, [{ category: 'fuel', amountC: 300, desc: 'Diesel' }]);
   assert.equal(rec('exp-off'), undefined);
@@ -155,7 +156,7 @@ test('every 2.x money path lands in the right place and reconciles', () => {
   assert.equal(rec('sp-open').source, 'person');
   assert.equal(rec('sp-open').billId, 'opening-s1');
   assert.equal(s.sup.s2.creditBalC, 1000);
-  assert.equal(rec('sp-acct').source, 'bank');
+  assert.equal(rec('sp-acct').source, 'cash');
   // Khaled: +1000 in, +120 supplier, +12 out of pocket, −5 kept, −18 cash take, −200 withdrawn = 909.
   assert.equal(s.people.m1.owedC, 90900);
   assert.equal(rec('e-oop').source, 'person');

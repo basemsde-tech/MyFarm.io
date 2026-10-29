@@ -90,14 +90,14 @@ export function useAttention() {
 }
 
 /* ───────────── Cash box ───────────── */
-const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal', transferIn: 'kind.transferIn', transferOut: 'kind.transferOut' };
+const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal' };
 
 export function CashScreen() {
   const app = useApp();
   const { farm, snap, t, fmt, today, ui, nav, lang } = app;
   const per = usePeriod('month');
   const [dir, setDir] = useState('all');
-  const [account, setAccount] = useState('cash');
+  const account = 'cash';
   const [kind, setKind] = useState('');
   const [sel, setSel] = useState([]);
   const att = useAttention();
@@ -139,7 +139,6 @@ export function CashScreen() {
           <div className="cash-big num" aria-live="polite">{fmt(shownCash)}</div>
           <div className="cash-spark"><Sparkline points={trend} label={t('cash.trend')} /><span className="cash-spark-label">{t('cash.trend')}</span></div>
           <div className="cash-row">
-            <span><Icon name="bank" size={16} /> {t('cash.bank')} <b className="num">{fmt(snap.bankC)}</b></span>
             {snap.capitalC !== 0 && <span>{t('cash.capital')} <b className="num">{fmt(snap.capitalC)}</b></span>}
           </div>
         </div>
@@ -175,15 +174,13 @@ export function CashScreen() {
         <div className="panel-head">
           <h2>{t('cash.journal')}</h2>
           <div className="row-btns">
-            <Button size="sm" icon="swap" onClick={() => ui.open('transfer')}>{t('cash.transfer')}</Button>
             <Button size="sm" icon="download" onClick={exportCSV}>{t('export')}</Button>
           </div>
         </div>
-        <FilterPanel id="cash" onReset={() => { per.reset(); setAccount('cash'); setDir('all'); setKind(''); }}
-          chips={[{ label: per.label, active: !per.isDefault }, { label: t(`acc.${account}`), active: account !== 'cash' }, dir !== 'all' && { label: t(dir), active: true }, kind && { label: t(FLOW_LABEL[kind]), active: true }]}>
+        <FilterPanel id="cash" onReset={() => { per.reset(); setDir('all'); setKind(''); }}
+          chips={[{ label: per.label, active: !per.isDefault }, dir !== 'all' && { label: t(dir), active: true }, kind && { label: t(FLOW_LABEL[kind]), active: true }]}>
           <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
           <div className="filter-row">
-            <Seg small label={t('account')} value={account} onChange={setAccount} options={[{ value: 'cash', label: t('acc.cash') }, { value: 'bank', label: t('acc.bank') }]} />
             <Seg small label={t('flt.direction')} value={dir} onChange={setDir} options={[{ value: 'all', label: t('all') }, { value: 'in', label: t('in') }, { value: 'out', label: t('out') }]} />
             <Select className="compact" label={t('flt.kind')} value={kind} onChange={setKind} options={Object.keys(FLOW_LABEL).map((k) => ({ value: k, label: t(FLOW_LABEL[k]) }))} placeholder={t('all')} />
           </div>

@@ -6,7 +6,7 @@ import { routeKey } from './ws.mjs';
 import { AppProvider, useApp, KEYS, storage } from './store.jsx';
 import { Button, Icon, IconButton, Seg, TextInput, Sheet, Avatar, Select } from './kit.jsx';
 import { RecordDrawer, DeleteDialog, PurgeDialog, VoidDialog, MasterDeleteDialog } from './tx.jsx';
-import { SaleSheet, PaymentSheet, ExpenseSheet, SupplierPaySheet, PersonSheet, MilkSheet, MilkUseSheet, EggsSheet, MedicineSheet, TransferSheet, NewMenu } from './forms.jsx';
+import { SaleSheet, PaymentSheet, ExpenseSheet, SupplierPaySheet, PersonSheet, MilkSheet, MilkUseSheet, EggsSheet, MedicineSheet, NewMenu } from './forms.jsx';
 import { CustomerSheet, SupplierSheet, PersonMasterSheet, AnimalSheet, AnimalEventSheet, WorkerSheet, ObligationSheet, ProfileSheet, DocSheet } from './masters.jsx';
 import { CashScreen, SalesScreen, ExpensesScreen, SuppliersScreen, PeopleScreen } from './screens-money.jsx';
 import { ProductionScreen, AnimalsScreen, ReportsScreen, SettingsScreen, TrashScreen } from './screens-farm.jsx';
@@ -24,7 +24,7 @@ const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 
 const SHEETS = {
   sale: SaleSheet, payment: PaymentSheet, expense: ExpenseSheet, supplierPay: SupplierPaySheet, capital: PersonSheet, milk: MilkSheet, milkUse: MilkUseSheet,
-  eggs: EggsSheet, medicine: MedicineSheet, transfer: TransferSheet, new: NewMenu, drawer: RecordDrawer, delete: DeleteDialog, purge: PurgeDialog, void: VoidDialog,
+  eggs: EggsSheet, medicine: MedicineSheet, new: NewMenu, drawer: RecordDrawer, delete: DeleteDialog, purge: PurgeDialog, void: VoidDialog,
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
 };
@@ -60,7 +60,7 @@ function Palette({ onClose }) {
   const items = useMemo(() => {
     const out = [];
     for (const g of NAV) for (const [k, ic] of g.items) out.push({ label: t(navLabel(k)), hint: t('cmd.go'), icon: ic, run: (o) => nav(k, null, null, o) });
-    for (const k of ['sale', 'payment', 'expense', 'milk', 'eggs', 'supplierPay', 'milkUse', 'medicine', 'transfer']) out.push({ label: t(`new.${k}`), hint: t('cmd.do'), icon: 'plus', run: () => ui.open(k) });
+    for (const k of ['sale', 'payment', 'expense', 'milk', 'eggs', 'supplierPay', 'milkUse', 'medicine']) out.push({ label: t(`new.${k}`), hint: t('cmd.do'), icon: 'plus', run: () => ui.open(k) });
     out.push({ label: t('new.person'), hint: t('cmd.do'), icon: 'plus', run: () => ui.open('capital') });
     for (const c of farm.customers) out.push({ label: c.name, hint: t('sale.customer'), icon: 'user', run: (o) => nav('sales', c.id, null, o) });
     for (const s of farm.suppliers) out.push({ label: s.name, hint: t('exp.supplier'), icon: 'truck', run: (o) => nav('suppliers', s.id, null, o) });
