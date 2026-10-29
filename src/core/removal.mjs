@@ -67,6 +67,7 @@ export function deleteMaster(farm, list, id, actor, { mode = 'only', reason = ''
   if (!MASTER_LISTS.includes(list)) throw new CommandError('badList');
   const row = (farm[list] || []).find((x) => x.id === id);
   if (!row) throw new CommandError('notFound');
+  if (list === 'animals' && row.status === 'sold') throw new CommandError('soldAnimalKept');
   const linked = list === 'animals' ? herdRecords(farm, id) : linkedRecords(farm, list, id);
   const moneyLinked = linkedRecords(farm, list, id).filter(isMoney);
   if (mode === 'only' && linked.length && ['customers', 'suppliers', 'people'].includes(list)) throw new CommandError('hasRecords', { n: linked.length });

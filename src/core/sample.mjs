@@ -84,5 +84,11 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     if (i === 30) f = addRecord(f, { type: 'capital', kind: 'withdraw', purpose: 'personal', personId: 'm-owner', amountC: 20000, account: 'cash', day, note: ar ? 'مصروف منزلي' : 'Household' }, owner, at(day, 20));
   }
   f.rev = 1;
+  // A steer bought as a calf, treated, weighed and sold — kept on record in Animals → Sold.
+  const soldDay = addDays(today, -12);
+  f = upsert(f, 'animals', { id: 'a-107', species: 'cow', tag: '107', name: '', breed: 'Baladi', status: 'healthy', dob: addDays(today, -560), weight: 380, source: 'bought', priceC: 45000, boughtDay: addDays(today, -400) }, owner);
+  f = addRecord(f, { type: 'medicine', day: addDays(today, -40), animalId: 'a-107', kind: 'vaccine', name: ar ? 'لقاح الحمى القلاعية' : 'FMD vaccine', costC: 1200 }, owner, at(addDays(today, -40), 9));
+  f = addRecord(f, { type: 'animalEvent', day: addDays(today, -14), animalId: 'a-107', kind: 'weight', data: { weight: 412 } }, owner, at(addDays(today, -14), 8));
+  f = addRecord(f, { type: 'sale', day: soldDay, customerId: null, lines: [{ product: 'animal', qty: 1, unit: 'head', priceC: 98000, amountC: 98000 }], discountC: 0, taxC: 0, totalC: 98000, paidNowC: 98000, tenderC: 98000, method: 'cash', note: ar ? 'بيع لتاجر مواشٍ من شتورة' : 'Sold to a livestock trader from Chtaura', animalId: 'a-107' }, owner, at(soldDay, 15));
   return f;
 }

@@ -117,6 +117,13 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Account sales carry a due date (default from payment terms). Sales → Invoices is an invoice register: number, customer, issued, due, total, balance, status (paid/partial/unpaid/overdue/voided), with invoiced/collected/outstanding/overdue totals, search, status filter, print and collect actions.
 - Printed invoices show bill-to, number, issue and due dates, subtotal, discount, tax, paid to date, balance due and a status stamp; payments print as a receipt with amount, offsets, total credited and balance after.
 
+## 16. Sold animals stay on record
+- A sale that names an animal marks it sold and stores a sale snapshot on the animal (sale, date, buyer, price, invoice no., weight at sale). Deleting the sale, or voiding it with stock returned, puts the animal back in the herd at its previous status; restoring or un-voiding sells it again. A write-off void keeps it sold. Moving a sale to another animal frees the first.
+- Sold animals cannot be deleted, only archived; they are never lost from the record. The sale owns the status and price while it exists.
+- The animal page of a sold animal shows a Sale record: date, buyer (link), invoice no., price, payment status, weight at sale, price per kg, age at sale, time on farm, purchase price, treatment costs, milk/eggs produced, births, status before sale, notes, and gain = price − purchase − treatments; print the invoice or open the sale from there. Production quick actions and the breeding panel are hidden for sold animals.
+- Animals has two tabs: Current herd and Sold. Sold is a register of every sold animal (archived included) with period, species and search filters, totals (count, sales, average, gain) and CSV export.
+- Animals sold before this version, or by hand without a money entry, keep their details; hand-recorded sales can hold date, price, buyer, weight and notes. Every delete or edit preview shows an animal's status change.
+
 ## 7. Engineering shape
 
 - Pure, tested core modules in `src/core/` (money, ledger, commands, validate, milk, statement, sync, backup, reports, species, catalog, security, sample). A new money rule never lives only in a click handler.
@@ -147,3 +154,4 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 20. The trial balance and balance sheet balance on the sample farm and on a restored 2.x backup, and cash, customer, supplier and people balances in Accounts equal the ones on their own pages.
 21. Every sale and customer payment has a unique number; the invoice register's outstanding total equals what customers owe.
 22. Nothing in the app offers a bank, card or transfer option; restoring data that used them puts that money in the cash box and the totals still match.
+23. Selling an animal moves it to Animals → Sold with its full sale record; deleting the sale returns it to the herd; a sold animal cannot be deleted.

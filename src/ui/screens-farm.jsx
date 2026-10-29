@@ -14,6 +14,7 @@ import { ROLES, can, CATEGORY_ICON, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { hashCode, newRecoveryCode, newSalt } from '../core/security.mjs';
 import { sampleFarm } from '../core/sample.mjs';
 import { setArchived, restoreMaster, MASTER_LISTS } from '../core/removal.mjs';
+import { SoldRegister, SaleRecordPanel } from './sold.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
@@ -195,15 +196,17 @@ export function AnimalsScreen() {
 }
 
 function AnimalList() {
-  const { farm, t, ui, nav, today, lang } = useApp();
+  const { farm, t, ui, nav, today, lang, route } = useApp();
+  const tab = route.tab === 'sold' ? 'sold' : 'herd';
+  const soldCount = farm.animals.filter((a) => !a.deletedAt && a.status === 'sold').length;
   const [sp, setSp] = useState('');
   const [st, setSt] = useState('');
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
   const [sort, setSort] = useState('tag');
   const { commit, actor } = useApp();
-  const gone = farm.animals.filter((a) => !a.archived && ['sold', 'dead'].includes(a.status));
-  const list = farm.animals.filter((a) => !!a.archived === arch && (!sp || a.species === sp) && (!st || a.status === st) && (!q || `${a.tag} ${a.name} ${a.breed}`.toLowerCase().includes(q.toLowerCase())))
+  const gone = farm.animals.filter((a) => !a.archived && a.status === 'dead');
+  const list = farm.animals.filter((a) => a.status !== 'sold' && !!a.archived === arch && (!sp || a.species === sp) && (!st || a.status === st) && (!q || `${a.tag} ${a.name} ${a.breed}`.toLowerCase().includes(q.toLowerCase())))
     .sort((a, b) => (['sold', 'dead'].includes(a.status) ? 1 : 0) - (['sold', 'dead'].includes(b.status) ? 1 : 0)
       || (sort === 'name' ? (a.name || a.tag).localeCompare(b.name || b.tag)
         : sort === 'due' ? ((a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check)?.due : '9999') || '9999').localeCompare((b.repro?.serviceDay ? reproTimeline(b.species, b.repro.serviceDay, today, b.repro.check)?.due : '9999') || '9999')
@@ -216,13 +219,15 @@ function AnimalList() {
         {gone.length > 0 && <Button icon="archive" onClick={() => commit((f) => gone.reduce((x, a) => setArchived(x, 'animals', a.id, true, actor), f), { label: t('archived') })}>{t('ani.archiveSold', { n: gone.length })}</Button>}
         <Button variant="primary" icon="plus" onClick={() => ui.open('animal', { species: sp || undefined })}>{t('ani.new')}</Button>
       </>} />
+      <Tabs value={tab} onChange={(x) => nav('animals', null, x === 'herd' ? null : x)} tabs={[{ value: 'herd', label: t('ani.herd') }, { value: 'sold', label: t('sold.tab'), count: soldCount }]} />
+      {tab === 'sold' ? <SoldRegister /> : (
       <section className="panel">
         <FilterPanel id="animals" onReset={() => { setQ(''); setSp(''); setSt(''); setArch(false); setSort('tag'); }}
           chips={[sp && { label: t(`sp.${sp}`), active: true }, st && { label: t(`as.${st}`), active: true }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }, { label: t(`flt.sort.${sort}`), active: sort !== 'tag' }]}>
           <div className="filter-row">
             <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
             <Seg small label={t('prod.species')} value={sp} onChange={(v) => { setSp(v); setSt(''); }} options={[{ value: '', label: t('all') }, ...Object.keys(SPECIES).map((s) => ({ value: s, label: t(`sp.${s}`) }))]} />
-            <Select className="compact" label={t('ani.status')} value={st} onChange={setSt} options={[...new Set(farm.animals.map((a) => a.status))].map((s) => ({ value: s, label: t(`as.${s}`) }))} placeholder={t('all')} />
+            <Select className="compact" label={t('ani.status')} value={st} onChange={setSt} options={[...new Set(farm.animals.map((a) => a.status))].filter((s) => s !== 'sold').map((s) => ({ value: s, label: t(`as.${s}`) }))} placeholder={t('all')} />
             <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['tag', 'name', 'due'].map((k) => ({ value: k, label: t(`flt.sort.${k === 'due' ? 'birth' : k}`) }))} />
             <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')} ({farm.animals.filter((x) => x.archived).length})</label>
           </div>
@@ -246,6 +251,7 @@ function AnimalList() {
           </div>
         ) : <Empty title={t('ani.none')} body={t('ani.noneHint')} icon="cow" action={<Button variant="primary" icon="plus" onClick={() => ui.open('animal')}>{t('ani.new')}</Button>} />}
       </section>
+      )}
     </div>
   );
 }
@@ -261,10 +267,10 @@ function AnimalDetail({ id }) {
   const ev = (kind) => ui.open('animalEvent', { animalId: a.id, kind });
   return (
     <div className="screen">
-      <PageHead back={() => nav('animals')} title={a.name ? `${a.name} · ${a.tag}` : a.tag} sub={[t(`sp.${a.species}`), a.breed, a.dob && `${daysBetween(a.dob, today)} ${t('u.unit') && (lang === 'ar' ? 'يوم' : 'days')}`].filter(Boolean).join(' · ')}
+      <PageHead back={() => nav('animals')} title={a.name ? `${a.name} · ${a.tag}` : a.tag} sub={[t(`sp.${a.species}`), a.breed, a.dob && a.status !== 'sold' && `${daysBetween(a.dob, today)} ${t('u.unit') && (lang === 'ar' ? 'يوم' : 'days')}`].filter(Boolean).join(' · ')}
         actions={<>
           <Button icon="archive" onClick={() => commit((f) => setArchived(f, 'animals', a.id, !a.archived, actor), { label: a.archived ? t('unarchive') : t('archived') })}>{a.archived ? t('unarchive') : t('ani.archive')}</Button>
-          <Button icon="trash" variant="danger" onClick={() => ui.open('deleteMaster', { list: 'animals', id: a.id, onDone: (m) => m !== 'archive' && nav('animals') })}>{t('ani.delete')}</Button>
+          {a.status !== 'sold' && <Button icon="trash" variant="danger" onClick={() => ui.open('deleteMaster', { list: 'animals', id: a.id, onDone: (m) => m !== 'archive' && nav('animals') })}>{t('ani.delete')}</Button>}
           <Button icon="edit" onClick={() => ui.open('animal', { record: a })}>{t('edit')}</Button>
         </>} />
       {a.archived && <div className="note info"><Icon name="archive" size={16} />{t('ani.archivedNote')}</div>}
@@ -284,15 +290,16 @@ function AnimalDetail({ id }) {
           {a.notes && <p className="muted">{a.notes}</p>}
         </div>
       </section>
-      <div className="quick">
+      {a.status === 'sold' && <SaleRecordPanel a={a} />}
+      {a.status !== 'sold' && <div className="quick">
         {sp.product === 'milk' && <Button icon="milk" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>}
         {flock && <Button icon="egg" onClick={() => ui.open('eggs')}>{t('new.eggs')}</Button>}
         <Button onClick={() => ui.open('medicine', { animalId: a.id })}>{t('t.medicine')}</Button>
         {!flock && <Button onClick={() => ev('weight')}>{t('ani.logWeight')}</Button>}
         <Button onClick={() => ev('loss')}>{t('ani.logLoss')}</Button>
-        {!['sold', 'dead'].includes(a.status) && <Button onClick={() => ui.open('sale', { animalId: a.id })}>{t('new.sale')}</Button>}
-      </div>
-      {!flock && (
+        {a.status !== 'dead' && <Button icon="cart" onClick={() => ui.open('sale', { animalId: a.id })}>{t('sold.sellAnimal')}</Button>}
+      </div>}
+      {!flock && a.status !== 'sold' && (
         <section className="panel">
           <div className="panel-head"><h2>{t('ani.repro')}</h2><Button size="sm" variant={tl ? 'quiet' : 'primary'} onClick={() => ev('service')}>{t('ani.service')}</Button></div>
           {tl ? (

@@ -13,21 +13,21 @@ import { SPECIES } from '../core/species.mjs';
 const strip = ({ id, createdAt, createdBy, createdByName, updatedAt, updatedBy, history, deletedAt, ...rest }) => rest;
 const opts = (list, t, prefix) => list.map((v) => ({ value: v, label: t(`${prefix}${v}`) }));
 
-function useParties() {
+function useParties(keepAnimal) {
   const { farm, t, snap, fmt } = useApp();
   return useMemo(() => ({
     customers: farm.customers.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name, sub: snap.cust[c.id]?.dueC ? `${t('cust.due')} ${fmt(snap.cust[c.id].dueC)}` : c.phone })),
     suppliers: farm.suppliers.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name, sub: snap.sup[c.id]?.dueC ? `${t('st.owing')} ${fmt(snap.sup[c.id].dueC)}` : '' })),
     people: farm.people.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name })),
-    animals: farm.animals.filter((a) => !['sold', 'dead'].includes(a.status)).map((a) => ({ value: a.id, label: a.name ? `${a.name} · ${a.tag}` : a.tag, sub: t(`sp.${a.species}`), species: a.species })),
-  }), [farm, snap, t, fmt]);
+    animals: farm.animals.filter((a) => !a.deletedAt && (a.id === keepAnimal || !['sold', 'dead'].includes(a.status))).map((a) => ({ value: a.id, label: a.name ? `${a.name} · ${a.tag}` : a.tag, sub: t(`sp.${a.species}`), species: a.species })),
+  }), [farm, snap, t, fmt, keepAnimal]);
 }
 
 /* ───────────── Sale / cashier ───────────── */
 export function SaleSheet({ record, customerId: presetCustomer, animalId: presetAnimal, onClose }) {
   const app = useApp();
   const { farm, t, fmt, today, snap, ui } = app;
-  const parties = useParties();
+  const parties = useParties(record?.animalId);
   const s = farm.settings;
   const blankLine = (cid) => {
     const c = farm.customers.find((x) => x.id === cid);
@@ -56,10 +56,6 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
   const issues = validateRecord(rec, { today, tax: s.tax });
   const ownMilk = record ? saleMilkL(record) : 0;
   const tank = snap.milk.stockL + (record && !record.voided ? ownMilk : 0);
-  const extraOp = rec.animalId && !record ? (x) => {
-    const a = x.animals.find((y) => y.id === rec.animalId);
-    return a ? upsert(x, 'animals', { id: a.id, status: 'sold', prevStatus: a.status }, app.actor) : x;
-  } : null;
   const change = tenderC != null ? tenderC - tot.totalC : 0;
   const denoms = [500, 1000, 2000, 5000, 10000].filter((d) => d >= tot.totalC).slice(0, 3);
   const chips = [{ label: t('sale.exact'), cents: tot.totalC }, ...denoms.map((d) => ({ label: fmt(d), cents: d }))];
@@ -81,7 +77,7 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
   }
   return (
     <Sheet title={record ? t('sale.edit') : t('sale.title')} onClose={onClose} wide
-      footer={<TxFooter recs={[rec]} editing={record} extraOp={extraOp} ctx={{}} onSaved={(next) => {
+      footer={<TxFooter recs={[rec]} editing={record} ctx={{}} onSaved={(next) => {
         if (!record) { chime(); const last = next.records[next.records.length - 1]; if (walkin) setDone({ totalC: tot.totalC, change, id: last.id }); }
       }} onDone={(m) => { if (record) return onClose(); clearDraft(); if (m === 'close' && !walkin) onClose(); }} />}>
       {restored && <div className="note info">{t('ed.draft')} <button type="button" className="link" onClick={clearDraft}>{t('ed.discard')}</button></div>}

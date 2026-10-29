@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useApp, inFrame } from './store.jsx';
-import { Button, Icon, MoneyInput, QtyInput, DateInput, Seg, Select, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton, Avatar, dayLabel } from './kit.jsx';
+import { Button, Icon, Pill, MoneyInput, QtyInput, DateInput, Seg, Select, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton, Avatar, dayLabel } from './kit.jsx';
 import { TxFooter } from './tx.jsx';
 import { upsert, newId } from '../core/commands.mjs';
 import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
+import { saleOfAnimal } from '../core/animals.mjs';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { partyLines, statement, periodRange } from '../core/statement.mjs';
 import { compute } from '../core/ledger.mjs';
@@ -107,6 +108,10 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
   const taken = farm.animals.some((a) => a.id !== record?.id && a.tag.trim().toLowerCase() === f.tag.trim().toLowerCase());
   const err = !f.tag.trim() ? t('e.name.required') : taken ? t('ani.tagTaken') : null;
   const breedOther = f.breed && !sp.breeds.includes(f.breed);
+  // Sold through a sale: the sale owns the status and the price; delete or void the sale to undo.
+  const saleLocked = !!(record && record.status === 'sold' && saleOfAnimal(farm, record.id));
+  const sold = f.sold || {};
+  const setSold = (p) => set({ sold: { ...sold, ...p } });
   return (
     <Sheet title={record ? t('ani.edit') : t('ani.new')} onClose={onClose} wide
       footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err} onClick={() => save({ ...f, tag: f.tag.trim() })}>{t('save')}</Button></div>}>
@@ -125,9 +130,9 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
       </div>
       <div className="grid2">
         <Select label={t('ani.breed')} value={breedOther ? '__other' : f.breed} onChange={(v) => set({ breed: v === '__other' ? ' ' : v })} options={[...sp.breeds.map((b) => ({ value: b, label: b })), { value: '__other', label: t('c.other') }]} placeholder="—" />
-        {breedOther ? <TextInput label={t('ani.breed')} value={f.breed.trim()} onChange={(v) => set({ breed: v || ' ' })} /> : <Select label={t('ani.status')} value={f.status} onChange={(v) => set({ status: v })} options={statusesFor(f.species).map((s) => ({ value: s, label: t(`as.${s}`) }))} />}
+        {breedOther ? <TextInput label={t('ani.breed')} value={f.breed.trim()} onChange={(v) => set({ breed: v || ' ' })} /> : <StatusField f={f} set={set} locked={saleLocked} />}
       </div>
-      {breedOther && <Select label={t('ani.status')} value={f.status} onChange={(v) => set({ status: v })} options={statusesFor(f.species).map((s) => ({ value: s, label: t(`as.${s}`) }))} />}
+      {breedOther && <StatusField f={f} set={set} locked={saleLocked} />}
       {flock ? (
         <div className="grid2">
           <QtyInput label={t('ani.birds')} value={f.birds} onValue={(v) => set({ birds: Math.round(v) })} />
@@ -145,10 +150,30 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
       )}
       <Seg label={t('ani.source')} value={f.source} onChange={(v) => set({ source: v })} options={[{ value: 'born', label: t('ani.born') }, { value: 'bought', label: t('ani.bought') }]} />
       {f.source === 'bought' && <MoneyInput label={t('ani.price')} cents={f.priceC} onCents={(c) => set({ priceC: c })} />}
+      {f.source === 'bought' && !flock && <DateInput label={t('sold.boughtDay')} value={f.boughtDay || ''} max={today} onChange={(v) => set({ boughtDay: v })} />}
+      {f.status === 'sold' && (
+        <section className="sub-sec sold-sec">
+          <h3>{t('sold.record')}</h3>
+          {saleLocked ? <p className="muted small">{t('sold.lockedHint')}</p> : <p className="muted small">{t('sold.manualHint')}</p>}
+          <div className="grid2">
+            {!saleLocked && <DateInput label={t('sold.date')} value={sold.day || ''} max={today} onChange={(v) => setSold({ day: v })} />}
+            {!saleLocked && <MoneyInput label={t('sold.price')} cents={sold.priceC || 0} onCents={(c) => setSold({ priceC: c })} />}
+            {!saleLocked && <TextInput label={t('sold.buyer')} value={sold.buyer || ''} onChange={(v) => setSold({ buyer: v })} />}
+            {!flock && <QtyInput label={t('sold.weight')} value={sold.weightKg || 0} onValue={(v) => setSold({ weightKg: v })} unit={t('u.kg')} />}
+          </div>
+          <TextArea label={t('sold.note')} value={sold.note || ''} onChange={(v) => setSold({ note: v })} />
+        </section>
+      )}
       <TextInput label={t('ani.medicine')} value={f.medicine} onChange={(v) => set({ medicine: v })} />
       <TextArea label={t('note')} value={f.notes} onChange={(v) => set({ notes: v })} />
     </Sheet>
   );
+}
+
+function StatusField({ f, set, locked }) {
+  const { t } = useApp();
+  if (locked) return <Field label={t('ani.status')}><div className="locked-val"><Pill status="sold">{t('as.sold')}</Pill><Icon name="lock" size={14} /></div></Field>;
+  return <Select label={t('ani.status')} value={f.status} onChange={(v) => set({ status: v, ...(v === 'sold' && f.status !== 'sold' ? { prevStatus: f.status } : {}) })} options={statusesFor(f.species).map((s) => ({ value: s, label: t(`as.${s}`) }))} />;
 }
 
 /** Herd events: service, pregnancy check, dry-off, birth, loss, weight. */

@@ -265,6 +265,7 @@ textarea.input { min-block-size: 64px; resize: vertical; }
 .money-in .input, .qty-in .input { font-size: 1.04rem; font-variant-numeric: tabular-nums; }
 .money-in.big .input { font-size: 1.7rem; font-weight: 600; min-block-size: 62px; letter-spacing: -.01em; }
 .qty-in .unit { position: absolute; inset-inline-end: 13px; color: var(--muted); font-size: .86rem; pointer-events: none; }
+.qty-in:has(.unit) .input { padding-inline-end: 3.4em; }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-block-start: 6px; animation: enter .2s var(--ease); }
 .keypad button { min-block-size: 54px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface-2); font-size: 1.3rem; font-variant-numeric: tabular-nums; transition: background var(--t-fast), transform var(--t-fast) var(--ease); }
 .keypad button:hover { background: var(--surface-3); }
@@ -1117,4 +1118,28 @@ button.bar-row:hover { background: var(--surface-2); }
   .inv-tbl th:nth-child(3), .inv-tbl td:nth-child(3), .inv-tbl th:nth-child(4), .inv-tbl td:nth-child(4), .inv-tbl th:nth-child(5), .inv-tbl td:nth-child(5) { display: none; }
   .inv-tbl td, .inv-tbl th { padding-inline: 6px; }
   .inv-tbl .cell-actions .btn:first-child:not(:last-child) { display: none; }
+}
+
+/* ── Sold animals ── */
+.sale-record { border-inline-start: 4px solid var(--gold); }
+.sr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.sr-kicker { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.sr-head h2 { margin-block-start: 2px; }
+.sr-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sr-price { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; padding-block: 14px; margin-block: 10px; border-block: 1px solid var(--line-2); }
+.sr-price > div { display: flex; flex-direction: column; gap: 2px; }
+.sr-price b { font-size: 1.6rem; font-family: var(--display); }
+.sr-gain.in b { color: var(--good); }
+.sr-gain.out b { color: var(--bad); }
+.sr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 20px; margin: 0; }
+.sr-item { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; }
+.sr-item.wide { grid-column: 1 / -1; }
+.sr-item dt { font-size: .76rem; color: var(--muted); }
+.sr-item dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.sold-tbl td { vertical-align: top; }
+.sold-sec { border: 1px dashed var(--line); border-radius: var(--r); padding: 12px 14px; }
+.locked-val { display: flex; align-items: center; gap: 8px; min-block-size: 44px; color: var(--muted); }
+@media (max-width: 760px) {
+  .sold-tbl th:nth-child(4), .sold-tbl td:nth-child(4), .sold-tbl th:nth-child(5), .sold-tbl td:nth-child(5), .sold-tbl th:nth-child(3), .sold-tbl td:nth-child(3) { display: none; }
+  .sr-price { gap: 18px; }
 }

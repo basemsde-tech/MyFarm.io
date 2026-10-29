@@ -51,6 +51,12 @@ export function ImpactList({ impact, compact }) {
   return (
     <ul className={`impact ${compact ? 'compact' : ''}`}>
       {impact.map((i) => {
+        if (i.kind === 'status') return (
+          <li key={i.key + (i.ref?.id || '')}>
+            <span className="impact-label">{t('imp.animal', { n: i.ref?.name || '' })}</span>
+            <span className="impact-vals"><span className="was">{t(`as.${i.before}`)}</span><Icon name="chev" size={14} className="flip-rtl" /><b>{t(`as.${i.after}`)}</b></span>
+          </li>
+        );
         const delta = i.after - i.before;
         return (
           <li key={i.key + (i.ref?.id || '')}>
@@ -345,10 +351,11 @@ export function MasterDeleteDialog({ list, id, onClose, onDone }) {
   const linked = row ? (list === 'animals' ? herdRecords(farm, id) : linkedRecords(farm, list, id)) : [];
   const moneyCount = row ? linkedRecords(farm, list, id).filter(isMoney).length : 0;
   const party = ['customers', 'suppliers', 'people'].includes(list);
+  const soldKept = list === 'animals' && row?.status === 'sold';
   const options = [
     { key: 'archive', ok: !row?.archived },
-    { key: 'only', ok: !(party && linked.length) },
-    { key: 'withRecords', ok: linked.length > 0 },
+    { key: 'only', ok: !soldKept && !(party && linked.length) },
+    { key: 'withRecords', ok: !soldKept && linked.length > 0 },
   ].filter((o) => o.ok);
   const [mode, setMode] = useState(options[0]?.key || 'only');
   const [reason, setReason] = useState('');
@@ -364,7 +371,7 @@ export function MasterDeleteDialog({ list, id, onClose, onDone }) {
   return (
     <Sheet title={t('del.masterTitle', { n: nm })} sub={linked.length ? t('del.linked', { n: linked.length }) : t('del.noLinked')} onClose={onClose}
       footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button>
-        <Button variant={mode === 'archive' ? 'primary' : 'danger'} icon={mode === 'archive' ? 'archive' : 'trash'} disabled={blocked.length > 0 || (mode === 'withRecords' && moneyCount > 0 && reason.trim().length < 3)} onClick={go}>{t(`del.do.${mode}`)}</Button></div>}>
+        <Button variant={mode === 'archive' ? 'primary' : 'danger'} icon={mode === 'archive' ? 'archive' : 'trash'} disabled={!options.length || blocked.length > 0 || (mode === 'withRecords' && moneyCount > 0 && reason.trim().length < 3)} onClick={go}>{t(`del.do.${mode}`)}</Button></div>}>
       <div className="choice-list" role="radiogroup">
         {options.map((o) => (
           <button type="button" role="radio" key={o.key} aria-checked={mode === o.key} className={`choice ${mode === o.key ? 'on' : ''}`} onClick={() => setMode(o.key)}>
@@ -374,7 +381,8 @@ export function MasterDeleteDialog({ list, id, onClose, onDone }) {
         ))}
       </div>
       {party && linked.length > 0 && <div className="note info"><Icon name="alert" size={16} />{t('del.partyHint')}</div>}
-      {mode !== 'archive' && (
+      {soldKept && <div className="note info"><Icon name="lock" size={16} />{t('sold.keptHint')}</div>}
+      {mode !== 'archive' && options.length > 0 && (
         <>
           <h3 className="sec-h">{t('imp.alsoChanges')}</h3>
           <ImpactList impact={pv.impact} />

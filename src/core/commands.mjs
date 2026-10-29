@@ -4,6 +4,7 @@
 import { compute, diffSnapshots } from './ledger.mjs';
 import { validateFarm, validateRecord } from './validate.mjs';
 import { can } from './catalog.mjs';
+import { syncAnimalSales } from './animals.mjs';
 
 export const FARM_VERSION = 4;
 export const TRASH_DAYS = 30;
@@ -123,7 +124,7 @@ export function addRecord(farm, rec, actor, now) {
     r = { ...r, no: seq[k] };
     base = { ...base, settings: { ...base.settings, seq } };
   }
-  return bumpRev({ ...base, records: [...base.records, r] });
+  return syncAnimalSales(bumpRev({ ...base, records: [...base.records, r] }), [r.id], r.createdAt);
 }
 
 const META = new Set(['no', 'id', 'type', 'createdAt', 'createdBy', 'createdByName', 'updatedAt', 'updatedBy', 'history', 'deletedAt', 'deletedBy', 'deletedByName', 'deleteReason']);
@@ -159,7 +160,7 @@ export function editRecord(farm, id, patch, actor, reason = '', now) {
   if (lockA.override || lockB.override) entry.afterClose = true;
   const rec = { ...next, id: old.id, type: old.type, history: [...(old.history || []), entry], updatedAt: entry.at, updatedBy: entry.by };
   if (entry.afterClose) rec.editedAfterClose = true;
-  return bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) });
+  return syncAnimalSales(bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) }), [id], entry.at, old.animalId ? [old.animalId] : []);
 }
 
 export function deleteRecords(farm, ids, actor, reason = '', now) {
@@ -171,7 +172,7 @@ export function deleteRecords(farm, ids, actor, reason = '', now) {
     checkLock(farm, r.day, actor);
     return { ...r, deletedAt: at, deletedBy: actor?.id || null, deletedByName: actor?.name || '—', deleteReason: reason, updatedAt: at };
   });
-  return bumpRev({ ...farm, records });
+  return syncAnimalSales(bumpRev({ ...farm, records }), ids, at);
 }
 
 export function restoreRecords(farm, ids, actor, now) {
@@ -184,7 +185,7 @@ export function restoreRecords(farm, ids, actor, now) {
   });
   // A write-off made when this sale was deleted must go, or the produce would leave stock twice.
   const cleaned = records.map((r) => (r.writeOffFor && set.has(r.writeOffFor) && !r.deletedAt ? { ...r, deletedAt: at, deletedBy: actor?.id || null, deletedByName: actor?.name || '—', deleteReason: 'replaced', updatedAt: at } : r));
-  return bumpRev({ ...farm, records: cleaned });
+  return syncAnimalSales(bumpRev({ ...farm, records: cleaned }), ids, at);
 }
 
 /** Permanent delete: owner only. Leaves a tombstone so sync cannot resurrect it. */
@@ -219,11 +220,7 @@ export function voidSale(farm, id, mode, reason, actor, now) {
   const at = nowIso(now);
   const rec = { ...old, voided: { mode, reason: reason.trim(), at, by: actor?.id, byName: actor?.name }, updatedAt: at,
     history: [...(old.history || []), { at, by: actor?.id, byName: actor?.name, reason: `void:${mode} ${reason.trim()}`, fields: ['voided'], before: { voided: old.voided || null } }] };
-  let next = bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) });
-  if (old.animalId && mode === 'restore') {
-    next = { ...next, animals: next.animals.map((a) => (a.id === old.animalId && a.status === 'sold' ? { ...a, status: a.prevStatus || 'healthy', updatedAt: at } : a)) };
-  }
-  return next;
+  return syncAnimalSales(bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) }), [id], at);
 }
 
 export function unvoidSale(farm, id, actor, now) {
@@ -232,7 +229,7 @@ export function unvoidSale(farm, id, actor, now) {
   const at = nowIso(now);
   const { voided, ...rest } = old;
   const rec = { ...rest, updatedAt: at, history: [...(old.history || []), { at, by: actor?.id, byName: actor?.name, reason: 'void undone', fields: ['voided'], before: { voided } }] };
-  return bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) });
+  return syncAnimalSales(bumpRev({ ...farm, records: farm.records.map((r) => (r.id === id ? rec : r)) }), [id], at);
 }
 
 /** Upsert into a master list (customers, suppliers, people, animals, workers, profiles, obligations). */
@@ -264,6 +261,11 @@ export function preview(farm, op, { names, today, now } = {}) {
   const a = compute(farm, { now });
   const b = compute(next, { now });
   const impact = diffSnapshots(a, b, names);
+  // Animals that a sale marks sold, or a deleted sale puts back in the herd.
+  const was = new Map((farm.animals || []).map((x) => [x.id, x.status]));
+  for (const x of next.animals || []) {
+    if (was.has(x.id) && was.get(x.id) !== x.status) impact.push({ key: 'animal', kind: 'status', before: was.get(x.id), after: x.status, ref: { id: x.id, name: x.name ? `${x.name} · ${x.tag}` : x.tag } });
+  }
   const before = new Set(validateFarm(farm, a).map((i) => i.code + i.recordId));
   const issues = validateFarm(next, b).filter((i) => !before.has(i.code + i.recordId));
   return { ok: !issues.some((i) => i.severity === 'error'), next, impact, issues };

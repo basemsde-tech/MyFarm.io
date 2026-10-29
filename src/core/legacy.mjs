@@ -6,6 +6,7 @@
 // cash-out is a supplierPay (expenseId), sometimes only implied. Here each cluster becomes
 // one 3.x record so cash, accounts and expenses can never drift apart.
 
+import { syncAllAnimalSales } from './animals.mjs';
 import { emptyFarm, ensureNumbers, foldBank } from './commands.mjs';
 import { compute } from './ledger.mjs';
 import { SPECIES, statusesFor } from './species.mjs';
@@ -461,7 +462,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
   farm.records = recs;
   farm.rev = 1;
   const hadBank = farm.records.some((r) => (r.method && r.method !== 'cash' && (r.type === 'sale' || r.type === 'payment')) || r.source === 'bank' || r.account === 'bank');
-  Object.assign(farm, foldBank(ensureNumbers(farm)));
+  Object.assign(farm, syncAllAnimalSales(foldBank(ensureNumbers(farm))));
 
   /* Reconcile every balance against 2.x */
   const snap = compute(farm);
