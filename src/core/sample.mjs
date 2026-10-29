@@ -14,7 +14,7 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
   const vary = (base, spread) => Math.round((base + (R() - 0.5) * spread) * 10) / 10;
   let f = emptyFarm();
   f.settings = { ...f.settings, farmName: ar ? 'مزرعة الوادي' : 'Valley Farm', farmPhone: '+961 70 123 456', farmAddress: ar ? 'البقاع، زحلة' : 'Bekaa, Zahle',
-    milkPriceC: 100, eggPriceC: 15, second: { code: 'LBP', rate: 89500 }, setupDone: true, demo: true, doc: { ...f.settings.doc, thanks: ar ? 'شكراً لتعاملكم معنا' : 'Thank you for your business' } };
+    milkPriceC: 100, eggPriceC: 15, second: { code: 'LBP', rate: 89500 }, setupDone: true, demo: true, doc: { ...f.settings.doc, thanks: ar ? 'شكرًا لتعاملكم معنا' : 'Thank you for your business' } };
   const owner = { id: 'pro-demo-owner', name: ar ? 'باسم' : 'Basem', role: 'owner', avatar: '👨‍🌾', color: '#CFE3DA' };
   const book = { id: 'pro-demo-book', name: ar ? 'رنا' : 'Rana', role: 'book', avatar: '👩', color: '#F1DFB4' };
   const milker = { id: 'pro-demo-milker', name: ar ? 'علي' : 'Ali', role: 'milker', avatar: '🧔', color: '#D3DDE7' };
@@ -25,7 +25,7 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
   f = upsert(f, 'people', { id: 'm-owner', name: owner.name, phone: '+961 70 123 456' }, owner);
   f = upsert(f, 'people', { id: 'm-khaled', name: ar ? 'خالد' : 'Khaled', phone: '+961 71 555 210' }, owner);
   f = upsert(f, 'customers', { id: 'c-fadi', accountNo: 'C-0001', name: ar ? 'ألبان أبو فادي' : 'Abu Fadi Dairy', phone: '+961 3 444 120', defaultPriceC: 85, defaultQty: 140 }, owner);
-  f = upsert(f, 'customers', { id: 'c-hanan', accountNo: 'C-0002', name: ar ? 'دكانة حنان' : "Hanan's Shop", phone: '+961 76 220 981', defaultPriceC: 100 }, owner);
+  f = upsert(f, 'customers', { id: 'c-hanan', accountNo: 'C-0002', name: ar ? 'متجر حنان' : "Hanan's Shop", phone: '+961 76 220 981', defaultPriceC: 100 }, owner);
   f = upsert(f, 'customers', { id: 'c-shams', accountNo: 'C-0003', name: ar ? 'مطعم شمس' : 'Shams Restaurant', phone: '+961 81 330 117', defaultPriceC: 95, openingC: 12000 }, owner);
   f = upsert(f, 'suppliers', { id: 's-feed', name: ar ? 'شركة أعلاف البقاع' : 'Bekaa Feed Co', tags: ['feed'], openingC: 45000 }, owner);
   f = upsert(f, 'suppliers', { id: 's-vet', name: ar ? 'صيدلية الريف البيطرية' : 'Rural Vet Pharmacy', tags: ['medicine'] }, owner);
@@ -38,11 +38,11 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     f = upsert(f, 'animals', { id: `a-${tag}`, species: 'cow', tag, name, breed, status, parity, weight: vary(560, 80), yieldL: status === 'lactating' ? 28 : 0, source: 'born', repro }, owner);
   }
   for (const [tag, name] of [['201', ar ? 'سمرا' : 'Samra'], ['202', ar ? 'بيضا' : 'Bayda'], ['203', '']]) f = upsert(f, 'animals', { id: `a-${tag}`, species: 'goat', tag, name, breed: 'Shami / Damascus', status: 'lactating', parity: 2, source: 'born' }, owner);
-  f = upsert(f, 'animals', { id: 'a-flock', species: 'chicken', tag: ar ? 'القن الشمالي' : 'North coop', coop: ar ? 'الشمالي' : 'North', breed: 'ISA Brown', status: 'laying', birds: 120, startDay: start }, owner);
+  f = upsert(f, 'animals', { id: 'a-flock', species: 'chicken', tag: ar ? 'الحظيرة الشمالية' : 'North coop', coop: ar ? 'الشمالية' : 'North', breed: 'ISA Brown', status: 'laying', birds: 120, startDay: start }, owner);
   f = upsert(f, 'workers', { id: 'w-samir', name: ar ? 'سمير' : 'Samir', pay: 'daily', wageC: 2000 }, owner);
   f = upsert(f, 'workers', { id: 'w-youssef', name: ar ? 'يوسف' : 'Youssef', pay: 'monthly', wageC: 45000 }, owner);
   f = upsert(f, 'obligations', { id: 'o-rent', party: ar ? 'إيجار الأرض' : 'Land rent', kind: 'rent', category: 'rent', amountC: 60000, nextDue: addDays(today, 2), freq: 'monthly' }, owner);
-  f = upsert(f, 'obligations', { id: 'o-elec', party: ar ? 'اشتراك الموتور' : 'Generator subscription', kind: 'bill', category: 'electricity', amountC: 8500, nextDue: addDays(today, 9), freq: 'monthly' }, owner);
+  f = upsert(f, 'obligations', { id: 'o-elec', party: ar ? 'اشتراك المولّد' : 'Generator subscription', kind: 'bill', category: 'electricity', amountC: 8500, nextDue: addDays(today, 9), freq: 'monthly' }, owner);
 
   const sale = (day, customerId, lines, paidNowC, by, hour, method = 'cash') => {
     const base = { type: 'sale', day, customerId, lines, discount: { kind: 'amount', valueC: 0 }, method };
@@ -70,9 +70,9 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     if (stock > 45) sale(day, null, [{ product: 'milk', qty: Math.floor(stock - 30), unit: 'L', priceC: 100 }], 0, milker, 19);
     f = addRecord(f, { type: 'attendance', day, workerId: 'w-samir', present: i % 7 !== 5 }, owner, at(day, 7));
     if (i % 7 === 3) {
-      f = addRecord(f, { type: 'payment', day, customerId: 'c-fadi', cashC: 70000, method: 'cash', offsets: i === 10 ? [{ category: 'fuel', amountC: 4000, desc: ar ? 'مازوت للبيك أب' : 'Diesel for the pickup' }] : [] }, book, at(day, 18));
+      f = addRecord(f, { type: 'payment', day, customerId: 'c-fadi', cashC: 70000, method: 'cash', offsets: i === 10 ? [{ category: 'fuel', amountC: 4000, desc: ar ? 'وقود لشاحنة النقل' : 'Diesel for the pickup' }] : [] }, book, at(day, 18));
       f = addRecord(f, { type: 'expense', day, category: 'feed', amountC: 62000, paidC: i % 14 === 3 ? 62000 : 30000, supplierId: 's-feed', source: 'cash', qty: 40, unit: 'bag', dueDay: addDays(day, 14) }, book, at(day, 14));
-      f = addRecord(f, { type: 'expense', day, category: 'labour', amountC: 12000, paidC: 12000, source: 'cash', payroll: true, note: ar ? 'أجار سمير' : "Samir's wages" }, owner, at(day, 19));
+      f = addRecord(f, { type: 'expense', day, category: 'labour', amountC: 12000, paidC: 12000, source: 'cash', payroll: true, note: ar ? 'أجر سمير' : "Samir's wages" }, owner, at(day, 19));
     }
     if (i % 7 === 6) f = addRecord(f, { type: 'payment', day, customerId: 'c-shams', cashC: 30000, method: 'transfer', offsets: [] }, book, at(day, 18));
     if (i % 9 === 4) f = addRecord(f, { type: 'payment', day, customerId: 'c-hanan', cashC: 10000, method: 'cash', offsets: [] }, book, at(day, 18));
@@ -80,8 +80,8 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     if (i === 15) f = addRecord(f, { type: 'medicine', day, animalId: 'a-102', kind: 'mastitis', name: 'Mastijet', costC: 1800 }, owner, at(day, 8));
     if (i === 20) f = addRecord(f, { type: 'expense', day, category: 'vet', amountC: 9000, paidC: 0, supplierId: 's-vet', source: 'cash', dueDay: addDays(day, 10) }, book, at(day, 11));
     if (i === 25) f = addRecord(f, { type: 'supplierPay', day, supplierId: 's-feed', amountC: 40000, source: 'person', personId: 'm-khaled' }, owner, at(day, 12));
-    if (i === 28) f = addRecord(f, { type: 'expense', day, category: 'electricity', amountC: 8500, paidC: 8500, source: 'cash', vendor: ar ? 'اشتراك الموتور' : 'Generator', obligationId: 'o-elec' }, book, at(day, 10));
-    if (i === 30) f = addRecord(f, { type: 'capital', kind: 'withdraw', purpose: 'personal', personId: 'm-owner', amountC: 20000, account: 'cash', day, note: ar ? 'مصروف البيت' : 'Household' }, owner, at(day, 20));
+    if (i === 28) f = addRecord(f, { type: 'expense', day, category: 'electricity', amountC: 8500, paidC: 8500, source: 'cash', vendor: ar ? 'اشتراك المولّد' : 'Generator', obligationId: 'o-elec' }, book, at(day, 10));
+    if (i === 30) f = addRecord(f, { type: 'capital', kind: 'withdraw', purpose: 'personal', personId: 'm-owner', amountC: 20000, account: 'cash', day, note: ar ? 'مصروف منزلي' : 'Household' }, owner, at(day, 20));
     if (i === 33) f = addRecord(f, { type: 'transfer', day, fromAccount: 'cash', amountC: 150000 }, owner, at(day, 16));
   }
   f.rev = 1;

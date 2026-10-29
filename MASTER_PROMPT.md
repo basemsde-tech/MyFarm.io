@@ -46,7 +46,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 ## 5. Design: ultra-premium enterprise desk
 
 - Visual identity: ink-green rail, porcelain desk, layered white surfaces with soft shadows and hairline borders, teal as the action colour, gold reserved for money highlights. Colour otherwise means status only (paid, partial, unpaid, overdue, clear, owing, credit).
-- Type: Readex Pro for UI and numbers (tabular figures everywhere digits align), Reem Kufi only for the brand. Large readable amounts, short plain labels, everyday Levantine Arabic, full English parallel.
+- Type: Readex Pro for UI and numbers (tabular figures everywhere digits align), Reem Kufi only for the brand. Large readable amounts, short plain labels, formal Modern Standard Arabic (فصحى) throughout — labels, messages, documents and sample data, full English parallel.
 - One job per screen, one primary button, quiet secondary actions; empty states say what is missing and offer the fix.
 - Cash home: animated cash balance with a 30-day trend line, today in/out, owed to us, we owe suppliers, a short "Needs attention" list, then the journal with running balance, filters and month groups.
 - Every row opens a detail drawer: what the record did, linked effects, edit history, and Edit / Void / Delete in one place.

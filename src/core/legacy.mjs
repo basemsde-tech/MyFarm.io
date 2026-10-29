@@ -258,7 +258,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
   const dropWalkin = (id) => walkinIds.has(id) && !walkinBal;
   let n = 0;
   farm.customers = (f.customers || []).filter((c) => c && c.id && !dropWalkin(c.id)).map((c) => ({
-    id: c.id, accountNo: `C-${String(++n).padStart(4, '0')}`, name: walkinIds.has(c.id) ? (lang === 'ar' ? 'زبون عابر (قديم)' : 'Walk-in (old)') : String(c.name || '—'),
+    id: c.id, accountNo: `C-${String(++n).padStart(4, '0')}`, name: walkinIds.has(c.id) ? (lang === 'ar' ? 'عميل نقدي (قديم)' : 'Walk-in (old)') : String(c.name || '—'),
     phone: c.phone || '', defaultProduct: PRODUCTS[c.product] ? c.product : 'milk', defaultPriceC: C(c.priceL) || undefined, defaultQty: +c.defaultQty || 0,
     archived: !!c.archived, note: c.note || '', createdAt: isoOf(c.at), updatedAt: isoOf(c.at),
   }));
@@ -368,7 +368,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
       return { category: OFFSET_TYPES.includes(cat(e.category)) ? cat(e.category) : 'other', amountC: C(e.amount), desc: String(e.note || e.name || e.memo || e.category || '—') };
     });
     const offC = offsets.reduce((a, o) => a + o.amountC, 0);
-    if (C(p.amount_expense_offset) > offC) offsets.push({ category: 'other', amountC: C(p.amount_expense_offset) - offC, desc: lang === 'ar' ? 'مصروف دفعه الزبون' : 'Cost paid by customer' });
+    if (C(p.amount_expense_offset) > offC) offsets.push({ category: 'other', amountC: C(p.amount_expense_offset) - offC, desc: lang === 'ar' ? 'مصروف دفعه العميل' : 'Cost paid by customer' });
     if (!cid) {
       // A walk-in payment with no surviving sale: keep the cash as a walk-in sale so the drawer still matches.
       const amt = payCashC(p);
@@ -384,7 +384,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
   // 2.x sale reimbursements (customer paid a farm cost, credited against a sale).
   for (const e of src.filter((x) => x.type === 'saleReimburse' && C(x.amount) > 0).sort(byTime)) {
     const sale = recs.find((x) => x.id === e.saleId && x.type === 'sale');
-    const desc = String(e.name || e.note || e.memo || (lang === 'ar' ? 'مصروف دفعه الزبون' : 'Cost paid by customer'));
+    const desc = String(e.name || e.note || e.memo || (lang === 'ar' ? 'مصروف دفعه العميل' : 'Cost paid by customer'));
     if (sale && sale.customerId) {
       push({ ...base(e, 'payment'), customerId: sale.customerId, cashC: 0, method: 'cash', offsets: [{ category: OFFSET_TYPES.includes(cat(e.category)) ? cat(e.category) : 'other', amountC: C(e.amount), desc }], allowCredit: true, note: desc }, 'saleReimburse');
     } else if (sale) {

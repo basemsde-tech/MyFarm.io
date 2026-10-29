@@ -16,13 +16,13 @@ export const SPECIES = {
   sheep: {
     mode: 'individual', product: 'milk', idLabel: 'tag', gestation: 152, gestationRange: [145, 155],
     dryOff: 45, heat: 17, checkFrom: 30, checkTo: 45, weaning: 75, weight: true, wool: true,
-    young: { ar: 'خروف', en: 'Lamb' }, name: { ar: 'أغنام', en: 'Sheep' }, one: { ar: 'نعجة', en: 'Ewe' },
+    young: { ar: 'حَمَل', en: 'Lamb' }, name: { ar: 'أغنام', en: 'Sheep' }, one: { ar: 'نعجة', en: 'Ewe' },
     breeds: ['Awassi', 'Baladi', 'Naimi', 'Najdi', 'Barki', 'Romanov', 'Suffolk', 'Chios', 'Cross'],
   },
   chicken: {
     mode: 'flock', product: 'eggs', idLabel: 'flock', gestation: 21, gestationRange: [21, 21],
     dryOff: 0, heat: 0, checkFrom: 0, checkTo: 0, weaning: 0, weight: false, wool: false,
-    young: { ar: 'كتكوت', en: 'Chick' }, name: { ar: 'دواجن', en: 'Poultry' }, one: { ar: 'قطيع دواجن', en: 'Flock' },
+    young: { ar: 'فرخ', en: 'Chick' }, name: { ar: 'دواجن', en: 'Poultry' }, one: { ar: 'قطيع دواجن', en: 'Flock' },
     breeds: ['Layer', 'Lohmann', 'ISA Brown', 'Baladi', 'Fayoumi', 'Sasso', 'Broiler', 'Cobb', 'Ross', 'Turkey', 'Cross'],
   },
 };
