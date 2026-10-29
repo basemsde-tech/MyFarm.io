@@ -38,6 +38,7 @@ const P = {
   'role-worker': 'M12 21.5V11M7 3v4a5 5 0 0 0 10 0V3M12 3v8',
   'role-health': 'M12 3l7 2.8v5.4c0 4.6-3 7.9-7 9.8-4-1.9-7-5.2-7-9.8V5.8zM12 9v6M9 12h6',
   backspace: 'M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7zM12 9.5l5 5M17 9.5l-5 5',
+  sliders: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4',
   popout: 'M14 4h6v6M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   dock: 'M4 5h16v14H4zM4 9h16M9 14l3 3 3-3M12 17v-6',
   minus: 'M6 12h12',
@@ -467,4 +468,42 @@ export function monthLabel(key, lang) {
 export function dayLabel(day, lang, opts = { day: 'numeric', month: 'short' }) {
   if (!day || day.startsWith('0000')) return '—';
   return new Date(day + 'T12:00:00').toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', opts);
+}
+
+/**
+ * Sort and filter controls, folded away by default.
+ * chips: [{ label, active }] — shown as a quiet summary while closed; active ones count on the badge.
+ * Open/closed is remembered per screen (id) on this device.
+ */
+export function FilterPanel({ id, chips = [], onReset, children, extra }) {
+  const { t, prefs, setPrefs } = useApp();
+  const open = !!prefs.filtersOpen?.[id];
+  const list = chips.filter((c) => c && c.label);
+  const active = list.filter((c) => c.active);
+  const toggle = () => setPrefs({ filtersOpen: { ...(prefs.filtersOpen || {}), [id]: !open } });
+  const bodyId = `fp-${id}`;
+  return (
+    <div className={`fp ${open ? 'open' : ''}`}>
+      <div className="fp-bar">
+        <button type="button" className={`fp-toggle ${active.length ? 'has' : ''}`} aria-expanded={open} aria-controls={bodyId} onClick={toggle}>
+          <Icon name="sliders" size={16} />
+          <span>{t('flt.title')}</span>
+          {active.length > 0 && <span className="fp-count num">{active.length}</span>}
+          <Icon name="down" size={15} className="fp-chev" />
+        </button>
+        {!open && list.length > 0 && (
+          <div className="fp-chips">
+            {list.map((c, i) => <button type="button" key={i} className={`fp-chip ${c.active ? 'on' : ''}`} onClick={toggle}>{c.label}</button>)}
+          </div>
+        )}
+        {active.length > 0 && onReset && <button type="button" className="fp-reset" onClick={onReset}><Icon name="close" size={13} />{t('flt.reset')}</button>}
+        {extra && <div className="fp-extra">{extra}</div>}
+      </div>
+      <div className="fp-body" id={bodyId}>
+        <div className="fp-inner" ref={(el) => { if (el) { if (open) el.removeAttribute('inert'); else el.setAttribute('inert', ''); } }}>
+          <div className="fp-content">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
 }

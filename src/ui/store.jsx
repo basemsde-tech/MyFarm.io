@@ -9,7 +9,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4' };
-export const VERSION = { name: '3.3.0', season: { ar: 'الموسم التاني', en: 'Second Season' } };
+export const VERSION = { name: '3.4.0', season: { ar: 'الموسم التاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {

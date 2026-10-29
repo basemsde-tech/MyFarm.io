@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useApp, KEYS, storage, readJSON, VERSION, MAX_BYTES } from './store.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, readImage, IconButton } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, readImage, IconButton, FilterPanel } from './kit.jsx';
 import { RecordRow, SelectionBar } from './tx.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
@@ -177,7 +177,9 @@ function ProdLog() {
   const rows = farm.records.filter((r) => live(r) && types.includes(r.type) && (!type || r.type === type)).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
   return (
     <section className="panel">
-      <Seg small wrap value={type} onChange={setType} options={[{ value: '', label: t('all') }, ...types.map((x) => ({ value: x, label: t(`t.${x}`) }))]} />
+      <FilterPanel id="prodlog" onReset={() => setType('')} chips={[type && { label: t(`t.${type}`), active: true }]}>
+        <Seg small wrap label={t('flt.kind')} value={type} onChange={setType} options={[{ value: '', label: t('all') }, ...types.map((x) => ({ value: x, label: t(`t.${x}`) }))]} />
+      </FilterPanel>
       {rows.length ? <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="muted num">{g.rows.length}</span></>}
         renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />} />
         : <Empty title={t('prod.noMilk')} icon="milk" />}
@@ -198,10 +200,15 @@ function AnimalList() {
   const [st, setSt] = useState('');
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
+  const [sort, setSort] = useState('tag');
   const { commit, actor } = useApp();
   const gone = farm.animals.filter((a) => !a.archived && ['sold', 'dead'].includes(a.status));
   const list = farm.animals.filter((a) => !!a.archived === arch && (!sp || a.species === sp) && (!st || a.status === st) && (!q || `${a.tag} ${a.name} ${a.breed}`.toLowerCase().includes(q.toLowerCase())))
-    .sort((a, b) => (['sold', 'dead'].includes(a.status) ? 1 : 0) - (['sold', 'dead'].includes(b.status) ? 1 : 0) || a.tag.localeCompare(b.tag, undefined, { numeric: true }));
+    .sort((a, b) => (['sold', 'dead'].includes(a.status) ? 1 : 0) - (['sold', 'dead'].includes(b.status) ? 1 : 0)
+      || (sort === 'name' ? (a.name || a.tag).localeCompare(b.name || b.tag)
+        : sort === 'due' ? ((a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check)?.due : '9999') || '9999').localeCompare((b.repro?.serviceDay ? reproTimeline(b.species, b.repro.serviceDay, today, b.repro.check)?.due : '9999') || '9999')
+        : 0)
+      || a.tag.localeCompare(b.tag, undefined, { numeric: true }));
   const counts = Object.keys(SPECIES).map((s) => [s, farm.animals.filter((a) => a.species === s && !['sold', 'dead'].includes(a.status)).reduce((n, a) => n + (SPECIES[s].mode === 'flock' ? (a.birds || 0) : 1), 0)]).filter(([, n]) => n);
   return (
     <div className="screen">
@@ -210,12 +217,16 @@ function AnimalList() {
         <Button variant="primary" icon="plus" onClick={() => ui.open('animal', { species: sp || undefined })}>{t('ani.new')}</Button>
       </>} />
       <section className="panel">
-        <div className="filter-row">
-          <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
-          <Seg small value={sp} onChange={(v) => { setSp(v); setSt(''); }} options={[{ value: '', label: t('all') }, ...Object.keys(SPECIES).map((s) => ({ value: s, label: t(`sp.${s}`) }))]} />
-          <Select className="compact" value={st} onChange={setSt} options={[...new Set(farm.animals.map((a) => a.status))].map((s) => ({ value: s, label: t(`as.${s}`) }))} placeholder={t('ani.status')} />
-          <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')} ({farm.animals.filter((x) => x.archived).length})</label>
-        </div>
+        <FilterPanel id="animals" onReset={() => { setQ(''); setSp(''); setSt(''); setArch(false); setSort('tag'); }}
+          chips={[sp && { label: t(`sp.${sp}`), active: true }, st && { label: t(`as.${st}`), active: true }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }, { label: t(`flt.sort.${sort}`), active: sort !== 'tag' }]}>
+          <div className="filter-row">
+            <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
+            <Seg small label={t('prod.species')} value={sp} onChange={(v) => { setSp(v); setSt(''); }} options={[{ value: '', label: t('all') }, ...Object.keys(SPECIES).map((s) => ({ value: s, label: t(`sp.${s}`) }))]} />
+            <Select className="compact" label={t('ani.status')} value={st} onChange={setSt} options={[...new Set(farm.animals.map((a) => a.status))].map((s) => ({ value: s, label: t(`as.${s}`) }))} placeholder={t('all')} />
+            <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['tag', 'name', 'due'].map((k) => ({ value: k, label: t(`flt.sort.${k === 'due' ? 'birth' : k}`) }))} />
+            <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')} ({farm.animals.filter((x) => x.archived).length})</label>
+          </div>
+        </FilterPanel>
         {list.length ? (
           <div className="animal-grid">
             {list.map((a) => {
@@ -332,7 +343,9 @@ export function ReportsScreen() {
   return (
     <div className="screen">
       <PageHead title={t('rep.title')} />
-      <section className="panel"><Seg small wrap value={per.p} onChange={per.onChange} options={['week', 'month', 'lastMonth', 'year', 'all'].map((p) => ({ value: p, label: t(`p.${p}`) }))} /></section>
+      <FilterPanel id="reports" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}>
+        <Seg small wrap value={per.p} onChange={per.onChange} options={['week', 'month', 'lastMonth', 'year', 'all'].map((p) => ({ value: p, label: t(`p.${p}`) }))} />
+      </FilterPanel>
       <section className="stats-row">
         <Stat label={t('rep.sales')} value={fmt(rep.salesC)} sub={rep.walkinC ? `${t('rep.walkin')} ${fmt(rep.walkinC)}` : null} />
         <Stat label={t('rep.expenses')} value={fmt(rep.expenseC)} />

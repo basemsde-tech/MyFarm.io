@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
 import { RecordRow, SelectionBar, describe } from './tx.jsx';
 import { customerInvoices, supplierBills, live } from '../core/ledger.mjs';
 import { partyLines } from '../core/statement.mjs';
@@ -53,7 +53,9 @@ export function usePeriod(initial = 'month') {
   const [p, setP] = useState(initial);
   const [range, setRange] = useState(periodRange(initial, today));
   const onChange = (v) => { setP(v); if (v !== 'custom') setRange(periodRange(v, today)); };
-  return { p, range, setRange, onChange };
+  const { t, lang } = useApp();
+  const label = p === 'custom' ? `${dayLabel(range.from, lang)} – ${dayLabel(range.to, lang)}` : t(`p.${p}`);
+  return { p, range, setRange, onChange, label, isDefault: p === initial, reset: () => onChange(initial) };
 }
 
 /** Everything that needs a look today. */
@@ -176,14 +178,15 @@ export function CashScreen() {
             <Button size="sm" icon="download" onClick={exportCSV}>{t('export')}</Button>
           </div>
         </div>
-        <div className="filters">
+        <FilterPanel id="cash" onReset={() => { per.reset(); setAccount('cash'); setDir('all'); setKind(''); }}
+          chips={[{ label: per.label, active: !per.isDefault }, { label: t(`acc.${account}`), active: account !== 'cash' }, dir !== 'all' && { label: t(dir), active: true }, kind && { label: t(FLOW_LABEL[kind]), active: true }]}>
           <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
           <div className="filter-row">
-            <Seg small value={account} onChange={setAccount} options={[{ value: 'cash', label: t('acc.cash') }, { value: 'bank', label: t('acc.bank') }]} />
-            <Seg small value={dir} onChange={setDir} options={[{ value: 'all', label: t('all') }, { value: 'in', label: t('in') }, { value: 'out', label: t('out') }]} />
-            <Select className="compact" value={kind} onChange={setKind} options={Object.keys(FLOW_LABEL).map((k) => ({ value: k, label: t(FLOW_LABEL[k]) }))} placeholder={t('all')} />
+            <Seg small label={t('account')} value={account} onChange={setAccount} options={[{ value: 'cash', label: t('acc.cash') }, { value: 'bank', label: t('acc.bank') }]} />
+            <Seg small label={t('flt.direction')} value={dir} onChange={setDir} options={[{ value: 'all', label: t('all') }, { value: 'in', label: t('in') }, { value: 'out', label: t('out') }]} />
+            <Select className="compact" label={t('flt.kind')} value={kind} onChange={setKind} options={Object.keys(FLOW_LABEL).map((k) => ({ value: k, label: t(FLOW_LABEL[k]) }))} placeholder={t('all')} />
           </div>
-        </div>
+        </FilterPanel>
         <div className="statement-strip num">
           <span>{t('cash.opening')} <b>{fmt(opening)}</b></span>
           <span className="in">+{fmt(inP)}</span>
@@ -220,6 +223,7 @@ function SalesHome({ tab, setTab }) {
   const { farm, snap, t, fmt, ui, nav, today, lang } = app;
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
+  const [sort, setSort] = useState('due');
   const per = usePeriod('month');
   const [sel, setSel] = useState([]);
   const sales = farm.records.filter((r) => live(r) && r.type === 'sale' && r.day >= per.range.from && r.day <= per.range.to).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
@@ -229,7 +233,7 @@ function SalesHome({ tab, setTab }) {
       const inv = snap.cust[c.id]?.dueC ? customerInvoices(farm, c.id, snap, { today, termsDays: farm.settings.termsDays }) : [];
       const status = snap.cust[c.id]?.creditBalC ? 'credit' : !snap.cust[c.id]?.dueC ? 'clear' : inv.some((i) => i.status === 'overdue') ? 'overdue' : 'owing';
       return { c, last, status, due: snap.cust[c.id]?.dueC || 0 };
-    }).sort((a, b) => b.due - a.due || a.c.name.localeCompare(b.c.name));
+    }).sort((a, b) => (sort === 'name' ? a.c.name.localeCompare(b.c.name) : sort === 'recent' ? (b.last || '').localeCompare(a.last || '') : b.due - a.due || a.c.name.localeCompare(b.c.name)));
   const total = sales.filter((s) => !s.voided).reduce((s, r) => s + r.totalC, 0);
   return (
     <div className="screen">
@@ -237,10 +241,14 @@ function SalesHome({ tab, setTab }) {
       <Tabs value={tab} onChange={setTab} tabs={[{ value: 'customers', label: t('sales.customers'), count: farm.customers.filter((c) => !c.archived).length }, { value: 'invoices', label: t('sales.invoices') }]} />
       {tab === 'customers' ? (
         <section className="panel">
-          <div className="filter-row">
-            <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
-            <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
-          </div>
+          <FilterPanel id="customers" onReset={() => { setQ(''); setArch(false); setSort('due'); }}
+            chips={[{ label: t(`flt.sort.${sort}`), active: sort !== 'due' }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
+            <div className="filter-row">
+              <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
+              <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['due', 'name', 'recent'].map((k) => ({ value: k, label: t(`flt.sort.${k}`) }))} />
+              <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
+            </div>
+          </FilterPanel>
           {custs.length ? (
             <div className="cards">
               {custs.map(({ c, last, status, due }) => (
@@ -255,7 +263,9 @@ function SalesHome({ tab, setTab }) {
         </section>
       ) : (
         <section className="panel">
-          <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
+          <FilterPanel id="invoices" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}>
+            <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
+          </FilterPanel>
           <div className="statement-strip num"><span>{t('total')} <b>{fmt(total)}</b></span><span>{sales.length} {t('items')}</span></div>
           {sales.length ? <Grouped rows={sales} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.filter((r) => !r.voided).reduce((s, r) => s + r.totalC, 0))}</span></>}
             renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />} />
@@ -351,10 +361,14 @@ export function ExpensesScreen() {
             </section>
           )}
           <section className="panel">
-            <div className="filters">
+            <FilterPanel id="expenses" onReset={() => { per.reset(); setQ(''); setGroup(''); }}
+              chips={[{ label: per.label, active: !per.isDefault }, group && { label: t(`g.${group}`), active: true }, q && { label: `“${q}”`, active: true }]}>
               <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
-              <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
-            </div>
+              <div className="filter-row">
+                <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
+                <Select className="compact" label={t('exp.group')} value={group} onChange={setGroup} options={Object.keys(EXPENSE_GROUPS).map((g) => ({ value: g, label: t(`g.${g}`) }))} placeholder={t('all')} />
+              </div>
+            </FilterPanel>
             {rows.length ? (
               <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.amountC, 0))}</span></>}
                 renderRow={(e) => {
@@ -437,6 +451,8 @@ export function SuppliersScreen() {
 function SupplierList() {
   const { farm, snap, t, fmt, ui, nav, today, lang } = useApp();
   const [arch, setArch] = useState(false);
+  const [q, setQ] = useState('');
+  const [sort, setSort] = useState('due');
   const month = today.slice(0, 7);
   const paidMonth = farm.records.filter((r) => live(r) && r.type === 'supplierPay' && r.day.startsWith(month)).reduce((s, r) => s + r.amountC, 0)
     + farm.records.filter((r) => live(r) && r.type === 'expense' && r.supplierId && r.day.startsWith(month)).reduce((s, r) => s + Math.min(r.paidC || 0, r.amountC), 0);
@@ -446,7 +462,7 @@ function SupplierList() {
     const due = snap.sup[s.id]?.dueC || 0;
     const last = farm.records.filter((r) => live(r) && r.supplierId === s.id).reduce((m, r) => (r.day > m ? r.day : m), '');
     return { s, due, over, last, status: over ? 'overdue' : due ? 'owing' : 'clear' };
-  }).sort((a, b) => b.due - a.due);
+  }).filter((r) => !q || `${r.s.name} ${r.s.phone || ''}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => (sort === 'name' ? a.s.name.localeCompare(b.s.name) : sort === 'recent' ? (b.last || '').localeCompare(a.last || '') : b.due - a.due));
   const totalOver = rows.reduce((a, r) => a + r.over, 0);
   return (
     <div className="screen">
@@ -457,7 +473,14 @@ function SupplierList() {
         <Stat label={t('sup.paidMonth')} value={fmt(paidMonth)} />
       </section>
       <section className="panel">
-        <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
+        <FilterPanel id="suppliers" onReset={() => { setArch(false); setQ(''); setSort('due'); }}
+          chips={[{ label: t(`flt.sort.${sort}`), active: sort !== 'due' }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
+          <div className="filter-row">
+            <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
+            <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['due', 'name', 'recent'].map((k) => ({ value: k, label: t(`flt.sort.${k}`) }))} />
+            <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
+          </div>
+        </FilterPanel>
         {rows.length ? (
           <div className="cards">
             {rows.map(({ s, due, status, last }) => (
@@ -569,7 +592,9 @@ function PersonAccount({ id }) {
         <Button variant="primary" icon="plus" onClick={() => ui.open('capital', { personId: id })}>{t('ppl.what')}</Button>
       </section>
       <section className="panel">
-        <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} options={['month', 'year', 'all', 'custom']} />
+        <FilterPanel id="person" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}>
+          <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} options={['month', 'year', 'all', 'custom']} />
+        </FilterPanel>
         {lines.length ? lines.map((l, i) => l.record && (
           <RecordRow key={l.ref + l.kind + i} r={l.record} onOpen={() => ui.open('drawer', { id: l.ref })}
             right={<span className={`num ${l.chargeC ? 'in' : 'out'}`}>{l.chargeC ? `+${fmt(l.chargeC)}` : `−${fmt(l.creditC).replace('−', '')}`}</span>} />

@@ -103,6 +103,13 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - The account chip in the sidebar (and top bar on phones) opens a menu: who is signed in, what the role allows, Team and roles, Switch user, Lock now.
 - Settings → Team shows people as cards with role, "You" marker and passcode status.
 
+## 14. Sort and filter controls stay folded
+
+- Every list's sort and filter controls (period, account, direction, type, search, species, status, sort order, archived) sit behind one "Sort & filter" toggle, closed by default.
+- While closed, a quiet line of chips shows what is applied; non-default choices are highlighted and counted on the toggle's badge; "Clear" resets them in one tap. Tapping a chip opens the panel.
+- Each screen remembers on this device whether its panel was left open.
+- Lists that had no sort options gained them: customers and suppliers by balance, name or latest activity; animals by tag, name or next birth.
+
 ## 7. Engineering shape
 
 - Pure, tested core modules in `src/core/` (money, ledger, commands, validate, milk, statement, sync, backup, reports, species, catalog, security, sample). A new money rule never lives only in a click handler.

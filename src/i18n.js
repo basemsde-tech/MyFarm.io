@@ -213,6 +213,7 @@ const ar = {
   'pf.pitch': 'مكتب واحد للمبيع والإنتاج والمصاريف والصندوق.', 'pf.locked': 'محمي برمز', 'pf.noCode': 'بلا رمز', 'pf.otherAccount': 'حساب تاني',
   'pf.erase': 'امسح', 'pf.team': 'الفريق والأدوار', 'pf.lockNow': 'اقفل هلّق', 'pf.you': 'إنت', 'pf.codeOn': 'رمز', 'pf.codeOff': 'بلا رمز',
   'pf.newHint': 'شخص جديد بيستعمل التطبيق على هالجهاز', 'pf.lastOwner': 'لازم يضل صاحب مزرعة واحد عالأقل.', 'pf.codeRemoved': 'الرمز رح ينشال لما تحفظ.',
+  'flt.title': 'فرز وفلترة', 'flt.reset': 'امسح', 'flt.sortBy': 'رتّب حسب', 'flt.direction': 'الاتجاه', 'flt.kind': 'النوع', 'flt.sort.due': 'الرصيد', 'flt.sort.name': 'الاسم', 'flt.sort.recent': 'آخر حركة', 'flt.sort.tag': 'الرقم', 'flt.sort.birth': 'أقرب ولادة',
   'flip.hint': 'وقّف الماوس على أي مبلغ ثانيتين لتشوفو بالليرة', 'cash.trend': 'رصيد الصندوق آخر ٣٠ يوم', 'printNote': 'الطباعة بتشتغل من التطبيق المنزّل أو المتصفح.',
 };
 
@@ -404,6 +405,7 @@ const en = {
   'pf.pitch': 'One desk for sales, production, expenses and cash.', 'pf.locked': 'Protected by passcode', 'pf.noCode': 'No passcode', 'pf.otherAccount': 'Another account',
   'pf.erase': 'Erase', 'pf.team': 'Team and roles', 'pf.lockNow': 'Lock now', 'pf.you': 'You', 'pf.codeOn': 'Passcode', 'pf.codeOff': 'No passcode',
   'pf.newHint': 'A new person using the app on this device', 'pf.lastOwner': 'The farm needs at least one owner.', 'pf.codeRemoved': 'The passcode is removed when you save.',
+  'flt.title': 'Sort & filter', 'flt.reset': 'Clear', 'flt.sortBy': 'Sort by', 'flt.direction': 'Direction', 'flt.kind': 'Type', 'flt.sort.due': 'Balance', 'flt.sort.name': 'Name', 'flt.sort.recent': 'Latest activity', 'flt.sort.tag': 'Tag', 'flt.sort.birth': 'Next birth',
   'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 
