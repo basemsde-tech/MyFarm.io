@@ -578,15 +578,19 @@ button.bar-row:hover { background: var(--surface-2); }
 .profile-pick small { color: var(--muted); }
 
 /* ── Money flip: hover a USD amount for 2 s to see it in LBP ── */
-.money-flip { position: fixed; z-index: 120; pointer-events: none; perspective: 600px; }
-.money-flip-inner { position: relative; inline-size: 100%; block-size: 100%; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.3, 1.25, .5, 1); }
-.money-flip.is-flipped .money-flip-inner { transform: rotateX(-180deg); }
-/* The value itself turns over: same font, same colour, no card. */
-.money-flip-face { position: absolute; inset: 0; display: flex; align-items: center; white-space: nowrap; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.money-flip-face.front { opacity: 0; }
-.money-flip.is-flipped .money-flip-face.front, .money-flip.is-leaving .money-flip-face.front { opacity: 1; }
-.money-flip-face.back { transform: rotateX(180deg); }
-.money-flip-face .mf-ccy { font-size: .78em; opacity: .75; margin-inline-start: .25em; font-weight: 600; }
+/* Hold on an amount: the other currency pops up in a chat-style bubble. */
+.money-bubble { position: fixed; z-index: 130; pointer-events: none; display: flex; flex-direction: column; gap: 2px; padding: 7px 12px; border-radius: 14px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: .92rem; line-height: 1.25; white-space: nowrap; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .12); opacity: 0; transform: translateY(6px) scale(.85); transform-origin: var(--tail, 50%) 100%; transition: opacity .18s var(--ease), transform .32s var(--spring); }
+.money-bubble.is-below { transform: translateY(-6px) scale(.85); transform-origin: var(--tail, 50%) 0%; }
+.money-bubble.is-in { opacity: 1; transform: none; }
+.money-bubble.is-out { opacity: 0; transform: scale(.94); transition: opacity .16s, transform .2s var(--ease); }
+.money-bubble::after { content: ''; position: absolute; left: var(--tail, 50%); inline-size: 11px; block-size: 11px; background: inherit; border: 1px solid var(--line); border-radius: 2px; translate: -50% 0; rotate: 45deg; }
+.money-bubble.is-above::after { inset-block-end: -6.5px; border-block-start-color: transparent; border-inline-start-color: transparent; }
+.money-bubble.is-below::after { inset-block-start: -6.5px; border-block-end-color: transparent; border-inline-end-color: transparent; }
+.mb-row b { color: var(--teal); }
+.mb-row { display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
+.mb-row b { font-weight: 700; letter-spacing: .01em; }
+.mb-row span { font-size: .72em; font-weight: 600; opacity: .7; }
+@media (prefers-reduced-motion: reduce) { .money-bubble { transition: opacity .12s; transform: none !important; } }
 /* ── Print document ── */
 .doc-controls { display: flex; flex-direction: column; gap: 10px; padding-block-end: 14px; border-bottom: 1px dashed var(--line); }
 .print-doc { background: #fff; color: #111; border-radius: 14px; padding: 30px; border: 1px solid var(--line); font-size: 13px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--sh-2); }
@@ -1547,5 +1551,5 @@ button.bar-row:hover { background: var(--surface-2); }
 @media (max-width: 1100px) and (min-width: 721px) { .desk .side-nav .nav-item .nb:not(.nb-quiet) { display: inline-grid; } }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.11.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.11.1"></script></body>
 </html>

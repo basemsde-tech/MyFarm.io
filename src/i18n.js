@@ -144,7 +144,7 @@ const ar = {
   // settings
   'set.title': 'الإعدادات', 'set.farm': 'المزرعة', 'set.farmName': 'اسم المزرعة أو الشركة', 'set.address': 'العنوان', 'set.email': 'البريد الإلكتروني', 'set.logo': 'الشعار',
   'set.location': 'الموقع', 'set.money': 'العملة والأسعار', 'set.currency': 'عملة الحسابات', 'set.second': 'عملة العرض الثانية', 'set.rate': 'سعر الصرف',
-  'set.rateHint': 'عدد وحدات {c} مقابل {b} واحد. أبقِ المؤشر على أي مبلغ ثانيتين لعرضه بـ {c}. القيمة صفر تعطّل هذه الميزة.', 'set.milkPrice': 'سعر لتر الحليب', 'set.eggPrice': 'سعر البيضة', 'set.wage': 'الأجر اليومي',
+  'set.rateHint': 'عدد وحدات {c} مقابل {b} واحد. أبقِ المؤشر على أي مبلغ لحظة لتظهر قيمته بـ {c} في فقاعة. القيمة صفر تعطّل هذه الميزة.', 'set.milkPrice': 'سعر لتر الحليب', 'set.eggPrice': 'سعر البيضة', 'set.wage': 'الأجر اليومي',
   'set.terms': 'مهلة السداد للعملاء (بالأيام)', 'set.milkMode': 'طريقة تسجيل الحليب', 'set.milkUnit': 'وحدة الحليب', 'set.tax': 'الضريبة', 'set.taxOn': 'تفعيل الضريبة',
   'set.taxRate': 'النسبة ٪', 'set.taxNumber': 'الرقم الضريبي', 'set.taxReg': 'رقم السجل التجاري', 'set.taxIncl': 'الأسعار شاملة الضريبة', 'set.docs': 'الفواتير والكشوفات',
   'set.prefix': 'بادئة رقم الفاتورة', 'set.thanks': 'عبارة الشكر', 'set.footer': 'ملاحظة أسفل الصفحة', 'set.signatures': 'خانات التوقيع', 'set.team': 'الفريق',
@@ -338,7 +338,7 @@ const ar = {
   'prod.milkDays': 'سجل الحليب اليومي', 'prod.eggLog': 'سجل البيض', 'flt.period': 'الفترة', 'flt.session': 'الحلبة', 'flt.none': 'لا توجد نتائج بهذه الشروط',
   'flt.sort.m.new': 'الأحدث', 'flt.sort.m.old': 'الأقدم', 'flt.sort.m.high': 'الأعلى إنتاجًا', 'flt.sort.m.low': 'الأقل إنتاجًا',
   'set.sound': 'الأصوات', 'set.soundHint': 'صوت عند نجاح الحفظ، وعند الخطأ، وصوت صندوق المحاسبة عند كل عملية بيع.', 'set.sndOk': 'نجاح', 'set.sndCash': 'بيع', 'set.sndFail': 'خطأ',
-  'flip.hint': 'أبقِ المؤشر على أي مبلغ ثانيتين ليتحوّل إلى LBP', 'cash.trend': 'رصيد الصندوق خلال آخر 30 يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
+  'flip.hint': 'أبقِ المؤشر على أي مبلغ لحظة ليظهر ما يعادله بـ LBP في فقاعة صغيرة', 'cash.trend': 'رصيد الصندوق خلال آخر 30 يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
 };
 
 const en = {
@@ -463,7 +463,7 @@ const en = {
   'rep.receivable': 'Customers owe us', 'rep.payable': 'We owe suppliers', 'rep.csv': 'Export CSV', 'rep.daily': 'Per day', 'rep.milkL': 'litres of milk', 'rep.eggsN': 'eggs',
   'set.title': 'Settings', 'set.farm': 'Farm', 'set.farmName': 'Farm or company name', 'set.address': 'Address', 'set.email': 'Email', 'set.logo': 'Logo',
   'set.location': 'Location', 'set.money': 'Currency and prices', 'set.currency': 'Ledger currency', 'set.second': 'Second display currency', 'set.rate': 'Exchange rate',
-  'set.rateHint': 'How many {c} per one {b}. Hover any amount for 2 seconds and it flips to {c}. Zero turns the flip off.', 'set.milkPrice': 'Milk price per litre', 'set.eggPrice': 'Price per egg', 'set.wage': 'Daily wage',
+  'set.rateHint': 'How many {c} per one {b}. Rest the pointer on any amount for a moment and its value in {c} pops up in a bubble. Zero turns this off.', 'set.milkPrice': 'Milk price per litre', 'set.eggPrice': 'Price per egg', 'set.wage': 'Daily wage',
   'set.terms': 'Customer payment terms (days)', 'set.milkMode': 'How milk is recorded', 'set.milkUnit': 'Milk unit', 'set.tax': 'Tax', 'set.taxOn': 'Turn on tax',
   'set.taxRate': 'Rate %', 'set.taxNumber': 'Tax number', 'set.taxReg': 'Company registration', 'set.taxIncl': 'Prices include tax', 'set.docs': 'Invoices and statements',
   'set.prefix': 'Invoice number prefix', 'set.thanks': 'Thank-you line', 'set.footer': 'Footer note', 'set.signatures': 'Signature lines', 'set.team': 'Team',
@@ -654,7 +654,7 @@ const en = {
   'prod.milkDays': 'Daily milk log', 'prod.eggLog': 'Egg log', 'flt.period': 'Period', 'flt.session': 'Milking', 'flt.none': 'Nothing matches these filters',
   'flt.sort.m.new': 'Newest', 'flt.sort.m.old': 'Oldest', 'flt.sort.m.high': 'Highest yield', 'flt.sort.m.low': 'Lowest yield',
   'set.sound': 'Sounds', 'set.soundHint': 'A sound when a save succeeds, when something fails, and a cash-register ring on every sale.', 'set.sndOk': 'Success', 'set.sndCash': 'Sale', 'set.sndFail': 'Error',
-  'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
+  'flip.hint': 'Rest the pointer on any amount for a moment to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 
 export const DICT = { ar, en };

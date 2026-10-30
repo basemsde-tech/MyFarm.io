@@ -1,8 +1,8 @@
-// Hover any USD amount for 2 seconds and the value itself turns over to show the same amount in LBP.
-// Works on every money figure in the app without touching each call site: it reads the
-// rendered text, draws a flip card exactly over it, and never edits React-managed nodes.
+// Hover any USD amount for 1.2 seconds and a small chat-style bubble pops up with the same amount in LBP.
+// Works on every money figure in the app without touching each call site: it reads the rendered
+// text, places one floating bubble beside it, and never edits React-managed nodes.
 
-const HOLD_MS = 2000;
+const HOLD_MS = 1200;
 const MONEY = /([+−-]?)\$([\d,]+(?:\.\d+)?)/g;
 const HAS_MONEY = /\$[\d,]+(?:\.\d+)?/;
 
@@ -14,79 +14,84 @@ function toCents(digits) {
 function candidate(start) {
   let el = start;
   for (let i = 0; el && i < 4; i++, el = el.parentElement) {
-    if (el.nodeType !== 1 || el.closest('.money-flip, input, textarea, select, svg, .print-doc')) return null;
+    if (el.nodeType !== 1 || el.closest('.money-bubble, input, textarea, select, svg, .print-doc')) return null;
     const text = el.textContent || '';
     if (text.length <= 56 && HAS_MONEY.test(text) && el.children.length <= 4) return el;
   }
   return null;
 }
 
+/** The box around the visible text, not the whole (often full-width) element. */
+function textRect(el) {
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const r = range.getBoundingClientRect();
+    if (r.width && r.height) return r;
+  } catch { /* fall back below */ }
+  return el.getBoundingClientRect();
+}
+
 export function initMoneyFlip(getConfig) {
   if (typeof window === 'undefined' || window.__moneyFlip) return;
   window.__moneyFlip = true;
-  let active = null; // { el, card, timer, flipped }
+  let active = null; // { el, timer, bubble }
 
-  const convert = (text, cfg) => text.replace(MONEY, (_, sign, digits) => {
-    const value = (toCents(digits) / 100) * cfg.rate;
-    const n = Math.round(value).toLocaleString('en-US');
-    return `${sign}${n} ${cfg.symbol}`;
-  });
-
-  const build = (el, cfg) => {
-    const r = el.getBoundingClientRect();
-    if (!r.width || !r.height) return null;
-    const cs = getComputedStyle(el);
-    const card = document.createElement('div');
-    card.className = 'money-flip';
-    card.setAttribute('aria-hidden', 'true');
-    // Copy the longhands: the 'font' shorthand reads back empty when tabular numbers are on.
-    Object.assign(card.style, {
-      left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`,
-      fontFamily: cs.fontFamily, fontSize: cs.fontSize, fontWeight: cs.fontWeight, fontStyle: cs.fontStyle, lineHeight: cs.lineHeight,
-      letterSpacing: cs.letterSpacing, color: cs.color, direction: cs.direction, fontVariantNumeric: 'tabular-nums',
+  const amounts = (text, cfg) => {
+    const out = [];
+    text.replace(MONEY, (_, sign, digits) => {
+      const n = Math.round((toCents(digits) / 100) * cfg.rate).toLocaleString('en-US');
+      out.push(`${sign}${n}`);
+      return _;
     });
-    const rtl = cs.direction === 'rtl';
-    const ta = cs.textAlign;
-    const align = ta === 'center' || cs.justifyContent === 'center' ? 'center'
-      : ta === 'end' ? 'flex-end'
-      : ta === 'left' ? (rtl ? 'flex-end' : 'flex-start')
-      : ta === 'right' ? (rtl ? 'flex-start' : 'flex-end')
-      : 'flex-start';
-    const inner = document.createElement('div');
-    inner.className = 'money-flip-inner';
-    const front = document.createElement('div');
-    front.className = 'money-flip-face front';
-    front.textContent = el.textContent;
-    const back = document.createElement('div');
-    back.className = 'money-flip-face back';
-    // The amount reads left to right ("1,250,000 LBP") even inside Arabic text.
-    const val = document.createElement('bdi');
-    const text = convert(el.textContent, cfg);
-    val.dir = /[\u0600-\u06FF]/.test(text) ? 'rtl' : 'ltr';
-    val.textContent = text;
-    back.append(val);
-
-    front.style.justifyContent = align;
-    back.style.justifyContent = align;
-    inner.append(front, back);
-    card.append(inner);
-    document.body.appendChild(card);
-    return card;
+    return [...new Set(out)];
   };
 
-  const finish = () => {
+  const show = (el, cfg) => {
+    const list = amounts(el.textContent || '', cfg);
+    if (!list.length) return null;
+    const r = textRect(el);
+    const b = document.createElement('div');
+    b.className = 'money-bubble';
+    b.setAttribute('role', 'tooltip');
+    b.dir = 'ltr';
+    for (const v of list) {
+      const row = document.createElement('div');
+      row.className = 'mb-row';
+      row.dir = 'ltr';
+      const num = document.createElement('b');
+      num.textContent = v;
+      const code = document.createElement('span');
+      code.textContent = cfg.symbol;
+      row.append(num, code);
+      b.append(row);
+    }
+    document.body.appendChild(b);
+    // Above the amount when there is room, otherwise below; kept inside the screen.
+    const bw = b.offsetWidth; const bh = b.offsetHeight; const gap = 10;
+    const below = r.top - bh - gap < 8;
+    const cx = r.left + r.width / 2;
+    const left = Math.min(window.innerWidth - bw - 8, Math.max(8, cx - bw / 2));
+    const top = below ? r.bottom + gap : r.top - bh - gap;
+    b.style.left = `${left}px`;
+    b.style.top = `${top}px`;
+    b.style.setProperty('--tail', `${Math.min(bw - 14, Math.max(14, cx - left))}px`);
+    b.classList.add(below ? 'is-below' : 'is-above');
+    requestAnimationFrame(() => b.classList.add('is-in'));
+    return b;
+  };
+
+  const finish = (delay = 0) => {
     if (!active) return;
-    const { el, card, timer, flipped } = active;
+    const { timer, bubble } = active;
     clearTimeout(timer);
     active = null;
-    if (!card) return;
-    if (flipped) {
-      card.classList.remove('is-flipped');
-      card.classList.add('is-leaving');
-      setTimeout(() => { el.style.opacity = ''; card.remove(); }, 520);
-    } else {
-      card.remove();
-    }
+    if (!bubble) return;
+    setTimeout(() => {
+      bubble.classList.remove('is-in');
+      bubble.classList.add('is-out');
+      setTimeout(() => bubble.remove(), 200);
+    }, delay);
   };
 
   const start = (el) => {
@@ -94,15 +99,11 @@ export function initMoneyFlip(getConfig) {
     if (!cfg.enabled) return;
     if (active?.el === el) return;
     finish();
-    const card = build(el, cfg);
-    if (!card) return;
     const timer = setTimeout(() => {
-      if (!active || active.el !== el) return;
-      active.flipped = true;
-      el.style.opacity = '0';
-      card.classList.add('is-flipped');
+      if (!active || active.el !== el || !el.isConnected) return;
+      active.bubble = show(el, cfg);
     }, HOLD_MS);
-    active = { el, card, timer, flipped: false };
+    active = { el, timer, bubble: null };
   };
 
   document.addEventListener('pointerover', (e) => {
@@ -115,15 +116,15 @@ export function initMoneyFlip(getConfig) {
     const to = e.relatedTarget;
     if (!to || !active.el.contains(to)) finish();
   }, true);
-  // Touch: press and hold for 2 seconds; lifting the finger flips back.
+  // Touch: press and hold; the bubble stays a moment after the finger lifts.
   document.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch') return;
     const el = candidate(e.target);
-    if (el) start(el);
+    if (el) start(el); else finish();
   }, true);
-  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, (e) => { if (e.pointerType === 'touch') finish(); }, true);
-  window.addEventListener('scroll', finish, true);
-  window.addEventListener('resize', finish);
-  document.addEventListener('keydown', finish, true);
-  window.addEventListener('blur', finish);
+  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, (e) => { if (e.pointerType === 'touch') finish(active?.bubble ? 1500 : 0); }, true);
+  window.addEventListener('scroll', () => finish(), true);
+  window.addEventListener('resize', () => finish());
+  document.addEventListener('keydown', () => finish(), true);
+  window.addEventListener('blur', () => finish());
 }
