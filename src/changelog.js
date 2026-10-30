@@ -2,6 +2,9 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.12.2', date: '2026-10-30', items: [
+    ['image', 'الشعار الجديد بخلفية شفافة يظهر بوضوح على الخلفيات الفاتحة والداكنة', 'The new logo now has a clear background and sits cleanly on light and dark screens'],
+  ] },
   { v: '3.12.1', date: '2026-10-30', items: [
     ['image', 'شعار جديد لمزرعتي: ورقة نبات ودائرة رقمية', 'A new Mazraati logo: a leaf and a digital circuit'],
   ] },
