@@ -1,6 +1,6 @@
 // Backup envelope, restore checks, and a best-effort import of the older Mazraati format.
 import { syncAllAnimalSales } from './animals.mjs';
-import { emptyFarm, FARM_VERSION, newId, ensureNumbers, foldBank } from './commands.mjs';
+import { emptyFarm, FARM_VERSION, ensureNumbers, foldBank } from './commands.mjs';
 import { importLegacy } from './legacy.mjs';
 
 export function backupEnvelope(farm, now = new Date(), files = null) {

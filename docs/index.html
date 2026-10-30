@@ -708,13 +708,26 @@ button.bar-row:hover { background: var(--surface-2); }
 }
 
 /* ── Print: a real A4 document, not the app chrome ── */
-@page { size: A4; margin: 16mm 14mm; }
+@page { size: A4; margin: 0; }
+#print-root { display: none; }
 @media print {
-  body { background: #fff; }
-  body * { visibility: hidden; }
-  .print-doc, .print-doc * { visibility: visible; }
-  .print-doc { position: absolute; inset: 0; border: 0; padding: 0; border-radius: 0; font-size: 11pt; box-shadow: none; }
-  .no-print, .print-doc .icon-btn { display: none !important; }
+  html, body { background: #fff !important; }
+  html.printing body > *:not(#print-root) { display: none !important; }
+  /* Fallback when nothing was copied (printing a page without a document) */
+  html:not(.printing) body * { visibility: hidden; }
+  html:not(.printing) .print-doc, html:not(.printing) .print-doc * { visibility: visible; }
+  html:not(.printing) .print-doc { position: fixed; inset: 0; padding: 16mm 14mm; }
+  #print-root { display: block; color: #111; }
+  .pr-frame { inline-size: 100%; border-collapse: collapse; }
+  .pr-frame > thead > tr > td, .pr-frame > tfoot > tr > td, .pr-body { padding: 0 15mm; }
+  .pr-space { block-size: 14mm; }
+  #print-root .print-doc { position: static; inset: auto; border: 0; border-radius: 0; box-shadow: none; padding: 0; margin: 0; font-size: 10.5pt; gap: 14px; background: #fff; max-inline-size: none; inline-size: auto; }
+  #print-root .print-doc tr, #print-root .doc-totals, #print-root .doc-head, #print-root .doc-foot, #print-root .doc-parties { break-inside: avoid; }
+  #print-root .print-doc thead { display: table-header-group; }
+  #print-root .print-doc tfoot { display: table-row-group; } /* totals print once, at the end */
+  #print-root .print-doc h1, #print-root .print-doc h2 { break-after: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print, .print-doc .icon-btn, .share-bar { display: none !important; }
 }
 
 /* Cash screen wrappers: the inner column must not replay the page entrance. */

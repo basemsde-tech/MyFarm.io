@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Empty, Stat, Seg, Sheet, TextArea, dayLabel } from './kit.jsx';
+import { Button, Icon, Empty, Stat, Seg, Sheet, TextArea, dayLabel } from './kit.jsx';
 import { overdueCustomers, reminderText, logReminder } from '../core/messages.mjs';
 import { docNo } from '../core/accounts.mjs';
 import { openWhatsApp } from './share.jsx';

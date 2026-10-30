@@ -2,11 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, DateInput, FilterPanel, dayLabel, monthLabel } from './kit.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
-import { profitAndLoss, balanceSheet, receivablesAging, payablesAging, trialBalance, journal, taxSummary, invoiceRegister, journalRows, docNo, BUCKETS, typeOf } from '../core/accounts.mjs';
+import { profitAndLoss, balanceSheet, receivablesAging, payablesAging, trialBalance, journal, taxSummary, invoiceRegister, journalRows, docNo, BUCKETS } from '../core/accounts.mjs';
 import { toCSV } from '../core/reports.mjs';
 import { Help } from './help.jsx';
 import { groupOf, EXPENSE_GROUPS } from '../core/catalog.mjs';
-import { periodRange } from '../core/statement.mjs';
+
 import { addDays } from '../core/species.mjs';
 
 /** Human name for a ledger account. */

@@ -1,5 +1,5 @@
 // Statements are drafts over the ledger. Generating one never rewrites a record.
-import { live, offsetsC } from './ledger.mjs';
+import { live } from './ledger.mjs';
 
 /** Ledger lines for one party: {day, at, ref, kind, desc, chargeC, creditC}. */
 export function partyLines(farm, party, id) {

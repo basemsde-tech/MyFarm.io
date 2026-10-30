@@ -4,7 +4,7 @@ import { LOGO } from './logo-data.js';
 // The logo shape, used as a mask for the shine that sweeps across it on hover.
 if (typeof document !== 'undefined') document.documentElement.style.setProperty('--app-logo', `url(${LOGO})`);
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Seg, Check } from './kit.jsx';
+import { Button, Icon, Seg, Check } from './kit.jsx';
 import { updateSettings } from '../core/commands.mjs';
 import { fileToDataUrl } from './vault.js';
 import { Help } from './help.jsx';

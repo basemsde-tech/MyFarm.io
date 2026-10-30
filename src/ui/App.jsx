@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LOGO } from './logo-data.js';
 import { initMoneyFlip } from './moneyflip.js';
+import { initPrint } from './print.js';
 import { play as playSound } from './sound.js';
 import { RestoreSheet } from './restore.jsx';
 import { SCREENS, Crumb, TabBar, WindowLayer, Taskbar } from './workspace.jsx';
 import { routeKey } from './ws.mjs';
-import { AppProvider, useApp, KEYS, storage } from './store.jsx';
+import { AppProvider, useApp } from './store.jsx';
 import { Button, Icon, IconButton, Seg, TextInput, Sheet, Avatar, Select } from './kit.jsx';
 import { RecordDrawer, DeleteDialog, PurgeDialog, VoidDialog, MasterDeleteDialog } from './tx.jsx';
 import { SaleSheet, PaymentSheet, ExpenseSheet, SupplierPaySheet, PersonSheet, MilkSheet, MilkUseSheet, EggsSheet, MedicineSheet, NewMenu } from './forms.jsx';
 import { CustomerSheet, SupplierSheet, PersonMasterSheet, AnimalSheet, AnimalEventSheet, WorkerSheet, ObligationSheet, ProfileSheet, DocSheet } from './masters.jsx';
-import { CashScreen, SalesScreen, ExpensesScreen, SuppliersScreen, PeopleScreen } from './screens-money.jsx';
-import { ProductionScreen, AnimalsScreen, ReportsScreen, SettingsScreen, TrashScreen } from './screens-farm.jsx';
+
 import { emptyFarm, upsert, updateSettings, newId } from '../core/commands.mjs';
 import { hashCode, newSalt, newRecoveryCode, validPasscode } from '../core/security.mjs';
 import { CURRENCIES } from '../core/money.mjs';
@@ -26,7 +26,6 @@ import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
-
 
 const SHEETS = {
   sale: SaleSheet, payment: PaymentSheet, expense: ExpenseSheet, supplierPay: SupplierPaySheet, capital: PersonSheet, milk: MilkSheet, milkUse: MilkUseSheet,
@@ -417,7 +416,7 @@ function Shell() {
   const wsRef = useRef(ws); wsRef.current = ws;
   const routeRef = useRef(route); routeRef.current = route;
   cfgRef.current = { enabled: farm.settings.currency === 'USD' && farm.settings.second?.code === 'LBP' && farm.settings.second?.rate > 0, rate: farm.settings.second?.rate || 0, symbol: 'LBP' };
-  useEffect(() => { initMoneyFlip(() => cfgRef.current); }, []);
+  useEffect(() => { initMoneyFlip(() => cfgRef.current); initPrint(); }, []);
   useEffect(() => {
     const on = () => setOnline(true); const off = () => setOnline(false);
     window.addEventListener('online', on); window.addEventListener('offline', off);

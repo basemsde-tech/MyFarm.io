@@ -7,7 +7,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { useApp, readJSON } from './store.jsx';
 import { Icon, Avatar, Button, Check } from './kit.jsx';
 import { useAttention } from './screens-money.jsx';
-import { useBackup, KIND_ICON, SEC } from './admin.jsx';
+import { useBackup, KIND_ICON } from './admin.jsx';
 import { activityLog } from '../core/audit.mjs';
 import { reproTimeline, daysBetween } from '../core/species.mjs';
 import { can } from '../core/catalog.mjs';

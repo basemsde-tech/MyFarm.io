@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Sheet, Select, TextInput, TextArea, DateInput, dayLabel, IconButton } from './kit.jsx';
+import { Button, Icon, Pill, Sheet, Select, TextInput, TextArea, DateInput, dayLabel } from './kit.jsx';
 import { DOC_KINDS, MAX_FILE_BYTES, addDocument, editDocument, removeDocument, docsFor, docState } from '../core/documents.mjs';
 import { can } from '../core/catalog.mjs';
 import { fileToDataUrl, dataUrlToBlob } from './vault.js';

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { LOGO } from './logo-data.js';
 import { useApp, KEYS, readJSON, MAX_BYTES, inFrame } from './store.jsx';
-import { Button, Icon, Pill, Empty, Seg, Select, TextInput, Check, Sheet, FilterPanel, DateInput, dayLabel, Avatar } from './kit.jsx';
+import { Button, Icon, Empty, Seg, Select, TextInput, Check, Sheet, FilterPanel, DateInput, dayLabel, Avatar } from './kit.jsx';
 import { PageHead, downloadText, usePeriod } from './screens-money.jsx';
 import { backupEnvelope } from '../core/backup.mjs';
 import { updateSettings } from '../core/commands.mjs';
@@ -442,7 +442,6 @@ export function ActivityScreen() {
     </div>
   );
 }
-
 
 /* ───────────── Log off ───────────── */
 /** Asks for a backup (replacing the backup file), then logs off to the profile screen. */

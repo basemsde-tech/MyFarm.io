@@ -3,7 +3,7 @@ import { useApp, inFrame } from './store.jsx';
 import { Button, Icon, Pill, MoneyInput, QtyInput, DateInput, Seg, Select, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton, Avatar, dayLabel } from './kit.jsx';
 import { TxFooter } from './tx.jsx';
 import { upsert, newId, addRecord, editRecord } from '../core/commands.mjs';
-import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
+import { SPECIES, statusesFor } from '../core/species.mjs';
 import { saleOfAnimal } from '../core/animals.mjs';
 import { saleText, receiptText, statementText } from '../core/messages.mjs';
 import { ShareBar } from './share.jsx';
@@ -105,7 +105,6 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
   const { farm, t, today, fmt, ui } = useApp();
   const [f, setF] = useState(record || { species: presetSpecies || 'cow', tag: '', name: '', breed: '', status: presetSpecies === 'chicken' ? 'laying' : 'healthy', dob: '', weight: 0, yieldL: 0, parity: 0, source: 'born', priceC: 0, birds: 0, coop: '', photo: '', medicine: '', notes: '', startDay: today });
   const set = (p) => setF((x) => ({ ...x, ...p }));
-  const save = useSaveMaster('animals', onClose);
   const sp = SPECIES[f.species];
   const flock = sp.mode === 'flock';
   const taken = farm.animals.some((a) => a.id !== record?.id && a.tag.trim().toLowerCase() === f.tag.trim().toLowerCase());

@@ -18,4 +18,4 @@ export function milkQ(litres, digits = 1) {
 export const milkN = (litres, digits = 1) => fmtQty(unit === 'kg' ? lToKg(Number(litres) || 0) : Number(litres) || 0, digits);
 
 /** Name of a milk use (built-in or the farm's own card). */
-export const useName = (id, t) => milkUseName(settings, id, t);
+export const milkUseLabel = (id, t) => milkUseName(settings, id, t);

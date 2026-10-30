@@ -16,7 +16,7 @@ import { partyLines } from '../core/statement.mjs';
 import { periodRange } from '../core/statement.mjs';
 import { upsert, addRecord, editRecord } from '../core/commands.mjs';
 import { toCSV } from '../core/reports.mjs';
-import { fmtQty } from '../core/money.mjs';
+
 import { daysBetween, addDays, SPECIES } from '../core/species.mjs';
 import { EXPENSE_GROUPS, groupOf, CATEGORY_ICON } from '../core/catalog.mjs';
 

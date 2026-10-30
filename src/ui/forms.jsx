@@ -1,17 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { milkQ, milkN } from './units.js';
+import { milkQ } from './units.js';
 import { useApp, useDraft } from './store.jsx';
 import { Button, Icon, MoneyInput, QtyInput, DateInput, Seg, Select, Picker, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton } from './kit.jsx';
 import { TxFooter, issuesFor } from './tx.jsx';
 import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledger.mjs';
-import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, MILK_USE_REASONS, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, OUT_OF_POCKET_CATEGORIES, groupOf } from '../core/catalog.mjs';
+import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
-import { deleteRecords, upsert, updateSettings, newId } from '../core/commands.mjs';
+import { deleteRecords, updateSettings, newId } from '../core/commands.mjs';
 import { litresOf, saleMilkL, lToKg, kgToL } from '../core/milk.mjs';
-import { fmtQty } from '../core/money.mjs';
+
 import { SPECIES } from '../core/species.mjs';
 
-const strip = ({ id, createdAt, createdBy, createdByName, updatedAt, updatedBy, history, deletedAt, ...rest }) => rest;
 const opts = (list, t, prefix) => list.map((v) => ({ value: v, label: t(`${prefix}${v}`) }));
 
 function useParties(keepAnimal) {

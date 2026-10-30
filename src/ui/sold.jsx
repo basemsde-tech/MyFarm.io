@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { milkQ, milkN } from './units.js';
+import { milkQ } from './units.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Seg, DateInput, FilterPanel, dayLabel } from './kit.jsx';
 import { usePeriod, downloadText } from './screens-money.jsx';
