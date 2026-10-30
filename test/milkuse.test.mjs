@@ -24,3 +24,16 @@ test('milk uses: built-ins, old plain names, add, rename, hide when used', () =>
   s = { milkUseReasons: dropMilkUse(s, 'Cheese', recs) };
   assert.equal(milkUses(s, { all: true }).filter((x) => !x.builtin).length, 1, 'unused one removed');
 });
+
+import { milkStock } from '../src/core/milk.mjs';
+test('an old shortfall does not hide new milk in the tank', () => {
+  const recs = [
+    { id: 's1', type: 'sale', day: '2026-10-29', createdAt: 'a', lines: [{ product: 'milk', qty: 80, unit: 'L' }] },
+    { id: 'm2', type: 'milk', day: '2026-10-31', session: 'am', species: 'cow', liters: 50, createdAt: 'b' },
+  ];
+  const s = milkStock(recs);
+  assert.equal(s.stockL, 50, 'the new 50 L are in the tank');
+  assert.equal(s.issues.length, 1, 'the old shortfall is still reported');
+  const normal = milkStock([{ id: 'm', type: 'milk', day: '2026-10-01', session: 'am', liters: 100, createdAt: 'a' }, { id: 's', type: 'sale', day: '2026-10-01', createdAt: 'b', lines: [{ product: 'milk', qty: 30, unit: 'L' }] }]);
+  assert.equal(normal.stockL, 70);
+});

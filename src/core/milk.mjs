@@ -129,7 +129,9 @@ export function milkStock(records, now = Date.now()) {
   const usedL = cons.filter((c) => c.kind !== 'sale').reduce((s, c) => s + c.liters, 0);
   return {
     producedL: r3(produced), soldL: r3(soldL), usedL: r3(usedL),
-    stockL: r3(Math.max(0, produced - consumed)), rawL: r3(produced - consumed),
+    // The tank holds what is left in its lots. An old shortfall (milk sold or used before any was
+    // recorded, e.g. after deleting an entry) is reported as an issue; it must not swallow new milk.
+    stockL: r3(remaining.reduce((x, l) => x + l.left, 0)), rawL: r3(produced - consumed),
     lots: remaining, issues,
   };
 }
