@@ -155,7 +155,7 @@ function Setup() {
   return (
     <div className="setup">
       <div className="setup-card">
-        <div className="brand-lockup"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="muted small">{t('tagline')}</div></div></div>
+        <div className="brand-lockup"><BrandMark className="lg" /><div><div className="brand-name">{t('brand')}</div><div className="muted small">{t('tagline')}</div></div></div>
         <div className="muted small num">{t('su.step', { a: step, b: 4 })}</div>
         {step === 1 && (
           <>
