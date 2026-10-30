@@ -1682,3 +1682,7 @@ button.bar-row:hover { background: var(--surface-2); }
 .bp-foot { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-block-start: 1px solid var(--line-2); background: var(--surface-2); }
 .bp-foot .grow { flex: 1; }
 @media (max-width: 720px) { .bell-pop { position: fixed; inset-inline: 12px; inset-block-start: 62px; inline-size: auto; } }
+
+/* Number columns line up under their headings in Arabic too (numbers read left to right). */
+[dir="rtl"] :is(.tbl, .doc-table) :is(td, th).num:not(:first-child) { text-align: left; }
+[dir="ltr"] :is(.tbl, .doc-table) :is(td, th).num:not(:first-child) { text-align: right; }

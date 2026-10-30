@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.14.1', date: '2026-10-30', items: [
+    ['print', 'طباعة أنيقة: المستند يبدأ من أعلى الصفحة بهوامش متساوية، دون عنوان الموقع وتاريخ المتصفح', 'Clean printing: documents start at the top with even margins, without the web address or browser date'],
+    ['print', 'رأس الجدول يتكرر في كل صفحة، والمجاميع مرة واحدة في النهاية، والأرقام تحت عناوينها', 'Table headings repeat on every page, totals print once at the end, and numbers line up under their headings'],
+  ] },
   { v: '3.14.0', date: '2026-10-30', items: [
     ['alert', 'جرس الإشعارات: ما يحتاج إلى متابعة ونشاط الفريق في قائمة واحدة ذكية', 'A notification bell: what needs attention and team activity in one smart list'],
     ['alert', 'إشعارات على الجهاز تفتح الصفحة المعنية عند النقر (تُفعَّل من الجرس أو الإعدادات)', 'Device notifications that open the right page (turn on from the bell or Settings)'],
