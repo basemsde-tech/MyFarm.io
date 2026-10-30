@@ -1585,3 +1585,20 @@ button.bar-row:hover { background: var(--surface-2); }
 .brand-mark.app-logo.xs { inline-size: 24px; block-size: 24px; }
 .setup .brand-mark.app-logo, .brand-mark.app-logo.lg { inline-size: 72px; block-size: 72px; }
 .boot .brand-mark.app-logo { inline-size: 104px; block-size: 104px; }
+
+/* Logo on hover: a little sprout-like sway and a shine that sweeps across the shape. */
+.brand-mark.app-logo { position: relative; }
+.brand-mark.app-logo img { transform-origin: 50% 90%; transition: transform .5s var(--spring); }
+.brand-mark.app-logo::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .85) 48%, rgba(255, 246, 210, .6) 52%, transparent 70%) 160% 0 / 260% 100% no-repeat; -webkit-mask: var(--app-logo) center / contain no-repeat; mask: var(--app-logo) center / contain no-repeat; opacity: 0; }
+.brand-mark.app-logo:hover img, .brand-lockup:hover .brand-mark.app-logo img { animation: logo-sway .9s var(--ease) both; }
+.brand-mark.app-logo:hover::after, .brand-lockup:hover .brand-mark.app-logo::after { animation: logo-shine .9s .12s var(--ease) both; }
+@keyframes logo-sway {
+  0% { transform: none; }
+  25% { transform: scale(1.12) rotate(-7deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+  75% { transform: scale(1.08) rotate(-2deg); }
+  100% { transform: scale(1.06) rotate(0); }
+}
+@keyframes logo-shine { 0% { opacity: 1; background-position: 160% 0; } 100% { opacity: 1; background-position: -60% 0; } }
+.boot .brand-mark.app-logo::after { animation: logo-shine 1.6s var(--ease) infinite; }
+@media (prefers-reduced-motion: reduce) { .brand-mark.app-logo img, .brand-mark.app-logo::after { animation: none !important; } }
