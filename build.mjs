@@ -42,12 +42,13 @@ writeFileSync('dist/manifest.webmanifest', JSON.stringify({
   icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }, { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }],
 }, null, 2));
 writeFileSync('dist/sw.js', `// Cache name moves with the version so an update replaces the shell.
-const CACHE = 'mazraati-v${VERSION}';
+// Own prefix: the old Mazraati 2 lives on the same site and keeps its own caches.
+const CACHE = 'mazraati3-v${VERSION}';
 const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './pdf.js'];
 // A first install takes over at once; an update waits until the user taps "Update now".
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
-self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('mazraati3-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -87,3 +88,8 @@ ${BOOT}
 <script>${js}</script>
 `);
 console.log('dist/app.js', (pwa.outputFiles[0].text.length / 1024).toFixed(0), 'KB · preview', (js.length / 1024).toFixed(0), 'KB');
+
+// GitHub Pages serves the app from docs/ on the main branch.
+import { rmSync, cpSync } from 'node:fs';
+rmSync('docs', { recursive: true, force: true });
+cpSync('dist', 'docs', { recursive: true });

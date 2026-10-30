@@ -6,7 +6,7 @@ import { downloadText } from './screens-money.jsx';
 import { compute } from '../core/ledger.mjs';
 
 /** Pick a backup file, review exactly what will be restored and how balances compare, then replace the farm. */
-export function RestoreSheet({ onClose, fromSetup }) {
+export function RestoreSheet({ onClose, fromSetup, preset }) {
   const { t, lang, farm, replaceFarm, setPrefs, toast, fmt, today, files, logEvent } = useApp();
   const [res, setRes] = useState(null);
   const [error, setError] = useState('');
@@ -17,6 +17,13 @@ export function RestoreSheet({ onClose, fromSetup }) {
   const input = useRef(null);
   const hasData = farm.records.length > 0 || farm.customers.length > 0;
 
+  // Data handed over directly (the old Mazraati found on this device).
+  React.useEffect(() => {
+    if (!preset?.text) return;
+    setFileName(preset.name);
+    const r = readBackup(preset.text, { lang });
+    if (!r.ok) setError(t('rs.unknown')); else setRes(r);
+  }, [preset?.text]); // eslint-disable-line react-hooks/exhaustive-deps
   const load = async (file) => {
     if (!file) return;
     setError(''); setRes(null); setBusy(true); setFileName(file.name);

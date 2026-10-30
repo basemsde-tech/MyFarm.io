@@ -326,6 +326,7 @@ const ar = {
   'hlp.helpMode': 'إظهار علامات المساعدة (؟)', 'hlp.helpModeHint': 'علامة ؟ بجانب الميزات، تُظهر شرحًا موجزًا عند النقر. يمكن تبديلها أيضًا من زر ؟ في الأعلى.',
   'hlp.restart': 'إعادة تشغيل الجولات', 'hlp.restarted': 'ستظهر الجولات مجددًا عند فتح كل صفحة',
   // updates
+  'old.found': 'وُجدت بيانات من مزرعتي القديمة على هذا الجهاز', 'old.foundHint': 'المزرعة «{f}» · {n} حركة. راجعها وطابق الأرصدة قبل الاستيراد؛ البيانات القديمة تبقى كما هي.', 'old.review': 'مراجعة واستيراد',
   'upd.ready': 'تحديث جديد جاهز', 'upd.readyHint': 'يتضمن ميزات وتحسينات جديدة. بياناتك تبقى كما هي.', 'upd.now': 'تحديث الآن', 'upd.later': 'لاحقًا',
   'upd.installing': 'جارٍ تثبيت التحديث…', 'upd.keepOpen': 'لحظات قليلة، لا تغلق التطبيق.', 'upd.done': 'تم التحديث بنجاح', 'upd.history': 'سجل التحديثات',
   'upd.lead': 'إليك ما الجديد منذ الإصدار {v}:', 'upd.leadFresh': 'إليك أبرز ما في هذا الإصدار:', 'upd.andMore': 'وتحديثات أقدم أخرى ({n}) في سجل التحديثات.',
@@ -634,6 +635,7 @@ const en = {
   'hlp.helpMode': 'Show help marks (?)', 'hlp.helpModeHint': 'A ? beside features shows a short explanation when tapped. Also toggled from the ? button at the top.',
   'hlp.restart': 'Restart tutorials', 'hlp.restarted': 'Tours will show again as you open each page',
   // updates
+  'old.found': 'Data from the old Mazraati found on this device', 'old.foundHint': 'Farm “{f}” · {n} entries. Review it and check the balances before importing; the old data stays as it is.', 'old.review': 'Review & import',
   'upd.ready': 'A new update is ready', 'upd.readyHint': 'New features and improvements. Your data stays as it is.', 'upd.now': 'Update now', 'upd.later': 'Later',
   'upd.installing': 'Installing the update…', 'upd.keepOpen': 'Just a moment — keep the app open.', 'upd.done': 'Updated successfully', 'upd.history': 'Update history',
   'upd.lead': 'Here is what’s new since version {v}:', 'upd.leadFresh': 'Here are the highlights of this version:', 'upd.andMore': 'And {n} earlier updates in the update history.',

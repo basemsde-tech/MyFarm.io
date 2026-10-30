@@ -1399,3 +1399,9 @@ button.bar-row:hover { background: var(--surface-2); }
 .history .wn-foot { justify-content: flex-end; }
 @media (prefers-reduced-motion: reduce) { .wn-card, .upd-card, .wn-rel li, .wn-burst span, .wn-check * { animation-duration: 1ms !important; animation-delay: 0ms !important; } }
 @media (max-width: 640px) { .upd-card { inset-inline: 12px; inset-block-end: 84px; inline-size: auto; } }
+
+/* ── Old app data offer ── */
+.old-offer { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--gold-soft); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); margin-block: 6px; animation: updIn .4s var(--ease); }
+.old-offer > div { display: flex; flex-direction: column; gap: 2px; }
+.oo-ico { inline-size: 38px; block-size: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--surface); color: var(--gold); }
+@media (max-width: 520px) { .old-offer { grid-template-columns: auto 1fr; } .old-offer .btn { grid-column: 1 / -1; } }

@@ -108,6 +108,32 @@ function EraseDialog({ onClose }) {
   );
 }
 
+/** The old Mazraati 2 on this same site keeps its farm in localStorage; offer to bring it in. */
+export function findOldAppData() {
+  try {
+    const held = localStorage.getItem('mazraati-walkthrough-hold');
+    const raw = (held && localStorage.getItem('mazraati-pre-walkthrough-v1')) || localStorage.getItem('mazraati-farm-v1');
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    const f = p?.farm && p?.kind ? p.farm : p;
+    const n = Array.isArray(f?.entries) ? f.entries.length : 0;
+    if (!n || !f.settings) return null;
+    return { text: raw, name: 'Mazraati 2', farmName: f.settings.farmName || '', entries: n };
+  } catch { return null; }
+}
+function OldAppOffer({ onOpen }) {
+  const { t } = useApp();
+  const [old] = useState(() => findOldAppData());
+  if (!old) return null;
+  return (
+    <div className="old-offer">
+      <span className="oo-ico"><Icon name="history" size={20} /></span>
+      <div><b>{t('old.found')}</b><span className="muted small">{t('old.foundHint', { f: old.farmName || '—', n: old.entries })}</span></div>
+      <Button variant="primary" size="sm" onClick={() => onOpen(old)}>{t('old.review')}</Button>
+    </div>
+  );
+}
+
 /* ───────────── First run ───────────── */
 function Setup() {
   const { t, prefs, setPrefs, replaceFarm, lang, enterDemo, farms, cancelNewFarm } = useApp();
@@ -141,7 +167,8 @@ function Setup() {
             <Seg label={t('su.lang')} value={prefs.lang} onChange={(v) => setPrefs({ lang: v })} options={[{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }]} />
             {farms.length > 1 && <div className="note info"><Icon name="plus" size={16} />{t('farms.newHint')} <button type="button" className="link" onClick={cancelNewFarm}>{t('cancel')}</button></div>}
             <div className="foot-btns"><Button onClick={demo}>{t('su.orDemo')}</Button><Button icon="upload" onClick={() => setRestoring(true)}>{t('su.restore')}</Button><Button variant="primary" onClick={() => setStep(2)}>{t('start')}</Button></div>
-            {restoring && <RestoreSheet fromSetup onClose={() => setRestoring(false)} />}
+            <OldAppOffer onOpen={(preset) => setRestoring(preset)} />
+            {restoring && <RestoreSheet fromSetup preset={restoring === true ? null : restoring} onClose={() => setRestoring(false)} />}
           </>
         )}
         {step === 2 && (

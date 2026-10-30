@@ -2,6 +2,9 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.10.2', date: '2026-10-30', items: [
+    ['history', 'استيراد بيانات مزرعتي القديمة من الجهاز نفسه بنقرة واحدة، مع مطابقة الأرصدة', 'One-click import of the old Mazraati data on the same device, with balance checks'],
+  ] },
   { v: '3.10.1', date: '2026-10-30', items: [
     ['check', 'أسرع بكثير مع سنوات من البيانات: الكتابة فورية، والحفظ يظهر خلال لحظة', 'Much faster with years of data: typing is instant and saves confirm in a moment'],
     ['lock', 'حماية إضافية عند الحفظ السريع المتتالي', 'Extra protection when saving several entries in quick succession'],

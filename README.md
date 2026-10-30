@@ -78,3 +78,11 @@ Company sync. The merge logic is written and tested, but the Firebase connection
 ## 3.10 — update experience
 - "A new update is ready" card with Update now / Later, then a one-time "What's new" celebration with bullet points.
 - Add each release's bullets to `src/changelog.js` before building.
+
+## Run it in a browser (GitHub Pages)
+`npm run build` writes the installable app to `dist/` and the same files to `docs/`.
+On GitHub: Settings → Pages → Build and deployment → Source "Deploy from a branch" → Branch `main`, folder `/docs` → Save.
+The app is then at `https://<account>.github.io/<repo>/`.
+
+### Coming from Mazraati 2 on the same site
+Both apps live under the same `<account>.github.io` address, so the new app finds the old farm in the browser and offers **Review & import** on its first screen. The old data is only read, never changed, and every balance is compared before anything is imported. The two apps keep separate caches and storage.
