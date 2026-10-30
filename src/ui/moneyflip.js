@@ -124,6 +124,9 @@ export function initMoneyFlip(getConfig) {
   }, true);
   for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, (e) => { if (e.pointerType === 'touch') finish(active?.bubble ? 1500 : 0); }, true);
   window.addEventListener('scroll', () => finish(), true);
+  // A page change removes the amount under the pointer: never leave its bubble behind.
+  window.addEventListener('hashchange', () => finish());
+  document.addEventListener('pointermove', () => { if (active && !active.el.isConnected) finish(); }, { passive: true });
   window.addEventListener('resize', () => finish());
   document.addEventListener('keydown', () => finish(), true);
   window.addEventListener('blur', () => finish());

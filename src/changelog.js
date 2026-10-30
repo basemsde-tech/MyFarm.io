@@ -2,6 +2,9 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.14.4', date: '2026-10-31', items: [
+    ['help', 'دليل الاستخدام محدَّث بكل الميزات الجديدة، مع قسم للإشعارات وآخر للتنقل', 'The user guide now covers every new feature, with sections on notifications and navigation'],
+  ] },
   { v: '3.14.3', date: '2026-10-31', items: [
     ['milk', 'إصلاح: الحليب المضاف يظهر في الخزان فورًا حتى لو سُجّل بيع قديم دون حليب مقابل', 'Fix: milk you add shows in the tank straight away, even after an old sale with no milk recorded for it'],
   ] },

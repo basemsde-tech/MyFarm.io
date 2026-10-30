@@ -207,3 +207,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - A bought animal's price becomes a linked livestock expense (opt-out to avoid duplicates); later price edits update it.
 - Home is the cash box: the logo (sidebar, phone top bar) goes there.
 - test/integration.test.mjs builds a farm with every flow and checks the screens against each other (with and without tax).
+
+## 23. Release rule — keep the user guide current
+- Every release that changes what the user sees also updates src/guide-content.js (sections, tours, "?" help, in both Arabic and English), then sets GUIDE_VERSION to the new version. test/guide.test.mjs fails until GUIDE_VERSION equals package.json's version, and checks that both languages have the same sections and help keys.
+- Release checklist: code → tests → guide → changelog (What's new) → MASTER_PROMPT → version bump (store.jsx VERSION + package.json) → build → push.
