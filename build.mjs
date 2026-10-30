@@ -93,3 +93,5 @@ console.log('dist/app.js', (pwa.outputFiles[0].text.length / 1024).toFixed(0), '
 import { rmSync, cpSync } from 'node:fs';
 rmSync('docs', { recursive: true, force: true });
 cpSync('dist', 'docs', { recursive: true });
+// …and from the repository root too, so the app opens whichever Pages folder is chosen.
+for (const f of readdirSync('dist')) cpSync(`dist/${f}`, f, { recursive: true });
