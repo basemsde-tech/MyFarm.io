@@ -193,3 +193,7 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Sounds (synthesised, offline): soft success on every labelled save, low knock on errors and wrong PINs, a cash-register ring on every new sale. Settings → Appearance → Sounds, with test buttons.
 - Currency: resting on an amount for 1.2 s pops up a chat-style bubble with the LBP value (3.11.1; the flip was removed). Numbers are always Latin digits; currencies without a Latin symbol show their English code (LBP, SAR…), never Arabic abbreviations.
 - Milk unit defaults to kilograms (storage stays in litres; display converts). Production: tank lots, daily milk log and egg log fold away to a one-line summary with a sparkline; the milk log has period, species, milking and sort controls, totals/average/best day, and paged rows.
+
+## 21. 3.12 — Milk use cards, log off with backup
+- Milk use: "Used for" cards (built-ins + the farm's own). Create, rename, pick an emoji, remove. A removed card that entries point to is hidden, never deleted, so old entries keep their name. Each card shows the last 30 days' amount. Quantity is typed in the farm's milk unit and stored in litres.
+- Log off (account menu, phone More sheet): a dialog offers "Back up and log off" — writes to the connected backup folder, or to one remembered backup file that is replaced each time (picked once), or downloads — then "Log off without backup" or Cancel. Log off returns to the profile screen; profiles with a passcode ask for it, others enter with one tap.

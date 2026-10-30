@@ -14,6 +14,7 @@ import { Help } from './help.jsx';
 const slug = (s) => (String(s || 'farm').trim().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'farm');
 const readBk = (id) => readJSON(KEYS.backups, {})[id] || {};
 const writeBk = (id, patch) => { const all = readJSON(KEYS.backups, {}); all[id] = { ...(all[id] || {}), ...patch }; try { localStorage.setItem(KEYS.backups, JSON.stringify(all)); } catch { /* ignore */ } };
+const fileHandles = new Map(); // this session's backup file per farm
 export const folderSupported = () => typeof window !== 'undefined' && 'showDirectoryPicker' in window && !inFrame;
 
 async function backupText(farm, files) {
@@ -126,7 +127,45 @@ export function useAutoBackup() {
       return true;
     } finally { setBusy(false); }
   };
-  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, supported: folderSupported() && storageMode === 'idb' };
+  /**
+   * One backup file that is replaced every time (used when logging off).
+   * First time: the user picks where it lives; after that the same file is overwritten.
+   */
+  const fileSupported = typeof window !== 'undefined' && 'showSaveFilePicker' in window && !inFrame && storageMode === 'idb';
+  const toFile = async () => {
+    setBusy(true);
+    try {
+      const text = await backupText(farm, files);
+      let h = fileHandles.get(farmId) || await vault.get(K.backupFile(farmId)).catch(() => null);
+      if (h && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') h = null;
+      if (!h) {
+        try {
+          h = await window.showSaveFilePicker({ id: `mazraati-file-${farmId}`, suggestedName: `mazraati-${slug(farm.settings.farmName)}-backup.json`, types: [{ description: 'Mazraati backup', accept: { 'application/json': ['.json'] } }] });
+        } catch (e) { if (e?.name === 'AbortError') return false; throw e; }
+        fileHandles.set(farmId, h);
+        await vault.set(K.backupFile(farmId), h).catch(() => {}); // remembered for next time where the browser allows it
+      }
+      const w = await h.createWritable();
+      await w.write(text);
+      await w.close();
+      mark({ lastAt: new Date().toISOString(), method: 'file', name: h.name, file: h.name, error: null });
+      logEvent('backup', { label: h.name });
+      return h.name;
+    } catch (e) {
+      mark({ error: String(e?.message || e) });
+      return false;
+    } finally { setBusy(false); }
+  };
+  /** The best way to back up right now: the connected folder, the remembered file, or a download/share. */
+  const backupNow = async () => {
+    if (dir && perm !== 'none') {
+      if (perm !== 'granted') { const p = await dir.requestPermission({ mode: 'readwrite' }); setPerm(p); if (p !== 'granted') return false; }
+      return (await toFolder(false)) ? readBk(farmId).name : false;
+    }
+    if (fileSupported) return toFile();
+    return (await shareNow()) ? readBk(farmId).name : false;
+  };
+  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, toFile, backupNow, fileSupported, supported: folderSupported() && storageMode === 'idb' };
 }
 
 const BackupCtx = createContext(null);
@@ -400,5 +439,46 @@ export function ActivityScreen() {
         {rows.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + 100)}>{t('more')} ({rows.length - limit})</Button>}
       </section>
     </div>
+  );
+}
+
+
+/* ───────────── Log off ───────────── */
+/** Asks for a backup (replacing the backup file), then logs off to the profile screen. */
+export function LogOffDialog({ onClose }) {
+  const { t, actor, demo, logEvent, setPrefs, toast, setToasts, lang } = useApp();
+  const bk = useBackup();
+  const [err, setErr] = useState('');
+  const where = bk.dir && bk.perm !== 'none' ? t('lo.toFolder', { f: bk.dir.name }) : bk.fileSupported ? (bk.state.file ? t('lo.toFile', { f: bk.state.file }) : t('lo.pickFile')) : t('lo.download');
+  const last = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const out = (msg) => { onClose(); logEvent('signout'); setPrefs({ profileId: null }); setToasts([]); toast(msg || t('pf.loggedOff'), { sound: 'success' }); };
+  const backupAndOut = async () => {
+    setErr('');
+    const name = await bk.backupNow();
+    if (name) out(t('lo.doneBoth', { f: `\u2068${name}\u2069` }));
+    else setErr(t('lo.failed'));
+  };
+  return (
+    <Sheet title={t('pf.logOff')} onClose={onClose}>
+      <div className="logoff">
+        <div className="lo-who"><Avatar p={actor} size={52} /><div><b>{actor?.name}</b><small className="muted">{t(`role.${actor?.role}`)}</small></div></div>
+        {demo ? <p className="muted">{t('lo.demo')}</p> : (
+          <div className="lo-backup">
+            <div className="lo-ico"><Icon name="download" size={22} /></div>
+            <div>
+              <b>{t('lo.ask')}</b>
+              <p className="muted small">{where}</p>
+              <p className="muted small">{last ? t('lo.last', { d: last }) : t('bk.never')}</p>
+            </div>
+          </div>
+        )}
+        {err && <div className="note bad">{err}</div>}
+        <div className="lo-actions">
+          {!demo && <Button variant="primary" icon="download" onClick={backupAndOut} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('lo.both')}</Button>}
+          <Button icon="logout" onClick={() => out()} disabled={bk.busy}>{demo ? t('pf.logOff') : t('lo.skip')}</Button>
+          <Button onClick={onClose} disabled={bk.busy}>{t('cancel')}</Button>
+        </div>
+      </div>
+    </Sheet>
   );
 }

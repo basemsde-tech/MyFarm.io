@@ -1549,7 +1549,46 @@ button.bar-row:hover { background: var(--surface-2); }
 @media (max-width: 720px) { .toasts { inset-block-end: calc(96px + env(safe-area-inset-bottom, 0px)) !important; } }
 .rail-mini .side-nav .nav-item .nb:not(.nb-quiet) { display: inline-grid; }
 @media (max-width: 1100px) and (min-width: 721px) { .desk .side-nav .nav-item .nb:not(.nb-quiet) { display: inline-grid; } }
+
+/* ── Milk "used for" cards ── */
+.use-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.use-card { position: relative; display: flex; border: 1px solid var(--line-2); border-radius: 16px; background: var(--surface-2); transition: border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast) var(--ease); animation: tile-in .36s var(--spring) both; }
+.use-card:hover { border-color: var(--teal-ring); }
+.use-card.on { border-color: var(--teal); background: var(--teal-soft); box-shadow: 0 0 0 3px var(--teal-ring); }
+.use-card:active { transform: scale(.97); }
+.uc-main, .uc-new { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px 10px; border: 0; background: none; color: var(--ink); text-align: center; min-inline-size: 0; border-radius: inherit; }
+.uc-new { border: 1.5px dashed var(--line); background: transparent; color: var(--muted); justify-content: center; }
+.uc-new:hover, .uc-new.on { color: var(--teal); border-color: var(--teal); }
+.uc-emoji { font-size: 1.5rem; line-height: 1; display: grid; place-items: center; block-size: 28px; transition: transform .35s var(--spring); }
+.use-card.on .uc-emoji { transform: scale(1.18) rotate(-6deg); }
+.uc-name { font-weight: 600; font-size: .86rem; max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uc-stat { color: var(--muted); font-size: .7rem; }
+.uc-edit { position: absolute; inset-block-start: 4px; inset-inline-end: 4px; inline-size: 24px; block-size: 24px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); opacity: .55; transition: opacity var(--t-fast), background var(--t-fast); }
+.use-card:hover .uc-edit, .uc-edit:focus-visible { opacity: 1; background: var(--surface); }
+@media (hover: none) { .uc-edit { opacity: .9; } }
+.use-editor { display: flex; flex-direction: column; gap: 10px; margin-block-start: 10px; padding: 12px; border: 1px solid var(--teal-ring); border-radius: 16px; background: color-mix(in srgb, var(--teal-soft) 45%, var(--surface)); animation: pop-in .28s var(--spring); }
+.emoji-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji-pick button { inline-size: 38px; block-size: 38px; border: 1px solid var(--line-2); border-radius: 11px; background: var(--surface); font-size: 1.2rem; transition: transform .25s var(--spring), border-color var(--t-fast); }
+.emoji-pick button:hover { transform: translateY(-2px); }
+.emoji-pick button.on { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-ring); transform: scale(1.08); }
+.use-editor .foot-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.use-editor .grow { flex: 1; }
+.acct-pop .acct-logoff { margin-block-start: 4px; border-top: 1px solid var(--line-2) !important; border-radius: 0 0 10px 10px; padding-block-start: 11px; color: #C2410C; font-weight: 600; }
+.acct-pop .acct-logoff .ico { color: currentColor; }
+.acct-pop .acct-logoff:hover { background: color-mix(in srgb, #C2410C 9%, transparent); }
+[data-theme="dark"] .acct-pop .acct-logoff { color: #FB923C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .acct-pop .acct-logoff { color: #FB923C; } }
+
+/* ── Log off ── */
+.logoff { display: flex; flex-direction: column; gap: 16px; }
+.lo-who { display: flex; align-items: center; gap: 12px; }
+.lo-who > div { display: flex; flex-direction: column; }
+.lo-backup { display: flex; gap: 12px; padding: 14px; border-radius: 16px; background: color-mix(in srgb, var(--teal-soft) 55%, var(--surface)); border: 1px solid var(--teal-ring); animation: pop-in .3s var(--spring); }
+.lo-backup p { margin: 4px 0 0; }
+.lo-ico { flex: none; inline-size: 42px; block-size: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--teal); color: var(--teal-ink); }
+.lo-actions { display: flex; flex-direction: column; gap: 8px; }
+.lo-actions .btn { justify-content: center; }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.11.1"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.12.0"></script></body>
 </html>

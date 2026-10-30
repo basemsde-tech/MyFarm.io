@@ -14,7 +14,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.11.1', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.12.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -176,7 +176,7 @@ function FarmProvider({ boot, children }) {
 
   const t = useMemo(() => makeT(prefs.lang), [prefs.lang]);
   setSoundOn(prefs.sound);
-  setMilkView(farm.settings.milkUnit, t);
+  setMilkView(farm.settings.milkUnit, t, farm.settings);
   const actor = useMemo(() => farm.profiles.find((p) => p.id === prefs.profileId) || null, [farm.profiles, prefs.profileId]);
   const actorRef = useRef(actor); actorRef.current = actor;
 

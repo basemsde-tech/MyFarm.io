@@ -4,10 +4,10 @@ import { useApp, useDraft } from './store.jsx';
 import { Button, Icon, MoneyInput, QtyInput, DateInput, Seg, Select, Picker, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton } from './kit.jsx';
 import { TxFooter, issuesFor } from './tx.jsx';
 import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledger.mjs';
-import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, MILK_USE_REASONS, PERSON_PURPOSES, OUT_OF_POCKET_CATEGORIES, groupOf } from '../core/catalog.mjs';
+import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, MILK_USE_REASONS, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, OUT_OF_POCKET_CATEGORIES, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
-import { deleteRecords, upsert } from '../core/commands.mjs';
-import { litresOf, saleMilkL } from '../core/milk.mjs';
+import { deleteRecords, upsert, updateSettings, newId } from '../core/commands.mjs';
+import { litresOf, saleMilkL, lToKg, kgToL } from '../core/milk.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { SPECIES } from '../core/species.mjs';
 
@@ -407,16 +407,72 @@ export function MilkSheet({ record, onClose }) {
 }
 
 export function MilkUseSheet({ record, onClose }) {
-  const { farm, t, today, snap } = useApp();
-  const reasons = [...MILK_USE_REASONS, ...(farm.settings.milkUseReasons || [])];
-  const [f, setF] = useState(record ? { day: record.day, liters: record.liters, reason: record.reason, note: record.note || '' } : { day: today, liters: 0, reason: 'calves', note: '' });
+  const { farm, t, today, snap, commit } = useApp();
+  const kg = farm.settings.milkUnit !== 'L';
+  const uses = milkUses(farm.settings);
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  // Typed in the farm's milk unit; stored in litres.
+  const [f, setF] = useState(record ? { day: record.day, qty: kg ? r3(lToKg(record.liters)) : record.liters, reason: record.reason, note: record.note || '' } : { day: today, qty: 0, reason: 'calves', note: '' });
   const set = (p) => setF((x) => ({ ...x, ...p }));
-  const rec = { type: 'milkUse', day: f.day, liters: f.liters, reason: f.reason, note: f.note };
+  const rec = { type: 'milkUse', day: f.day, liters: kg ? r3(kgToL(f.qty)) : f.qty, reason: f.reason, note: f.note };
+  const [edit, setEdit] = useState(null); // { id?, name, emoji }
+  // Last 30 days per use, shown on each card.
+  const since = useMemo(() => { const d = new Date(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - 29); return d.toISOString().slice(0, 10); }, [today]);
+  const recent = useMemo(() => {
+    const m = {};
+    for (const r of farm.records) if (r.type === 'milkUse' && !r.deletedAt && r.day >= since) m[r.reason] = (m[r.reason] || 0) + (Number(r.liters) || 0);
+    return m;
+  }, [farm.records, since]);
+  // An entry pointing to a hidden use still shows its card while editing.
+  const cards = record && !uses.some((u) => u.id === record.reason) ? [...uses, ...milkUses(farm.settings, { all: true }).filter((u) => u.id === record.reason)] : uses;
+  const saveUse = () => {
+    const list = saveMilkUse(farm.settings, edit, () => newId('mu'));
+    const next = commit((x) => updateSettings(x, { milkUseReasons: list }), { label: edit.id ? t('mu.renamed') : t('mu.added') });
+    if (next && !edit.id) { const added = milkUses(next.settings).find((u) => !u.builtin && u.name.toLowerCase() === edit.name.trim().toLowerCase()); if (added) set({ reason: added.id }); }
+    setEdit(null);
+  };
+  const dropUse = () => {
+    commit((x) => updateSettings(x, { milkUseReasons: dropMilkUse(x.settings, edit.id, x.records) }), { label: t('mu.removed') });
+    if (f.reason === edit.id) set({ reason: 'other' });
+    setEdit(null);
+  };
   return (
     <Sheet title={t('prod.use')} onClose={onClose} footer={<TxFooter recs={[rec]} editing={record} saveAndNew={false} onDone={onClose} />}>
       <DateInput label={t('date')} value={f.day} max={today} onChange={(v) => set({ day: v })} />
-      <QtyInput autoFocus label={t('qty')} value={f.liters} onValue={(v) => set({ liters: v })} unit={t('u.L')} hint={t('sale.inStock', { l: `${milkQ(snap.milk.stockL + (record?.liters || 0))}` })} />
-      <Seg wrap value={f.reason} onChange={(v) => set({ reason: v })} options={reasons.map((r) => ({ value: r, label: t(`use.${r}`) !== `use.${r}` ? t(`use.${r}`) : r }))} />
+      <QtyInput autoFocus label={t('qty')} value={f.qty} onValue={(v) => set({ qty: v })} unit={t(kg ? 'u.kg' : 'u.L')} hint={t('sale.inStock', { l: `${milkQ(snap.milk.stockL + (record?.liters || 0))}` })} />
+      <div className="field">
+        <span className="seg-label">{t('mu.usedFor')}</span>
+        <div className="use-cards" role="radiogroup" aria-label={t('mu.usedFor')}>
+          {cards.map((u) => (
+            <div key={u.id} className={`use-card ${f.reason === u.id ? 'on' : ''}`}>
+              <button type="button" role="radio" aria-checked={f.reason === u.id} className="uc-main" onClick={() => set({ reason: u.id })}>
+                <span className="uc-emoji" aria-hidden="true">{u.emoji}</span>
+                <span className="uc-name">{milkUseName(farm.settings, u.id, t)}</span>
+                <small className="uc-stat num">{recent[u.id] ? milkQ(recent[u.id]) : t('mu.none30')}</small>
+              </button>
+              {!u.builtin && <button type="button" className="uc-edit" onClick={() => setEdit({ id: u.id, name: u.name, emoji: u.emoji })} aria-label={t('edit')} title={t('edit')}><Icon name="edit" size={13} /></button>}
+            </div>
+          ))}
+          <button type="button" className={`use-card uc-new ${edit && !edit.id ? 'on' : ''}`} onClick={() => setEdit({ name: '', emoji: '🥛' })}>
+            <span className="uc-emoji"><Icon name="plus" size={20} /></span><span className="uc-name">{t('mu.new')}</span>
+          </button>
+        </div>
+        {edit && (
+          <div className="use-editor" key={edit.id || 'new'}>
+            <TextInput label={edit.id ? t('mu.rename') : t('mu.name')} value={edit.name} autoFocus maxLength={40} placeholder={t('mu.namePh')}
+              onChange={(v) => setEdit({ ...edit, name: v })} onKeyDown={(e) => { if (e.key === 'Enter' && edit.name.trim()) { e.preventDefault(); saveUse(); } if (e.key === 'Escape') { e.stopPropagation(); setEdit(null); } }} />
+            <div className="emoji-pick" role="radiogroup" aria-label={t('mu.icon')}>
+              {USE_EMOJIS.map((e) => <button type="button" key={e} role="radio" aria-checked={edit.emoji === e} className={edit.emoji === e ? 'on' : ''} onClick={() => setEdit({ ...edit, emoji: e })}>{e}</button>)}
+            </div>
+            <div className="foot-btns">
+              {edit.id && <Button variant="danger" size="sm" icon="trash" onClick={dropUse}>{t('mu.remove')}</Button>}
+              <span className="grow" />
+              <Button size="sm" onClick={() => setEdit(null)}>{t('cancel')}</Button>
+              <Button size="sm" variant="primary" icon="check" disabled={!edit.name.trim()} onClick={saveUse}>{edit.id ? t('save') : t('mu.create')}</Button>
+            </div>
+          </div>
+        )}
+      </div>
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
   );

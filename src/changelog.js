@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.12.0', date: '2026-10-30', items: [
+    ['milk', 'بطاقات «استُخدم في» للحليب: أنشئ بطاقاتك وسمّها واختر لها رمزًا', 'Milk “Used for” cards: create your own, name them and pick an icon'],
+    ['logout', 'تسجيل الخروج يعود إلى شاشة اختيار الملف، مع رمز الدخول أو دونه', 'Log off returns to the profile screen, with or without a passcode'],
+    ['download', 'عند الخروج: نسخة احتياطية بنقرة تحل محل ملف النسخة السابق', 'On log off: a one-tap backup that replaces the previous backup file'],
+  ] },
   { v: '3.11.1', date: '2026-10-30', items: [
     ['swap', 'أبقِ المؤشر على أي مبلغ لحظة لتظهر قيمته بـ LBP في فقاعة صغيرة', 'Rest on any amount for a moment and its LBP value pops up in a small bubble'],
   ] },

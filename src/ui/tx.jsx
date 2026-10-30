@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { milkQ, milkN } from './units.js';
+import { useName, milkQ, milkN } from './units.js';
 import { play as playSound } from './sound.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Sheet, TextInput, Seg, dayLabel } from './kit.jsx';
@@ -29,7 +29,7 @@ export function describe(r, { t, names, fmt }) {
     case 'milk':
       return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: r.animalId ? names.animal(r.animalId) : t('prod.herdMode'), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milk') };
     case 'milkUse':
-      return { title: t('t.milkUse'), sub: t(`use.${r.reason}`) !== `use.${r.reason}` ? t(`use.${r.reason}`) : r.reason, qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milkUse') };
+      return { title: t('t.milkUse'), sub: useName(r.reason, t), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milkUse') };
     case 'eggUse':
       return { title: t('t.eggUse'), sub: r.note || t(`use.${r.reason || 'waste'}`), qty: `−${r.count}`, icon: 'egg', kind: t('t.eggUse') };
     case 'eggs':

@@ -2,9 +2,12 @@
 import { fmtQty, } from '../core/money.mjs';
 import { lToKg } from '../core/milk.mjs';
 
+import { milkUseName } from '../core/catalog.mjs';
+
 let unit = 'kg';
+let settings = {};
 let label = (u) => u;
-export function setMilkView(u, t) { unit = u === 'L' ? 'L' : 'kg'; label = (x) => t(`u.${x}`); }
+export function setMilkView(u, t, s) { settings = s || {}; unit = u === 'L' ? 'L' : 'kg'; label = (x) => t(`u.${x}`); }
 export const milkUnit = () => unit;
 /** "182.8 kg" from litres. */
 export function milkQ(litres, digits = 1) {
@@ -13,3 +16,6 @@ export function milkQ(litres, digits = 1) {
 }
 /** Just the number, in the chosen unit. */
 export const milkN = (litres, digits = 1) => fmtQty(unit === 'kg' ? lToKg(Number(litres) || 0) : Number(litres) || 0, digits);
+
+/** Name of a milk use (built-in or the farm's own card). */
+export const useName = (id, t) => milkUseName(settings, id, t);

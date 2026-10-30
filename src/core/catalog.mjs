@@ -73,3 +73,41 @@ export function can(role, action) {
   if (action === 'herd.view' && list.includes('herd')) return true;
   return false;
 }
+
+/* ── Milk "used for" cards ──
+ * Built-in uses plus the farm's own, kept in settings.milkUseReasons.
+ * Older farms stored plain names; those still work (the name is also the id).
+ * A custom use that records point to is hidden, never removed, so old entries keep their name. */
+export const MILK_USE_EMOJI = { home: '🏠', calves: '🐄', waste: '🗑️', other: '📦' };
+export const USE_EMOJIS = ['🥛', '🧀', '🧈', '🍶', '☕', '🐄', '🐐', '🐑', '🐕', '🐖', '🏠', '🎁', '🤝', '🧪', '🗑️', '📦'];
+
+export function milkUses(settings = {}, { all = false } = {}) {
+  const own = (settings.milkUseReasons || []).map((x) => (typeof x === 'string' ? { id: x, name: x, emoji: '🥛' } : x)).filter((x) => x && x.id);
+  const list = [...MILK_USE_REASONS.map((id) => ({ id, builtin: true, emoji: MILK_USE_EMOJI[id] })), ...own];
+  return all ? list : list.filter((x) => !x.hidden);
+}
+
+export function milkUseName(settings, id, t) {
+  const u = milkUses(settings, { all: true }).find((x) => x.id === id);
+  if (u && !u.builtin) return u.name;
+  const k = `use.${id}`;
+  return t && t(k) !== k ? t(k) : id;
+}
+
+/** Add or rename a custom use. Returns the new list for settings.milkUseReasons. */
+export function saveMilkUse(settings, { id, name, emoji }, makeId) {
+  const clean = String(name || '').trim().slice(0, 40);
+  if (!clean) return settings.milkUseReasons || [];
+  const own = milkUses(settings, { all: true }).filter((x) => !x.builtin);
+  if (id) return own.map((x) => (x.id === id ? { ...x, name: clean, emoji: emoji || x.emoji } : x));
+  const same = own.find((x) => x.name.toLowerCase() === clean.toLowerCase());
+  if (same) return own.map((x) => (x === same ? { ...x, hidden: false, emoji: emoji || x.emoji } : x));
+  return [...own, { id: makeId(), name: clean, emoji: emoji || '🥛' }];
+}
+
+/** Remove a custom use; hide it instead when entries still point to it. */
+export function dropMilkUse(settings, id, records = []) {
+  const own = milkUses(settings, { all: true }).filter((x) => !x.builtin);
+  const used = records.some((r) => r.type === 'milkUse' && r.reason === id && !r.deletedAt);
+  return used ? own.map((x) => (x.id === id ? { ...x, hidden: true } : x)) : own.filter((x) => x.id !== id);
+}

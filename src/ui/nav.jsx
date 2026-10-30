@@ -174,7 +174,7 @@ export function MoreSheet({ go, onClose, onSwitch }) {
             </section>
           );
         })}
-        <button type="button" className="ms-switch" onClick={onSwitch}><Icon name="swap" size={16} />{t('pf.switch')}</button>
+        <button type="button" className="ms-switch" onClick={onSwitch}><Icon name="logout" size={16} />{t('pf.logOff')}</button>
       </div>
     </div>
   );

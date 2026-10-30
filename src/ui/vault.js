@@ -86,6 +86,7 @@ export const K = {
   held: (id) => `held:${id}`,
   file: (id) => `file:${id}`,
   backupDir: (id) => `backupDir:${id}`,
+  backupFile: (id) => `backupFile:${id}`,
 };
 
 /** Read a File as a data URL. */

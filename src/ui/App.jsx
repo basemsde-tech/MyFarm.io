@@ -23,7 +23,7 @@ import { HelpMenu, HelpModeBanner, TourHost, Help } from './help.jsx';
 import { BrandMark } from './brand.jsx';
 import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
-import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
+import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 
 const SHEETS = {
@@ -32,7 +32,7 @@ const SHEETS = {
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
   whatsNew: ({ onClose }) => <WhatsNew all onClose={onClose} />,
-  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog,
+  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog,
 };
 
 function ModalHost() {
@@ -369,9 +369,9 @@ function SignInFarms() {
 
 /** Account chip in the sidebar and top bar: who is signed in, and a short menu. */
 function AccountMenu({ compact }) {
-  const { actor, t, setPrefs, nav, farm, logEvent, farms } = useApp();
+  const { actor, t, setPrefs, nav, farm, logEvent, farms, ui } = useApp();
   const [open, setOpen] = useState(false);
-  const leave = () => { setOpen(false); logEvent('signout'); setPrefs({ profileId: null }); };
+  const logOff = () => { setOpen(false); ui.open('logoff'); };
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return undefined;
@@ -395,9 +395,8 @@ function AccountMenu({ compact }) {
           </div>
           <p className="acct-pop-role">{t(`role.${actor?.role}.d`)}</p>
           <button type="button" role="menuitem" onClick={() => { setOpen(false); nav('options'); }}><Icon name="people" size={17} />{t('pf.team')}</button>
-          <button type="button" role="menuitem" onClick={leave}><Icon name="swap" size={17} />{t('pf.switch')}</button>
-          {actor?.passHash && <button type="button" role="menuitem" onClick={leave}><Icon name="lock" size={17} />{t('pf.lockNow')}</button>}
           {(farms.length > 1 || can(actor?.role, 'settings')) && <FarmSwitch onPick={() => setOpen(false)} />}
+          <button type="button" role="menuitem" className="acct-logoff" onClick={logOff}><Icon name="logout" size={17} />{t('pf.logOff')}</button>
         </div>
       )}
     </div>
@@ -473,7 +472,7 @@ function Shell() {
       </div>
       <button type="button" className="fab" onClick={() => ui.open('new')} aria-label={t('new')}><Icon name="plus" size={26} /><span>{t('new')}</span></button>
       <Dock go={go} onNew={() => { setMore(false); ui.open('new'); }} more={more} setMore={setMore} />
-      {more && <MoreSheet go={go} onClose={() => setMore(false)} onSwitch={() => { setMore(false); setPrefs({ profileId: null }); }} />}
+      {more && <MoreSheet go={go} onClose={() => setMore(false)} onSwitch={() => { setMore(false); ui.open('logoff'); }} />}
       <ModalHost />
       <TourHost />
       <UpdatePrompt />
