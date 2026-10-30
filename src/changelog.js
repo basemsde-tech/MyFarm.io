@@ -2,6 +2,13 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.14.0', date: '2026-10-30', items: [
+    ['alert', 'جرس الإشعارات: ما يحتاج إلى متابعة ونشاط الفريق في قائمة واحدة ذكية', 'A notification bell: what needs attention and team activity in one smart list'],
+    ['alert', 'إشعارات على الجهاز تفتح الصفحة المعنية عند النقر (تُفعَّل من الجرس أو الإعدادات)', 'Device notifications that open the right page (turn on from the bell or Settings)'],
+    ['cow', 'تنبيهات القطيع: الولادات القريبة، وفحص الحمل، والتجفيف', 'Herd alerts: births coming up, pregnancy checks and dry-off'],
+    ['history', 'سجل النشاط صار داخل الجرس، مع رابط للسجل الكامل', 'The activity log now lives in the bell, with a link to the full log'],
+    ['image', 'شعار كبير في وسط شاشة الدخول', 'A big logo in the middle of the sign-in screen'],
+  ] },
   { v: '3.13.0', date: '2026-10-30', items: [
     ['ledger', 'الأقسام مترابطة بحساب واحد: كل تكلفة تُحسب مرة واحدة، والدفع للمورد يسدّد الفاتورة دون تكرار', 'One set of books: every cost counts once, and paying a supplier settles the bill without double counting'],
     ['receipt', 'الفواتير المدفوعة لاحقًا للمورد تظهر مدفوعة في المصروفات', 'Supplier bills paid later now show as paid in Expenses'],

@@ -78,25 +78,25 @@ export function useAttention() {
       if (!snap.cust[c.id]?.dueC) continue;
       if (customerInvoices(farm, c.id, snap, { today, termsDays: terms }).some((i) => i.status === 'overdue')) overdueCust++;
     }
-    if (overdueCust) out.push({ tone: 'bad', text: t('att.custDue', { n: overdueCust }), go: ['sales', null, 'reminders'] });
+    if (overdueCust) out.push({ key: `custDue:${overdueCust}`, icon: 'cart', tone: 'bad', text: t('att.custDue', { n: overdueCust }), go: ['sales', null, 'reminders'] });
     let supOver = 0;
     for (const s of farm.suppliers) supOver += supplierBills(farm, s.id, { today }).bills.filter((b) => b.status === 'overdue').length;
-    if (supOver) out.push({ tone: 'bad', text: t('att.supOverdue', { n: supOver }), go: ['suppliers'] });
+    if (supOver) out.push({ key: `supOver:${supOver}`, icon: 'truck', tone: 'bad', text: t('att.supOverdue', { n: supOver }), go: ['suppliers'] });
     for (const o of farm.obligations) {
       if (o.archived || !o.nextDue) continue;
       const d = daysBetween(today, o.nextDue);
-      if (d <= 3) out.push({ tone: d < 0 ? 'bad' : 'warn', text: `${t('att.obligation', { name: o.party })} · ${d < 0 ? t('obl.overdue', { n: -d }) : d === 0 ? t('obl.dueToday') : t('obl.dueIn', { n: d })}`, go: ['expenses', null, 'obligations'] });
+      if (d <= 3) out.push({ key: `obl:${o.id}:${o.nextDue}`, icon: 'calendar', tone: d < 0 ? 'bad' : 'warn', text: `${t('att.obligation', { name: o.party })} · ${d < 0 ? t('obl.overdue', { n: -d }) : d === 0 ? t('obl.dueToday') : t('obl.dueIn', { n: d })}`, go: ['expenses', null, 'obligations'] });
     }
     const old = snap.milk.lots.filter((l) => l.fresh === 'old');
-    if (old.length) out.push({ tone: 'warn', text: t('att.lowTank', { l: `${milkQ(old.reduce((s, l) => s + l.left, 0))}` }), go: ['production', null, 'milk'] });
+    if (old.length) out.push({ key: `milkOld:${old.map((l) => l.key).join(',')}`, icon: 'milk', tone: 'warn', text: t('att.lowTank', { l: `${milkQ(old.reduce((s, l) => s + l.left, 0))}` }), go: ['production', null, 'milk'] });
     const milkers = farm.animals.some((a) => SPECIES[a.species]?.product === 'milk' && !['sold', 'dead'].includes(a.status));
-    if (milkers && !farm.records.some((r) => r.type === 'milk' && r.day === today && !r.deletedAt) && new Date().getHours() >= 10) out.push({ tone: 'info', text: t('att.noMilk'), go: ['production', null, 'milk'], action: 'milk' });
+    if (milkers && !farm.records.some((r) => r.type === 'milk' && r.day === today && !r.deletedAt) && new Date().getHours() >= 10) out.push({ key: `noMilk:${today}`, icon: 'milk', tone: 'info', text: t('att.noMilk'), go: ['production', null, 'milk'], action: 'milk' });
     const openBills = farm.records.filter((r) => live(r) && r.type === 'expense' && !r.supplierId && r.source !== 'person' && (r.paidC || 0) < r.amountC);
-    if (openBills.length) out.push({ tone: 'warn', text: `${t('att.openBills', { n: openBills.length })} · ${fmt(snap.payablesC)}`, go: ['expenses', null, 'open'] });
+    if (openBills.length) out.push({ key: `openBills:${openBills.length}:${snap.payablesC}`, icon: 'receipt', tone: 'warn', text: `${t('att.openBills', { n: openBills.length })} · ${fmt(snap.payablesC)}`, go: ['expenses', null, 'open'] });
     const lateOrders = orderList(farm).filter((o) => o.late).length;
-    if (lateOrders) out.push({ tone: 'warn', text: t('att.lateOrders', { n: lateOrders }), go: ['suppliers', null, 'orders'] });
+    if (lateOrders) out.push({ key: `lateOrders:${lateOrders}`, icon: 'truck', tone: 'warn', text: t('att.lateOrders', { n: lateOrders }), go: ['suppliers', null, 'orders'] });
     const docs = expiringDocs(farm, today);
-    if (docs.length) out.push({ tone: docs.some((d) => d.state === 'expired') ? 'bad' : 'warn', text: t('att.docs', { n: docs.length, d: docs[0].title }), go: docs[0].owner.list === 'animals' ? ['animals', docs[0].owner.id] : docs[0].owner.list === 'customers' ? ['sales', docs[0].owner.id] : docs[0].owner.list === 'orders' ? ['suppliers', null, 'orders'] : [docs[0].owner.list, docs[0].owner.id] });
+    if (docs.length) out.push({ key: `docs:${docs.map((d) => d.id + d.state).join(',')}`, icon: 'file', tone: docs.some((d) => d.state === 'expired') ? 'bad' : 'warn', text: t('att.docs', { n: docs.length, d: docs[0].title }), go: docs[0].owner.list === 'animals' ? ['animals', docs[0].owner.id] : docs[0].owner.list === 'customers' ? ['sales', docs[0].owner.id] : docs[0].owner.list === 'orders' ? ['suppliers', null, 'orders'] : [docs[0].owner.list, docs[0].owner.id] });
     return out;
   }, [farm, snap, today, t, fmt]);
 }

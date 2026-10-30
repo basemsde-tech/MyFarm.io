@@ -1633,7 +1633,57 @@ button.bar-row:hover { background: var(--surface-2); }
 .brand-home:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 .top-home { display: none; border: 0; background: none; padding: 2px; border-radius: 10px; }
 @media (max-width: 720px) { .top-home { display: inline-flex; } }
+
+/* Sign-in: the logo, big, in the middle */
+.signin-main { align-content: center; }
+.signin-hero { position: relative; display: grid; place-items: center; margin-block-end: 18px; }
+.signin-hero .brand-mark.hero { inline-size: 148px; block-size: 148px; border-radius: 36px; animation: hero-in .8s var(--spring) both, hero-float 6s 1s ease-in-out infinite; }
+.signin-hero .brand-mark.has-logo.hero { padding: 12px; background: #fff; box-shadow: var(--sh-2); }
+.sh-glow { position: absolute; inline-size: 210px; block-size: 210px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--teal) 22%, transparent) 0%, transparent 68%); filter: blur(6px); animation: hero-glow 6s ease-in-out infinite; }
+@keyframes hero-in { from { opacity: 0; transform: scale(.6) translateY(16px); } }
+@keyframes hero-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes hero-glow { 0%, 100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@media (max-width: 720px) { .signin-hero .brand-mark.hero { inline-size: 104px; block-size: 104px; } .sh-glow { inline-size: 150px; block-size: 150px; } }
+@media (prefers-reduced-motion: reduce) { .signin-hero .brand-mark.hero, .sh-glow { animation: none; } }
+
+/* ── Notification bell ── */
+.bell-wrap { position: relative; }
+.bell { position: relative; inline-size: 38px; block-size: 38px; display: grid; place-items: center; border: 1px solid transparent; border-radius: 12px; background: none; color: var(--ink-2, var(--ink)); transition: background var(--t-fast), border-color var(--t-fast); }
+.bell:hover, .bell.on { background: var(--surface); border-color: var(--line-2); }
+.bell svg { transform-origin: 50% 10%; }
+.bell.ring svg { animation: bell-ring 1s var(--ease); }
+@keyframes bell-ring { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-14deg); } 45% { transform: rotate(10deg); } 60% { transform: rotate(-6deg); } 75% { transform: rotate(3deg); } }
+.bell-count { position: absolute; inset-block-start: 2px; inset-inline-end: 1px; min-inline-size: 18px; block-size: 18px; padding-inline: 5px; border-radius: 99px; display: grid; place-items: center; font-size: .66rem; font-weight: 700; background: var(--gold-bright); color: #3A2A05; box-shadow: 0 0 0 2px var(--bg); direction: ltr; animation: nb-pop .45s var(--spring); }
+.bell-count.bad { background: #E5484D; color: #fff; }
+.bell-pop { position: absolute; inset-block-start: calc(100% + 8px); inset-inline-end: -8px; z-index: 80; inline-size: min(400px, calc(100vw - 24px)); max-block-size: min(70vh, 560px); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 18px; box-shadow: var(--sh-3); overflow: hidden; transform-origin: top right; animation: pop-in .26s var(--spring); }
+[dir="rtl"] .bell-pop { transform-origin: top left; }
+.bp-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+.bp-tabs { display: flex; gap: 4px; padding: 0 10px; border-block-end: 1px solid var(--line-2); }
+.bp-tabs button { position: relative; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 9px 8px 10px; color: var(--muted); font-weight: 600; font-size: .86rem; }
+.bp-tabs button.on { color: var(--teal); }
+.bp-tabs button.on::after { content: ''; position: absolute; inset-inline: 6px; inset-block-end: -1px; block-size: 2px; border-radius: 2px; background: var(--teal); animation: grow-x .25s var(--spring); }
+.bp-n { min-inline-size: 18px; block-size: 18px; padding-inline: 5px; border-radius: 99px; background: var(--teal-soft); color: var(--teal); font-size: .68rem; display: grid; place-items: center; }
+.bp-body { overflow-y: auto; flex: 1; }
+.bp-list { list-style: none; margin: 0; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.bp-item { position: relative; display: flex; align-items: stretch; border-radius: 12px; animation: tile-in .3s var(--spring) both; animation-delay: calc(var(--i, 0) * 18ms); }
+.bp-item:hover { background: var(--surface-2); }
+.bp-main { flex: 1; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 9px 10px; text-align: start; color: var(--ink); min-inline-size: 0; border-radius: inherit; }
+.bp-ico { flex: none; inline-size: 30px; block-size: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--teal-soft); color: var(--teal); }
+.tone-bad .bp-ico { background: color-mix(in srgb, #E5484D 14%, transparent); color: #D93036; }
+.tone-warn .bp-ico { background: color-mix(in srgb, var(--gold-bright) 22%, transparent); color: #9A6B00; }
+.bp-text { flex: 1; min-inline-size: 0; font-size: .88rem; line-height: 1.35; }
+.bp-item.read .bp-text { color: var(--muted); }
+.bp-dot { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--teal); flex: none; }
+.bp-at { flex: none; }
+.bp-hide { border: 0; background: none; color: var(--muted); padding: 0 10px; border-radius: 10px; opacity: 0; transition: opacity var(--t-fast); }
+.bp-item:hover .bp-hide, .bp-hide:focus-visible { opacity: 1; }
+@media (hover: none) { .bp-hide { opacity: .7; } }
+.bp-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 16px; color: var(--muted); }
+.bp-empty .ico { color: var(--teal); }
+.bp-foot { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-block-start: 1px solid var(--line-2); background: var(--surface-2); }
+.bp-foot .grow { flex: 1; }
+@media (max-width: 720px) { .bell-pop { position: fixed; inset-inline: 12px; inset-block-start: 62px; inline-size: auto; } }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.13.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.14.0"></script></body>
 </html>

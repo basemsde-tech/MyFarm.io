@@ -371,8 +371,8 @@ export function MessagingPanel({ canSet }) {
 }
 
 /* ───────────── Activity log ───────────── */
-const KIND_ICON = { created: 'plus', edited: 'edit', deleted: 'trash', restored: 'undo', voided: 'alert', unvoided: 'undo', change: 'sliders', signin: 'user', signout: 'user', failed: 'lock', lockout: 'lock', autolock: 'lock', backup: 'download', export: 'download', restore: 'upload', switchFarm: 'swap', undo: 'undo', reminder: 'cash', sent: 'upload', pinSet: 'lock' };
-const SEC = new Set(['signin', 'signout', 'failed', 'lockout', 'autolock', 'pinSet']);
+export const KIND_ICON = { created: 'plus', edited: 'edit', deleted: 'trash', restored: 'undo', voided: 'alert', unvoided: 'undo', change: 'sliders', signin: 'user', signout: 'user', failed: 'lock', lockout: 'lock', autolock: 'lock', backup: 'download', export: 'download', restore: 'upload', switchFarm: 'swap', undo: 'undo', reminder: 'cash', sent: 'upload', pinSet: 'lock' };
+export const SEC = new Set(['signin', 'signout', 'failed', 'lockout', 'autolock', 'pinSet']);
 
 export function ActivityScreen() {
   const { farm, t, lang, ui, actor } = useApp();

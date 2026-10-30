@@ -21,6 +21,7 @@ import { BackupPanel, SecurityPanel, FarmsPanel, MessagingPanel } from './admin.
 import { Attachments } from './documents.jsx';
 import { Help, HelpPanel } from './help.jsx';
 import { LogoPanel } from './brand.jsx';
+import { NotifySettings } from './notify.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
@@ -639,6 +640,7 @@ export function SettingsScreen() {
           <div className="field-msg">{t('set.paletteHint')}</div>
         </div>
       </section>
+      <NotifySettings />
       <section className="panel">
         <h2>{t('set.about')}</h2>
         <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]} <button type="button" className="link" onClick={() => ui.open('whatsNew')}>{t('upd.whatsNew')}</button></p>

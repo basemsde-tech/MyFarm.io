@@ -11,7 +11,7 @@ import { can } from '../core/catalog.mjs';
 export const NAV = [
   { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
   { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
-  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['activity', 'history'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']] },
+  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']] },
 ];
 export const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 const DOCK = [['cash', 'cash'], ['sales', 'cart'], null, ['production', 'milk'], ['animals', 'cow']];

@@ -23,6 +23,7 @@ import { DocumentSheet } from './documents.jsx';
 import { HelpMenu, HelpModeBanner, TourHost, Help } from './help.jsx';
 import { BrandMark } from './brand.jsx';
 import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
+import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
@@ -295,6 +296,7 @@ function ProfileGate() {
         <div className="signin-foot">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
       </aside>
       <main className="signin-main">
+        <div className="signin-hero" aria-hidden="true"><span className="sh-glow" /><BrandMark className="hero" /></div>
         <div className="signin-card" key={pick ? pick.id + forgot : 'list'}>
           {!pick ? (
             <>
@@ -455,6 +457,7 @@ function Shell() {
           <button type="button" className="search-btn" onClick={() => ui.open('palette')}><Icon name="search" size={16} /><span>{t('cmd.placeholder')}</span><kbd>Ctrl K</kbd></button>
           <div className="top-actions">
             <span className="ccy-chip" title={farm.settings.second?.rate > 0 ? t('flip.hint') : undefined}>{farm.settings.currency}</span><Help k="flip" />
+            <NotificationBell />
             <HelpMenu />
             <IconButton icon={theme === 'dark' ? 'sun' : 'moon'} label={t('set.theme')} onClick={() => setPrefs({ theme: theme === 'dark' ? 'light' : 'dark' })} />
             <button type="button" className="chip lang-toggle" onClick={() => setPrefs({ lang: prefs.lang === 'ar' ? 'en' : 'ar' })}>{prefs.lang === 'ar' ? 'EN' : 'ع'}</button>
@@ -495,7 +498,7 @@ function Root() {
   }, [lang, dir, prefs.theme, prefs.palette]);
   if (!farm.settings.setupDone) return <><Setup /><Toasts /></>;
   if (!actor) return <><ProfileGate /><Toasts /></>;
-  return <BackupProvider><Shell /></BackupProvider>;
+  return <BackupProvider><NotifyProvider><Shell /></NotifyProvider></BackupProvider>;
 }
 
 export default function App() {

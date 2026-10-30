@@ -49,6 +49,16 @@ const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webman
 // A first install takes over at once; an update waits until the user taps "Update now".
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
+// A tapped notification opens (or focuses) the app on the page it is about.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const go = e.notification.data && e.notification.data.go;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    const c = list[0];
+    if (c) { if (go) c.postMessage({ type: 'mz-nav', go }); return c.focus(); }
+    return self.clients.openWindow('./' + (go ? '#' + go.filter(Boolean).join('-') : ''));
+  }));
+});
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('mazraati3-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
   const req = e.request;
