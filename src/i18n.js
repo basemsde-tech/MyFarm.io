@@ -311,6 +311,20 @@ const ar = {
   'act.list.customers': 'العملاء', 'act.list.suppliers': 'الموردون', 'act.list.people': 'المديرون', 'act.list.animals': 'الحيوانات', 'act.list.workers': 'العمال', 'act.list.obligations': 'الالتزامات',
   'act.list.profiles': 'المستخدمون', 'act.list.orders': 'أوامر الشراء', 'act.list.documents': 'المستندات', 'act.list.settings': 'الإعدادات',
   'fld.amountC': 'المبلغ', 'fld.paidC': 'المدفوع', 'fld.day': 'التاريخ', 'fld.lines': 'البنود', 'fld.customerId': 'العميل', 'fld.supplierId': 'المورد', 'fld.note': 'الملاحظة', 'fld.cashC': 'المقبوض', 'fld.category': 'البند', 'fld.liters': 'الكمية',
+  // brand & help
+  'nav.guide': 'دليل الاستخدام', 'brand.title': 'شعار المزرعة', 'brand.hint': 'صورة واحدة تظهر شعارًا على الفواتير والإيصالات وكشوف الحساب وأوامر الشراء، وعند الرغبة في واجهة التطبيق.',
+  'brand.upload': 'رفع الشعار', 'brand.replace': 'استبدال الشعار', 'brand.dropHint': 'اسحب الصورة إلى هنا أو انقر للاختيار', 'brand.saved': 'حُفظ الشعار', 'brand.removed': 'أُزيل الشعار',
+  'brand.notImage': 'اختر ملف صورة (PNG أو SVG أو JPG أو WebP)', 'brand.tooBig': 'الصورة أكبر من 12 ميغابايت',
+  'brand.q.great': 'جودة ممتازة للطباعة', 'brand.q.ok': 'جودة مقبولة', 'brand.q.low': 'جودة منخفضة — قد يظهر الشعار مشوّشًا', 'brand.transparent': 'خلفية شفافة',
+  'brand.tip.size': 'ارفع نسخة أكبر: 600 بكسل على الأقل في الضلع الأقصر.', 'brand.tip.png': 'يُفضَّل ملف PNG بخلفية شفافة بدل JPG، حتى لا يظهر مربع أبيض حول الشعار.',
+  'brand.tip.transparent': 'الخلفية غير شفافة؛ احذفها إن أمكن ليندمج الشعار مع المستند.', 'brand.tip.wide': 'الشعار عريض جدًا؛ النسخة المربعة أو الأقرب للمربع تظهر أوضح.', 'brand.tip.heavy': 'الملف كبير؛ صُغّر للحفاظ على سرعة التطبيق.',
+  'brand.bestTitle': 'للحصول على أفضل نتيجة:', 'brand.best1': 'PNG بخلفية شفافة، أو SVG (الأفضل لأنه لا يفقد الدقة).', 'brand.best2': 'مربع أو قريب من المربع، بعرض 600–1000 بكسل.',
+  'brand.best3': 'اترك هامشًا صغيرًا حول الشعار، وتجنّب لقطات الشاشة والصور بخلفيات مزدحمة.', 'brand.best4': 'ألوان واضحة تُقرأ بالأبيض والأسود عند الطباعة.',
+  'brand.shape': 'شكل الشعار', 'brand.shape.original': 'كما هو', 'brand.shape.rounded': 'زوايا مستديرة', 'brand.shape.circle': 'دائري',
+  'brand.onDocs': 'إظهاره على كل المستندات', 'brand.inApp': 'استخدامه في واجهة التطبيق بدل علامة «م»', 'brand.preview': 'معاينة رأس المستند',
+  'hlp.title': 'المساعدة والجولات التعليمية', 'hlp.tutorials': 'تشغيل الجولات التعليمية', 'hlp.tutorialsHint': 'جولة قصيرة تشرح كل صفحة عند فتحها أول مرة.',
+  'hlp.helpMode': 'إظهار علامات المساعدة (؟)', 'hlp.helpModeHint': 'علامة ؟ بجانب الميزات، تُظهر شرحًا موجزًا عند النقر. يمكن تبديلها أيضًا من زر ؟ في الأعلى.',
+  'hlp.restart': 'إعادة تشغيل الجولات', 'hlp.restarted': 'ستظهر الجولات مجددًا عند فتح كل صفحة',
   'flip.hint': 'أبقِ المؤشر على أي مبلغ ثانيتين لعرضه بالليرة اللبنانية', 'cash.trend': 'رصيد الصندوق خلال آخر ٣٠ يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
 };
 
@@ -600,6 +614,20 @@ const en = {
   'act.list.customers': 'customers', 'act.list.suppliers': 'suppliers', 'act.list.people': 'managers', 'act.list.animals': 'animals', 'act.list.workers': 'workers', 'act.list.obligations': 'obligations',
   'act.list.profiles': 'users', 'act.list.orders': 'purchase orders', 'act.list.documents': 'documents', 'act.list.settings': 'settings',
   'fld.amountC': 'amount', 'fld.paidC': 'paid', 'fld.day': 'date', 'fld.lines': 'lines', 'fld.customerId': 'customer', 'fld.supplierId': 'supplier', 'fld.note': 'note', 'fld.cashC': 'received', 'fld.category': 'item', 'fld.liters': 'quantity',
+  // brand & help
+  'nav.guide': 'User guide', 'brand.title': 'Farm logo', 'brand.hint': 'One image used as the logo on invoices, receipts, statements and purchase orders, and in the app if you like.',
+  'brand.upload': 'Upload logo', 'brand.replace': 'Replace logo', 'brand.dropHint': 'Drag the image here or tap to choose', 'brand.saved': 'Logo saved', 'brand.removed': 'Logo removed',
+  'brand.notImage': 'Choose an image file (PNG, SVG, JPG or WebP)', 'brand.tooBig': 'The image is larger than 12 MB',
+  'brand.q.great': 'Great for print', 'brand.q.ok': 'Acceptable', 'brand.q.low': 'Low quality — the logo may print blurry', 'brand.transparent': 'transparent background',
+  'brand.tip.size': 'Upload a larger version: at least 600 px on the shorter side.', 'brand.tip.png': 'Prefer a PNG with a transparent background over JPG, so no white box shows around the logo.',
+  'brand.tip.transparent': 'The background is not transparent; remove it if you can so the logo blends with the page.', 'brand.tip.wide': 'The logo is very wide; a square or near-square version reads better.', 'brand.tip.heavy': 'Large file; it was resized to keep the app fast.',
+  'brand.bestTitle': 'For the best result:', 'brand.best1': 'A transparent PNG, or an SVG (best — it never loses sharpness).', 'brand.best2': 'Square or close to it, 600–1000 px wide.',
+  'brand.best3': 'Leave a small margin around the mark; avoid screenshots and photos with busy backgrounds.', 'brand.best4': 'Clear colours that still read in black and white print.',
+  'brand.shape': 'Logo shape', 'brand.shape.original': 'As is', 'brand.shape.rounded': 'Rounded', 'brand.shape.circle': 'Circle',
+  'brand.onDocs': 'Show on every document', 'brand.inApp': 'Use in the app instead of the م mark', 'brand.preview': 'Document header preview',
+  'hlp.title': 'Help & tutorials', 'hlp.tutorials': 'Show tutorials', 'hlp.tutorialsHint': 'A short tour explains each page the first time you open it.',
+  'hlp.helpMode': 'Show help marks (?)', 'hlp.helpModeHint': 'A ? beside features shows a short explanation when tapped. Also toggled from the ? button at the top.',
+  'hlp.restart': 'Restart tutorials', 'hlp.restarted': 'Tours will show again as you open each page',
   'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 

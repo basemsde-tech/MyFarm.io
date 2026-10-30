@@ -4,6 +4,7 @@ import { Button, Icon, Pill, Sheet, Select, TextInput, TextArea, DateInput, dayL
 import { DOC_KINDS, MAX_FILE_BYTES, addDocument, editDocument, removeDocument, docsFor, docState } from '../core/documents.mjs';
 import { can } from '../core/catalog.mjs';
 import { fileToDataUrl, dataUrlToBlob } from './vault.js';
+import { Help } from './help.jsx';
 
 const kb = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const isImage = (m) => /^image\//.test(m || '');
@@ -32,7 +33,7 @@ export function Attachments({ list, id, title }) {
   return (
     <section className="panel docs-panel">
       <div className="panel-head">
-        <h2><Icon name="file" size={18} /> {title || t('docs.title')}{docs.length > 0 && <span className="count num">{docs.length}</span>}</h2>
+        <h2><Icon name="file" size={18} /> {title || t('docs.title')}{docs.length > 0 && <span className="count num">{docs.length}</span>} <Help k="docs" more="documents" /></h2>
         {canEdit && <Button size="sm" icon="plus" onClick={() => ui.open('document', { owner: { list, id } })}>{t('docs.add')}</Button>}
       </div>
       {docs.length ? (

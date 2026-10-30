@@ -18,12 +18,14 @@ import { can } from '../core/catalog.mjs';
 import { OrderSheet, OrderView, ReceiveSheet, ReasonSheet } from './orders.jsx';
 import { ReminderSheet } from './reminders.jsx';
 import { DocumentSheet } from './documents.jsx';
+import { HelpMenu, HelpModeBanner, TourHost, Help } from './help.jsx';
+import { BrandMark } from './brand.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const NAV = [
   { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
   { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
-  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['activity', 'history'], ['options', 'gear'], ['trash', 'trash']] },
+  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['activity', 'history'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']] },
 ];
 const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 
@@ -128,7 +130,7 @@ function Setup() {
   return (
     <div className="setup">
       <div className="setup-card">
-        <div className="brand-lockup"><span className="brand-mark">م</span><div><div className="brand-name">{t('brand')}</div><div className="muted small">{t('tagline')}</div></div></div>
+        <div className="brand-lockup"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="muted small">{t('tagline')}</div></div></div>
         <div className="muted small num">{t('su.step', { a: step, b: 4 })}</div>
         {step === 1 && (
           <>
@@ -257,7 +259,7 @@ function ProfileGate() {
   return (
     <div className="signin">
       <aside className="signin-side">
-        <div className="brand-lockup"><span className="brand-mark">م</span><div><div className="brand-name">{t('brand')}</div><div className="signin-farm">{farm.settings.farmName}</div></div></div>
+        <div className="brand-lockup"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="signin-farm">{farm.settings.farmName}</div></div></div>
         <div className="signin-pitch">
           <h2>{t(greet)}</h2>
           <p>{t('pf.pitch')}</p>
@@ -415,7 +417,7 @@ function Shell() {
     <div className={`desk has-tabs ${prefs.rail === 'mini' ? 'rail-mini' : ''} ${ws.windows.length ? 'has-taskbar' : ''}`}>
       <aside className="sidebar" aria-label={t('brand')}>
         <button type="button" className="rail-toggle" onClick={() => setPrefs({ rail: prefs.rail === 'mini' ? 'full' : 'mini' })} aria-label={t('nav.more')} title={t('nav.more')}><Icon name="menu" size={18} /></button>
-        <div className="brand-lockup small"><span className="brand-mark">م</span><div><div className="brand-name">{t('brand')}</div><div className="farm-name">{farm.settings.farmName}</div></div></div>
+        <div className="brand-lockup small"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="farm-name">{farm.settings.farmName}</div></div></div>
         <nav>
           {NAV.map((g) => (
             <div className="nav-group" key={g.group}>
@@ -437,7 +439,8 @@ function Shell() {
           <Crumb />
           <button type="button" className="search-btn" onClick={() => ui.open('palette')}><Icon name="search" size={16} /><span>{t('cmd.placeholder')}</span><kbd>Ctrl K</kbd></button>
           <div className="top-actions">
-            <span className="ccy-chip" title={farm.settings.second?.rate > 0 ? t('flip.hint') : undefined}>{farm.settings.currency}</span>
+            <span className="ccy-chip" title={farm.settings.second?.rate > 0 ? t('flip.hint') : undefined}>{farm.settings.currency}</span><Help k="flip" />
+            <HelpMenu />
             <IconButton icon={theme === 'dark' ? 'sun' : 'moon'} label={t('set.theme')} onClick={() => setPrefs({ theme: theme === 'dark' ? 'light' : 'dark' })} />
             <button type="button" className="chip lang-toggle" onClick={() => setPrefs({ lang: prefs.lang === 'ar' ? 'en' : 'ar' })}>{prefs.lang === 'ar' ? 'EN' : 'ع'}</button>
             <AccountMenu compact />
@@ -446,6 +449,7 @@ function Shell() {
         <TabBar />
         {demo && <div className="banner info"><span>{t('set.demoOn')}</span><button type="button" onClick={async () => { const held = await exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</button></div>}
         <BackupBanner bk={bk} />
+        <HelpModeBanner />
         {!online && <div className="banner warn"><Icon name="wifi" size={16} /><span>{t('offline')}</span></div>}
         {saveError && <div className="banner bad"><Icon name="alert" size={16} /><span>{t(`e.${saveError.code}`)}</span><button type="button" onClick={retrySave}>{t('e.retry')}</button></div>}
         {!demo && !prefs.dismissed?.deviceOnly && <div className="banner quiet"><span>{t('deviceOnly')}</span><button type="button" onClick={() => setPrefs({ dismissed: { ...prefs.dismissed, deviceOnly: true } })}>{t('dismiss')}</button></div>}
@@ -471,6 +475,7 @@ function Shell() {
         </div>
       )}
       <ModalHost />
+      <TourHost />
       <Toasts />
     </div>
   );

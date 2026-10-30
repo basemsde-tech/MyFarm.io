@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
+import { Help } from './help.jsx';
+const GUIDE_FOR = { cash: 'cash', sales: 'sales', expenses: 'expenses', suppliers: 'suppliers', production: 'production', animals: 'animals', accounts: 'accounts', options: 'security', trash: 'edit', activity: 'security', people: 'payments' };
 import { RemindersPanel, useOverdue } from './reminders.jsx';
 import { OrdersList } from './orders.jsx';
 import { Attachments } from './documents.jsx';
@@ -28,12 +30,12 @@ export function downloadText(name, text, type = 'text/csv') {
 }
 
 export function PageHead({ title, actions, back, sub }) {
-  const { t } = useApp();
+  const { t, route } = useApp();
   return (
     <header className="page-head">
       <div className="page-title">
         {back && <IconButton icon="back" label={t('back')} onClick={back} className="flip-rtl" />}
-        <div><h1>{title}</h1>{sub && <div className="page-sub">{sub}</div>}</div>
+        <div><h1>{title}{!route.id && <Help k={`page.${route.name}`} more={GUIDE_FOR[route.name]} />}</h1>{sub && <div className="page-sub">{sub}</div>}</div>
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>
@@ -144,7 +146,7 @@ export function CashScreen() {
       <div className="screen cash-col">
       <section className="cash-hero">
         <div className="cash-main">
-          <div className="cash-label">{t('cash.inBox')}</div>
+          <div className="cash-label">{t('cash.inBox')} <Help k="page.cash" more="cash" /></div>
           <div className="cash-big num" aria-live="polite">{fmt(shownCash)}</div>
           <div className="cash-spark"><Sparkline points={trend} label={t('cash.trend')} /><span className="cash-spark-label">{t('cash.trend')}</span></div>
           <div className="cash-row">
@@ -169,7 +171,7 @@ export function CashScreen() {
 
       <div className="cash-grid">
       <section className="panel attention">
-        <h2>{t('cash.attention')}</h2>
+        <h2>{t('cash.attention')} <Help k="attention" /></h2>
         {att.length ? (
           <ul className="att-list">
             {att.map((a, i) => (

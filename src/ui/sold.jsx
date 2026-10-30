@@ -7,6 +7,7 @@ import { invoiceRegister, docNo } from '../core/accounts.mjs';
 import { SPECIES } from '../core/species.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { toCSV } from '../core/reports.mjs';
+import { Help } from './help.jsx';
 
 /** Age as years and months, or days when young. */
 export function useAge() {
@@ -37,7 +38,7 @@ export function SaleRecordPanel({ a }) {
       <div className="sr-head">
         <div>
           <span className="sr-kicker"><Icon name="lock" size={14} />{t('sold.kept')}</span>
-          <h2>{t('sold.record')}</h2>
+          <h2>{t('sold.record')} <Help k="saleRecord" /></h2>
         </div>
         <div className="sr-actions">
           {info.sale && <Button size="sm" icon="print" onClick={() => ui.open('doc', { kind: info.sale.customerId ? 'invoice' : 'receipt', id: info.sale.id })}>{t('print')}</Button>}

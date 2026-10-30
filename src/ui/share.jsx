@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button } from './kit.jsx';
 import { waUrl } from '../core/messages.mjs';
+import { Help } from './help.jsx';
 
 /* PDF libraries load only when someone asks for a PDF (the installed app ships them as
    pdf.js beside app.js; the preview page fetches them from cdnjs). */
@@ -92,6 +93,7 @@ export function ShareBar({ getEl, fileName, text, phone, onSent, compact }) {
       <Button icon="whatsapp" className="btn-wa" onClick={wa} disabled={!text}>{t('share.whatsapp')}</Button>
       {getEl && <Button icon="file" onClick={pdf} disabled={busy}>{busy ? t('share.making') : t('share.pdf')}</Button>}
       {phone ? null : <span className="muted small">{t('share.noPhone')}</span>}
+      <Help k="share" />
     </div>
   );
 }

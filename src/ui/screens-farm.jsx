@@ -17,6 +17,8 @@ import { setArchived, restoreMaster, MASTER_LISTS } from '../core/removal.mjs';
 import { SoldRegister, SaleRecordPanel } from './sold.jsx';
 import { BackupPanel, SecurityPanel, FarmsPanel, MessagingPanel } from './admin.jsx';
 import { Attachments } from './documents.jsx';
+import { Help, HelpPanel } from './help.jsx';
+import { LogoPanel } from './brand.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
@@ -71,7 +73,7 @@ function MilkTab() {
       </div>
       {snap.milk.lots.length > 0 && (
         <section className="panel">
-          <h2>{t('prod.lots')}</h2>
+          <h2>{t('prod.lots')} <Help k="tank" more="production" /></h2>
           <div className="lots">
             {[...snap.milk.lots].reverse().map((l) => (
               <div className="lot" key={l.key}>
@@ -303,7 +305,7 @@ function AnimalDetail({ id }) {
       </div>}
       {!flock && a.status !== 'sold' && (
         <section className="panel">
-          <div className="panel-head"><h2>{t('ani.repro')}</h2><Button size="sm" variant={tl ? 'quiet' : 'primary'} onClick={() => ev('service')}>{t('ani.service')}</Button></div>
+          <div className="panel-head"><h2>{t('ani.repro')} <Help k="repro" more="animals" /></h2><Button size="sm" variant={tl ? 'quiet' : 'primary'} onClick={() => ev('service')}>{t('ani.service')}</Button></div>
           {tl ? (
             <>
               <ol className="timeline">
@@ -462,13 +464,8 @@ export function SettingsScreen() {
           <TextInput label={t('set.address')} value={s.farmAddress} onChange={(v) => set({ farmAddress: v })} />
           <TextInput label={t('set.email')} value={s.farmEmail} onChange={(v) => set({ farmEmail: v })} />
         </div>
-        <Field label={t('set.logo')}>
-          <div className="receipt-row">
-            {s.logo && <img src={s.logo} alt="" className="thumb" />}
-            <label className="btn btn-quiet btn-sm"><Icon name="upload" size={16} /><span>{t('exp.addReceipt')}</span><input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) set({ logo: await readImage(f, 240, 0.8) }); }} /></label>
-          </div>
-        </Field>
       </fieldset>
+      <LogoPanel canSet={canSet} />
       <fieldset className="panel" disabled={!canSet}>
         <h2>{t('set.money')}</h2>
         <div className="grid3">
@@ -509,7 +506,7 @@ export function SettingsScreen() {
         <Check label={t('set.signatures')} checked={s.doc.signatures} onChange={(v) => set({ doc: { ...s.doc, signatures: v } })} />
       </fieldset>
       <section className="panel">
-        <div className="panel-head"><h2>{t('set.team')}</h2>{canSet && <Button size="sm" icon="plus" onClick={() => ui.open('profile')}>{t('set.addProfile')}</Button>}</div>
+        <div className="panel-head"><h2>{t('set.team')} <Help k="team" more="security" /></h2>{canSet && <Button size="sm" icon="plus" onClick={() => ui.open('profile')}>{t('set.addProfile')}</Button>}</div>
         <div className="team-grid">
           {farm.profiles.map((p) => (
             <button type="button" key={p.id} className="team-card" onClick={() => canSet && ui.open('profile', { record: p })} disabled={!canSet}>
@@ -531,7 +528,7 @@ export function SettingsScreen() {
         )}
       </section>
       <section className="panel">
-        <h2>{t('set.lock')}</h2>
+        <h2>{t('set.lock')} <Help k="lock" more="edit" /></h2>
         <p className="muted small">{t('set.lockHint')}</p>
         <div className="row-btns">
           {s.lockedThrough && <span>{t('set.lockedThrough')} <b className="num">{s.lockedThrough}</b></span>}
@@ -539,6 +536,7 @@ export function SettingsScreen() {
           {canSet && s.lockedThrough && <Button size="sm" onClick={() => set({ lockedThrough: '' })}>{t('set.unlock')}</Button>}
         </div>
       </section>
+      <HelpPanel />
       <SecurityPanel canSet={canSet} />
       <FarmsPanel />
       <MessagingPanel canSet={canSet} />

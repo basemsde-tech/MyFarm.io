@@ -8,6 +8,7 @@ import { activityLog } from '../core/audit.mjs';
 import { toCSV } from '../core/reports.mjs';
 import { can } from '../core/catalog.mjs';
 import { vault, K } from './vault.js';
+import { Help } from './help.jsx';
 
 /* ───────────── Backups ───────────── */
 const slug = (s) => (String(s || 'farm').trim().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'farm');
@@ -167,7 +168,7 @@ export function BackupPanel({ canSet }) {
   const used = storageMode === 'idb' ? est?.used : size;
   return (
     <section className="panel">
-      <h2>{t('set.backup')}</h2>
+      <h2>{t('set.backup')} <Help k="backup" more="backup" /></h2>
       <div className={`bk-status ${bk.due || !bk.state.lastAt ? 'due' : 'ok'}`}>
         <Icon name={bk.due || !bk.state.lastAt ? 'alert' : 'check'} size={18} />
         <div>
@@ -232,7 +233,7 @@ export function SecurityPanel({ canSet }) {
   const noCode = farm.profiles.filter((p) => !p.passHash);
   return (
     <section className="panel">
-      <h2>{t('sec.title')}</h2>
+      <h2>{t('sec.title')} <Help k="security" more="security" /></h2>
       <div className="grid2">
         <Select label={t('sec.autoLock')} value={String(sec.autoLockMin || 0)} onChange={(v) => set({ autoLockMin: Number(v) })} disabled={!canSet}
           options={[0, 5, 15, 30, 60].map((n) => ({ value: String(n), label: n ? t('sec.afterMin', { n }) : t('sec.never') }))} />
@@ -267,7 +268,7 @@ export function FarmsPanel() {
   const { t, farms, farmId, switchFarm, addFarm, ui, actor } = useApp();
   return (
     <section className="panel">
-      <div className="panel-head"><h2>{t('farms.title')}</h2>{can(actor?.role, 'settings') && <Button size="sm" icon="plus" onClick={addFarm}>{t('farms.add')}</Button>}</div>
+      <div className="panel-head"><h2>{t('farms.title')} <Help k="farms" more="farms" /></h2>{can(actor?.role, 'settings') && <Button size="sm" icon="plus" onClick={addFarm}>{t('farms.add')}</Button>}</div>
       <p className="muted small">{t('farms.hint')}</p>
       <ul className="farm-list">
         {farms.map((f) => (

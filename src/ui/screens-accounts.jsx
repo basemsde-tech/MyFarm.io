@@ -4,6 +4,7 @@ import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, DateInput, FilterPanel, day
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { profitAndLoss, balanceSheet, receivablesAging, payablesAging, trialBalance, journal, taxSummary, invoiceRegister, journalRows, docNo, BUCKETS, typeOf } from '../core/accounts.mjs';
 import { toCSV } from '../core/reports.mjs';
+import { Help } from './help.jsx';
 import { groupOf, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { periodRange } from '../core/statement.mjs';
 import { addDays } from '../core/species.mjs';
@@ -68,7 +69,7 @@ function ProfitLoss() {
         <Stat label={t('acc.netProfit')} value={fmt(pl.profitC)} tone={pl.profitC >= 0 ? 'in' : 'out'} sub={pl.marginPct != null ? t('acc.margin', { p: pl.marginPct }) : null} />
       </section>
       <section className="panel fin">
-        <div className="fin-head"><h2>{t('acc.pl')}</h2><span className="muted small">{per.label}{prevRange ? ` · ${t('acc.vs')} ${dayLabel(prevRange.from, lang)} – ${dayLabel(prevRange.to, lang)}` : ''}</span></div>
+        <div className="fin-head"><h2>{t('acc.pl')} <Help k="pl" more="accounts" /></h2><span className="muted small">{per.label}{prevRange ? ` · ${t('acc.vs')} ${dayLabel(prevRange.from, lang)} – ${dayLabel(prevRange.to, lang)}` : ''}</span></div>
         <div className="table-wrap">
           <table className="tbl fin-tbl">
             <thead><tr><th /><th className="num">{t('acc.thisPeriod')}</th><th className="num cmp">{t('acc.previous')}</th><th className="num cmp">{t('acc.change')}</th></tr></thead>
@@ -134,7 +135,7 @@ function BalanceSheet() {
       </section>
       <div className="two-col">
         <section className="panel fin">
-          <div className="fin-head"><h2>{t('bs.owns')}</h2><span className="muted small">{dayLabel(asOf, lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+          <div className="fin-head"><h2>{t('bs.owns')} <Help k="bs" more="accounts" /></h2><span className="muted small">{dayLabel(asOf, lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
           <table className="tbl fin-tbl"><tbody>
             {line('cash', bs.assets.cash)}{line('bank', bs.assets.bank)}{line('receivable', bs.assets.receivable, t('bs.receivableHint'))}
             {line('supplierCredit', bs.assets.supplierCredit)}{line('peopleOwe', bs.assets.peopleOwe)}
@@ -186,7 +187,7 @@ function Aging() {
         ))}
       </section>
       <section className="panel">
-        <div className="fin-head"><h2>{side === 'ar' ? t('ag.arTitle') : t('ag.apTitle')}</h2><span className="muted small">{t('ag.total')}: <b className="num">{fmt(data.totals.total)}</b></span></div>
+        <div className="fin-head"><h2>{side === 'ar' ? t('ag.arTitle') : t('ag.apTitle')} <Help k="aging" /></h2><span className="muted small">{t('ag.total')}: <b className="num">{fmt(data.totals.total)}</b></span></div>
         {data.rows.length ? (
           <div className="table-wrap">
             <table className="tbl aging-tbl">
@@ -241,7 +242,7 @@ function Journal() {
       </FilterPanel>
       {view === 'journal' ? (
         <section className="panel">
-          <p className="muted small">{t('acc.journalHint')}</p>
+          <p className="muted small">{t('acc.journalHint')} <Help k="journal" /></p>
           {entries.length ? entries.slice(0, limit).map((e) => (
             <div key={e.id} className="je">
               <button type="button" className="je-head" onClick={() => e.record && ui.open('drawer', { id: e.id })} disabled={!e.record}>

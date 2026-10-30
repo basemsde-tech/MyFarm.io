@@ -8,6 +8,8 @@ import { fmtQty } from '../core/money.mjs';
 import { can } from '../core/catalog.mjs';
 import { ShareBar } from './share.jsx';
 import { Attachments } from './documents.jsx';
+import { Help } from './help.jsx';
+import { DocBrand } from './brand.jsx';
 import { downloadText } from './screens-money.jsx';
 import { toCSV } from '../core/reports.mjs';
 
@@ -45,7 +47,7 @@ export function OrdersList({ supplierId }) {
       )}
       <section className="panel">
         <div className="panel-head">
-          <h2>{t('po.title')}</h2>
+          <h2>{t('po.title')} <Help k="orders" more="suppliers" /></h2>
           <Button size="sm" variant="primary" icon="plus" onClick={() => ui.open('order', { supplierId })}>{t('po.new')}</Button>
         </div>
         <FilterPanel id={`orders-${supplierId || 'all'}`} onReset={() => { setStatus(supplierId ? 'all' : 'active'); setQ(''); }} extra={<Button size="sm" icon="download" onClick={exportCSV}>{t('rep.csv')}</Button>}
@@ -165,7 +167,7 @@ export function OrderView({ id, onClose }) {
         </div>
       </div>
       <section className="po-match">
-        <h3>{t('po.matching')}</h3>
+        <h3>{t('po.matching')} <Help k="matching" /></h3>
         <div className="table-wrap">
           <table className="tbl">
             <thead><tr><th>{t('exp.item')}</th><th className="num">{t('po.ordered')}</th><th className="num">{t('po.received')}</th><th className="num">{t('po.open')}</th><th className="num">{t('po.billed')}</th><th className="num">{t('po.diff')}</th></tr></thead>
@@ -205,7 +207,7 @@ export function OrderView({ id, onClose }) {
       <article className="print-doc" ref={docRef} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <header className="doc-head">
           <div className="doc-farm">
-            {s.logo && <img src={s.logo} alt="" className="doc-logo" />}
+            <DocBrand />
             <div><b>{s.farmName || t('brand')}</b><div>{[s.farmPhone, s.farmAddress].filter(Boolean).join(' · ')}</div></div>
           </div>
           <div className="doc-title"><h1>{t('po.title1')}</h1><b className="doc-no num">{number}</b></div>

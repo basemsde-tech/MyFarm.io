@@ -4,6 +4,7 @@ import { Button, Icon, Pill, Empty, Stat, Seg, Sheet, TextArea, dayLabel } from 
 import { overdueCustomers, reminderText, logReminder } from '../core/messages.mjs';
 import { docNo } from '../core/accounts.mjs';
 import { openWhatsApp } from './share.jsx';
+import { Help } from './help.jsx';
 
 export function useOverdue() {
   const { farm, snap, today } = useApp();
@@ -27,7 +28,7 @@ export function RemindersPanel() {
       </section>
       <section className="panel">
         <div className="panel-head">
-          <h2>{t('rem.title')}</h2>
+          <h2>{t('rem.title')} <Help k="reminders" more="reminders" /></h2>
           <Seg small value={show} onChange={setShow} options={[{ value: 'due', label: t('rem.toSend') }, { value: 'all', label: t('all') }]} />
         </div>
         <p className="muted small">{t('rem.hint', { n: rows[0] ? '' : '' })}</p>

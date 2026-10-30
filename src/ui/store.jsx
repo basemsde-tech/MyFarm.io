@@ -12,7 +12,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1' };
-export const VERSION = { name: '3.8.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.9.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -385,7 +385,7 @@ function FarmProvider({ boot, children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'accounts', 'reports', 'activity', 'options', 'trash'];
+const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'accounts', 'reports', 'activity', 'guide', 'options', 'trash'];
 function parseHash() {
   const h = (typeof location !== 'undefined' ? location.hash.slice(1) : '') || 'cash';
   const parts = h.split('-');

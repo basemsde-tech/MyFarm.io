@@ -70,3 +70,7 @@ Company sync. The merge logic is written and tested, but the Firebase connection
 - Attached documents with expiry alerts on animals, customers, suppliers, people and orders.
 - IndexedDB storage, several farms per device, automatic backups to a cloud-synced folder, sign-in protection and an activity log.
 - `dist/pdf.js` holds the PDF tools and loads only when a PDF is made.
+
+## 3.9 — logo, guide and help
+- Farm logo with quality check, used on every document and optionally in the app.
+- Built-in user guide (searchable), first-visit guided tours, and a ? help mode with explanation bubbles. Toggle in Settings → Help & tutorials. Guide text lives in `src/guide-content.js`.

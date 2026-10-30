@@ -7,6 +7,7 @@ import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
 import { saleOfAnimal } from '../core/animals.mjs';
 import { saleText, receiptText, statementText } from '../core/messages.mjs';
 import { ShareBar } from './share.jsx';
+import { DocBrand } from './brand.jsx';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { partyLines, statement, periodRange } from '../core/statement.mjs';
 import { compute } from '../core/ledger.mjs';
@@ -394,7 +395,7 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
       <article className="print-doc" ref={docRef} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <header className="doc-head">
           <div className="doc-farm">
-            {s.logo && <img src={s.logo} alt="" className="doc-logo" />}
+            <DocBrand />
             <div><b>{s.farmName || t('brand')}</b><div>{[s.farmPhone, s.farmAddress].filter(Boolean).join(' · ')}</div>{s.tax.enabled && s.tax.number && <div>{t('set.taxNumber')}: {s.tax.number}</div>}</div>
           </div>
           <div className="doc-title">
