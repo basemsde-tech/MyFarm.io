@@ -178,7 +178,7 @@ export function NotificationBell() {
     return () => { document.removeEventListener('mousedown', off); document.removeEventListener('keydown', esc); };
   }, [open]);
   const toggle = () => { const o = !open; setOpen(o); if (o) setTab(n.unreadAlerts.length || !n.newActivity.length ? 'alerts' : 'activity'); };
-  const goTo = (a) => { n.markRead(a.key); setOpen(false); if (a.run) a.run(); else if (a.action) ui.open(a.action.kind, a.action.props); else if (a.go) nav(...a.go); };
+  const goTo = (a) => { n.markRead(a.key); setOpen(false); if (a.run) a.run(); else if (typeof a.action === 'string') ui.open(a.action); else if (a.action) ui.open(a.action.kind, a.action.props); else if (a.go) nav(...a.go); };
   const stamp = (at) => {
     const d = Date.now() - new Date(at).getTime();
     if (d < 60000) return t('nt.now');

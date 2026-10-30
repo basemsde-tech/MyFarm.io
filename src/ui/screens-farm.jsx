@@ -539,7 +539,7 @@ export function SettingsScreen() {
           <QtyInput label={t('set.rate')} hint={t('set.rateHint', { c: s.second?.code, b: s.currency })} value={s.second?.rate} onValue={(v) => set({ second: { ...s.second, rate: v } })} />
         </div>
         <div className="grid3">
-          <MoneyInput label={t('set.milkPrice')} cents={s.milkPriceC} onCents={(c) => set({ milkPriceC: c })} />
+          <MoneyInput label={t('set.milkPriceU', { u: t(s.milkUnit === 'L' ? 'u.L' : 'u.kg') })} cents={s.milkPriceC} onCents={(c) => set({ milkPriceC: c })} />
           <MoneyInput label={t('set.eggPrice')} cents={s.eggPriceC} onCents={(c) => set({ eggPriceC: c })} />
           <MoneyInput label={t('set.wage')} cents={s.wageC} onCents={(c) => set({ wageC: c })} />
         </div>
@@ -607,11 +607,6 @@ export function SettingsScreen() {
       <MessagingPanel canSet={canSet} />
       <CustomCategories canSet={canSet} />
       <BackupPanel canSet={canSet} />
-      <section className="panel">
-        <h2>{t('set.sync')}</h2>
-        <p>{t('set.syncOff')}</p>
-        <p className="muted small">{t('set.syncHint')}</p>
-      </section>
       <section className="panel">
         <h2>{t('set.appearance')}</h2>
         <div className="grid2">

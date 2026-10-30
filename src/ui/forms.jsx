@@ -7,7 +7,7 @@ import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledg
 import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
 import { deleteRecords, updateSettings, newId } from '../core/commands.mjs';
-import { litresOf, saleMilkL, lToKg, kgToL } from '../core/milk.mjs';
+import { litresOf, saleMilkL, lToKg, kgToL, KG_PER_L } from '../core/milk.mjs';
 
 import { SPECIES } from '../core/species.mjs';
 
@@ -99,7 +99,7 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
                   <QtyInput label={t('qty')} value={l.qty} onValue={(v) => setLine(i, { qty: v })} unit={isMilk ? null : t(`u.${l.unit}`)}
                     hint={isMilk ? t('sale.inStock', { l: `${milkQ(tank)}` }) : null}
                     error={short ? t('e.milk.oversell', { l: `${milkQ(litresOf(l.qty, l.unit) - tank)}` }) : issuesFor(issues, `lines.${i}.qty`, t, l.qty)} />
-                  {isMilk && <Seg small value={l.unit} onChange={(v) => setLine(i, { unit: v })} options={[{ value: 'L', label: t('u.L') }, { value: 'kg', label: t('u.kg') }]} />}
+                  {isMilk && <Seg small value={l.unit} onChange={(v) => setLine(i, { unit: v, priceC: v === l.unit ? l.priceC : Math.round((l.priceC || 0) * (v === 'kg' ? 1 / KG_PER_L : KG_PER_L)) })} options={[{ value: 'L', label: t('u.L') }, { value: 'kg', label: t('u.kg') }]} />}
                   <MoneyInput label={`${t('price')} / ${t(`u.${l.unit}`)}`} cents={l.priceC} onCents={(c) => setLine(i, { priceC: c })} error={issuesFor(issues, `lines.${i}.price`, t, l.priceC)} />
                 </>
               )}

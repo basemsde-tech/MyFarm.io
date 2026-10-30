@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.14.2', date: '2026-10-30', items: [
+    ['check', 'فحص شامل: إصلاح أخطاء صغيرة وإزالة شيفرة غير مستخدمة', 'A full check-up: small fixes and unused code removed'],
+    ['milk', 'سعر الحليب يتبع وحدة المزرعة (كغ أو لتر) ويتحوّل عند تغيير الوحدة في البيع', 'Milk price follows the farm unit (kg or L) and converts when a sale line switches unit'],
+    ['gear', 'أُزيل قسم «مزامنة الشركة» غير المفعّل من الإعدادات', 'The unused “Company sync” section was removed from Settings'],
+  ] },
   { v: '3.14.1', date: '2026-10-30', items: [
     ['print', 'طباعة أنيقة: المستند يبدأ من أعلى الصفحة بهوامش متساوية، دون عنوان الموقع وتاريخ المتصفح', 'Clean printing: documents start at the top with even margins, without the web address or browser date'],
     ['print', 'رأس الجدول يتكرر في كل صفحة، والمجاميع مرة واحدة في النهاية، والأرقام تحت عناوينها', 'Table headings repeat on every page, totals print once at the end, and numbers line up under their headings'],

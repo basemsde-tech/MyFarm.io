@@ -73,7 +73,6 @@ self.addEventListener('fetch', (e) => {
 `);
 for (const f of readdirSync('public')) copyFileSync(`public/${f}`, `dist/${f}`);
 writeFileSync('dist/.nojekyll', '');
-writeFileSync('dist/firebase-config.js', '// Company sync: paste your Firebase web config here to share one farm across devices.\n// Leave empty to keep the farm on this device only.\nwindow.MAZRAATI_FIREBASE = null;\n');
 
 // Preview page: React 18.3.1 UMD from cdnjs as globals; the app code avoids React 19-only APIs.
 const shim = {
