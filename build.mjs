@@ -28,7 +28,8 @@ writeFileSync('dist/index.html', `<!doctype html>
 <meta name="theme-color" content="#1B6B5A">
 <meta name="description" content="Farm office for herd, milk and eggs, sales, cash and suppliers.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 ${FONTS}
 ${BOOT}
@@ -38,13 +39,13 @@ ${BOOT}
 </html>`);
 writeFileSync('dist/manifest.webmanifest', JSON.stringify({
   name: 'مزرعتي · Mazraati', short_name: 'مزرعتي', start_url: './', scope: './', display: 'standalone', orientation: 'portrait',
-  dir: 'rtl', lang: 'ar', theme_color: '#1B6B5A', background_color: '#EDF1EC',
+  dir: 'rtl', lang: 'ar', theme_color: '#1B6B5A', background_color: '#FBFAF5',
   icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }, { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }],
 }, null, 2));
 writeFileSync('dist/sw.js', `// Cache name moves with the version so an update replaces the shell.
 // Own prefix: the old Mazraati 2 lives on the same site and keeps its own caches.
 const CACHE = 'mazraati3-v${VERSION}';
-const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './pdf.js'];
+const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './favicon.png', './logo.png', './pdf.js'];
 // A first install takes over at once; an update waits until the user taps "Update now".
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });

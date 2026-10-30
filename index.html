@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#1B6B5A">
 <meta name="description" content="Farm office for herd, milk and eggs, sales, cash and suppliers.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap">
 <script>try{var p=JSON.parse(localStorage.getItem('mazraati-device-v4')||'{}');var l=p.lang||'ar';document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';if(p.theme&&p.theme!=='system')document.documentElement.setAttribute('data-theme',p.theme);}catch(e){document.documentElement.dir='rtl';}</script>
@@ -1588,7 +1589,14 @@ button.bar-row:hover { background: var(--surface-2); }
 .lo-ico { flex: none; inline-size: 42px; block-size: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--teal); color: var(--teal-ink); }
 .lo-actions { display: flex; flex-direction: column; gap: 8px; }
 .lo-actions .btn { justify-content: center; }
+
+/* ── App logo (leaf + circuit) ── */
+.brand-mark.app-logo { background: #FBFAF5; color: inherit; padding: 4px; overflow: hidden; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(20, 60, 50, .08); }
+.brand-mark.app-logo img { inline-size: 100%; block-size: 100%; object-fit: contain; display: block; }
+.brand-mark.app-logo.xs { padding: 2px; }
+.boot .brand-mark.app-logo { inline-size: 88px; block-size: 88px; border-radius: 24px; padding: 10px; }
+.brand-mark.app-logo.lg { inline-size: 64px; block-size: 64px; border-radius: 18px; padding: 6px; }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.12.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.12.1"></script></body>
 </html>

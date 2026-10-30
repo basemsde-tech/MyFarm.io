@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { LOGO } from './logo-data.js';
 import { initMoneyFlip } from './moneyflip.js';
 import { play as playSound } from './sound.js';
 import { RestoreSheet } from './restore.jsx';
@@ -360,7 +361,7 @@ function SignInFarms() {
       <div className="fs-label">{t('farms.title')}</div>
       {farms.map((f) => (
         <button type="button" key={f.id} className={f.id === farmId ? 'on' : ''} onClick={() => switchFarm(f.id)}>
-          <span className="brand-mark xs">م</span><span>{f.name || t('farms.unnamed')}</span>
+          <span className="brand-mark app-logo xs"><img src={LOGO} alt="" /></span><span>{f.name || t('farms.unnamed')}</span>
         </button>
       ))}
     </div>

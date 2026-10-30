@@ -1,4 +1,5 @@
 import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { LOGO } from './logo-data.js';
 import { play as playSound, setSoundOn } from './sound.js';
 import { setMilkView } from './units.js';
 import { emptyFarm, autoPurge, CommandError, newId } from '../core/commands.mjs';
@@ -14,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.12.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.12.1', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -74,7 +75,7 @@ export function AppProvider({ children }) {
     })().catch(() => live && setBoot({ reg: { active: 'main', farms: [{ id: 'main', name: '' }] }, farm: emptyFarm(), mode: 'ls' }));
     return () => { live = false; };
   }, []);
-  if (!boot) return <div className="boot" aria-busy="true"><span className="brand-mark">م</span></div>;
+  if (!boot) return <div className="boot" aria-busy="true"><span className="brand-mark app-logo"><img src={LOGO} alt="" /></span></div>;
   return <FarmProvider boot={boot}>{children}</FarmProvider>;
 }
 

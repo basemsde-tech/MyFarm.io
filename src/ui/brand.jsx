@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { LOGO } from './logo-data.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Seg, Check } from './kit.jsx';
 import { updateSettings } from '../core/commands.mjs';
@@ -68,7 +69,7 @@ export function BrandMark({ className = '' }) {
   const { farm } = useApp();
   const s = farm.settings;
   if (s.logo && s.brand?.inApp) return <span className={`brand-mark has-logo ${className}`}><img src={s.logo} alt="" /></span>;
-  return <span className={`brand-mark ${className}`}>م</span>;
+  return <span className={`brand-mark app-logo ${className}`}><img src={LOGO} alt="" /></span>;
 }
 
 /** Settings → Farm profile photo / logo. */

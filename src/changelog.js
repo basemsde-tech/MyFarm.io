@@ -2,6 +2,9 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.12.1', date: '2026-10-30', items: [
+    ['image', 'شعار جديد لمزرعتي: ورقة نبات ودائرة رقمية', 'A new Mazraati logo: a leaf and a digital circuit'],
+  ] },
   { v: '3.12.0', date: '2026-10-30', items: [
     ['milk', 'بطاقات «استُخدم في» للحليب: أنشئ بطاقاتك وسمّها واختر لها رمزًا', 'Milk “Used for” cards: create your own, name them and pick an icon'],
     ['logout', 'تسجيل الخروج يعود إلى شاشة اختيار الملف، مع رمز الدخول أو دونه', 'Log off returns to the profile screen, with or without a passcode'],

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { LOGO } from './logo-data.js';
 import { useApp, KEYS, readJSON, MAX_BYTES, inFrame } from './store.jsx';
 import { Button, Icon, Pill, Empty, Seg, Select, TextInput, Check, Sheet, FilterPanel, DateInput, dayLabel, Avatar } from './kit.jsx';
 import { PageHead, downloadText, usePeriod } from './screens-money.jsx';
@@ -313,7 +314,7 @@ export function FarmsPanel() {
       <ul className="farm-list">
         {farms.map((f) => (
           <li key={f.id} className={f.id === farmId ? 'on' : ''}>
-            <span className="brand-mark sm">م</span>
+            <span className="brand-mark app-logo sm"><img src={LOGO} alt="" /></span>
             <span className="fl-text"><b>{f.name || t('farms.unnamed')}</b><small className="muted">{f.id === farmId ? t('farms.current') : t('farms.since', { d: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : '—' })}{f.demo ? ` · ${t('farms.demo')}` : ''}</small></span>
             {f.id !== farmId && <Button size="sm" onClick={() => switchFarm(f.id)}>{t('farms.open')}</Button>}
             {farms.length > 1 && actor?.role === 'owner' && <Button size="sm" variant="quiet" icon="trash" aria-label={t('farms.remove')} onClick={() => ui.open('removeFarm', { id: f.id, name: f.name })} />}
@@ -344,7 +345,7 @@ export function FarmSwitch({ onPick }) {
       <div className="fs-label">{t('farms.title')}</div>
       {farms.map((f) => (
         <button type="button" role="menuitem" key={f.id} className={f.id === farmId ? 'on' : ''} onClick={() => { onPick?.(); if (f.id !== farmId) switchFarm(f.id); }}>
-          <span className="brand-mark xs">م</span><span>{f.name || t('farms.unnamed')}</span>{f.id === farmId && <Icon name="check" size={15} />}
+          <span className="brand-mark app-logo xs"><img src={LOGO} alt="" /></span><span>{f.name || t('farms.unnamed')}</span>{f.id === farmId && <Icon name="check" size={15} />}
         </button>
       ))}
       {can(actor?.role, 'settings') && <button type="button" role="menuitem" onClick={() => { onPick?.(); addFarm(); }}><Icon name="plus" size={16} />{t('farms.add')}</button>}
