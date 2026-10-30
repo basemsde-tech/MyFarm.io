@@ -74,3 +74,7 @@ Company sync. The merge logic is written and tested, but the Firebase connection
 ## 3.9 — logo, guide and help
 - Farm logo with quality check, used on every document and optionally in the app.
 - Built-in user guide (searchable), first-visit guided tours, and a ? help mode with explanation bubbles. Toggle in Settings → Help & tutorials. Guide text lives in `src/guide-content.js`.
+
+## 3.10 — update experience
+- "A new update is ready" card with Update now / Later, then a one-time "What's new" celebration with bullet points.
+- Add each release's bullets to `src/changelog.js` before building.

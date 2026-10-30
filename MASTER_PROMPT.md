@@ -141,6 +141,12 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - **Help marks (the ? toolkit).** The ? button in the top bar toggles help mode, starts this page's tour and opens the guide. In help mode small ? marks appear beside features (page titles, filters, currency flip, needs-attention, invoices, reminders, orders and matching, sharing, documents, sale record, accounting reports, tank, breeding, team, period lock, logo, backups, security, farms); tapping one opens a cloud bubble with a short explanation and a link to the guide section.
 - **Settings → Help & tutorials:** tutorials on/off, help marks on/off, restart tutorials, open the guide. These are per device.
 
+## 19. Updates feel like an app update
+- The service worker checks for a new version on start, every 30 minutes and whenever the app comes back to the foreground. A first install takes over at once; an update downloads in the background and waits.
+- When it is ready, a card says "A new update is ready — new features and improvements; your data stays as it is" with **Update now** and **Later**. Update now shows a short "Installing the update…" screen, switches to the new version and reloads.
+- After loading a newer version, a **What's new** card celebrates it once per device: animated check with a small burst, "Updated successfully", the version and season, and short bullet points with icons for every release since the version this device last saw (up to four releases, newest first), then "Great, let's go". Brand-new farms skip it. Settings → About → What's new shows the full update history.
+- Release notes live in `src/changelog.js` (`[icon, Arabic, English]` per bullet); every release adds its bullets there.
+
 ## 7. Engineering shape
 
 - Pure, tested core modules in `src/core/` (money, ledger, commands, validate, milk, statement, sync, backup, reports, species, catalog, security, sample). A new money rule never lives only in a click handler.
@@ -179,3 +185,4 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 28. Two farms on one device keep separate data; switching asks for that farm's sign-in.
 29. A low-resolution JPG logo is rated low with advice; a transparent 800 px PNG is rated great and appears on invoices and their PDF.
 30. A new user sees the Cash tour once; turning tutorials off stops tours; help mode shows ? marks that open explanation bubbles; the guide searches and links to tours.
+31. Publishing a new build makes an open installed app show the update card; Update now reloads into the new version and shows What's new with that release's bullets.

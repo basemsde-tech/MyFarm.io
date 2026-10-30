@@ -1368,7 +1368,51 @@ button.bar-row:hover { background: var(--surface-2); }
   .guide-toc nav button { white-space: nowrap; border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
 }
 @media print { .help-dot, .help-bubble, .tour { display: none !important; } }
+
+/* ── Update prompt & What's new ── */
+.upd-card { position: fixed; z-index: 420; inset-block-end: 22px; inset-inline-end: 22px; inline-size: min(400px, calc(100vw - 32px)); display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; box-shadow: 0 22px 50px -14px rgba(8, 30, 25, .4); animation: updIn .45s var(--spring, var(--ease)); }
+.upd-ico { inline-size: 40px; block-size: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--teal-soft); color: var(--teal); animation: updPulse 2s ease-in-out infinite; }
+.upd-text { display: flex; flex-direction: column; gap: 2px; }
+.upd-btns { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+@keyframes updIn { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes updPulse { 0%, 100% { box-shadow: 0 0 0 0 var(--teal-ring); } 50% { box-shadow: 0 0 0 8px transparent; } }
+.upd-overlay { position: fixed; inset: 0; z-index: 600; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(6px); animation: fadeIn .2s; }
+.upd-installing { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.upd-spin { inline-size: 44px; block-size: 44px; border-radius: 50%; border: 4px solid var(--teal-soft); border-top-color: var(--teal); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.wn-scrim { display: grid; place-items: center; padding: 16px; z-index: 500; }
+.wn-card { position: relative; inline-size: min(480px, 100%); max-block-size: calc(100vh - 32px); overflow: auto; background: var(--surface); border-radius: 24px; padding: 28px 26px 22px; text-align: center;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.5); animation: wnIn .5s var(--spring, var(--ease)); }
+.wn-card.history { text-align: start; }
+@keyframes wnIn { from { opacity: 0; transform: translateY(18px) scale(.94); } to { opacity: 1; transform: none; } }
+.wn-hero { position: relative; inline-size: 92px; block-size: 92px; margin: 0 auto 10px; }
+.wn-check { inline-size: 92px; block-size: 92px; }
+.wn-check circle { fill: var(--good-soft); stroke: var(--good); stroke-width: 2.5; stroke-dasharray: 152; stroke-dashoffset: 152; animation: draw .6s .1s ease-out forwards; }
+.wn-check path { fill: none; stroke: var(--good); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw .4s .6s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.wn-burst span { position: absolute; inset-block-start: 50%; inset-inline-start: 50%; inline-size: 8px; block-size: 8px; border-radius: 2px; opacity: 0;
+  background: hsl(calc(var(--i) * 26 + 20) 70% 55%); transform: rotate(calc(var(--i) * 25.7deg)) translateY(0); animation: burst .9s .55s cubic-bezier(.2,.7,.3,1) forwards; }
+.wn-burst span:nth-child(3n) { border-radius: 50%; background: var(--gold); }
+@keyframes burst { 0% { opacity: 1; transform: rotate(calc(var(--i) * 25.7deg)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(calc(var(--i) * 25.7deg)) translateY(-70px) scale(.5); } }
+.wn-card h2 { font-size: 1.45rem; margin: 4px 0; }
+.wn-ver { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
+.history .wn-ver { justify-content: flex-start; }
+.wn-pill { background: var(--teal-soft); color: var(--teal); border-radius: 99px; padding: 3px 12px; font-weight: 600; font-size: .85rem; }
+.wn-lead { margin: 12px 0 4px; }
+.wn-list { text-align: start; display: flex; flex-direction: column; gap: 12px; margin-block: 12px 18px; }
+.wn-rel-head { display: flex; align-items: baseline; gap: 10px; margin-block-end: 6px; border-block-end: 1px solid var(--line-2); padding-block-end: 4px; }
+.wn-rel ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.wn-rel li { display: flex; align-items: flex-start; gap: 10px; line-height: 1.55; opacity: 0; animation: wnItem .4s var(--d, 200ms) var(--ease) forwards; }
+.wn-ico { inline-size: 30px; block-size: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-2); color: var(--teal); flex: none; }
+@keyframes wnItem { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.wn-foot { display: flex; justify-content: center; position: sticky; inset-block-end: -22px; margin: 0 -26px -22px; padding: 12px 26px 22px; background: linear-gradient(transparent, var(--surface) 30%); }
+.wn-foot .btn { min-inline-size: 180px; }
+.history .wn-foot { justify-content: flex-end; }
+@media (prefers-reduced-motion: reduce) { .wn-card, .upd-card, .wn-rel li, .wn-burst span, .wn-check * { animation-duration: 1ms !important; animation-delay: 0ms !important; } }
+@media (max-width: 640px) { .upd-card { inset-inline: 12px; inset-block-end: 84px; inline-size: auto; } }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.9.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.10.0"></script></body>
 </html>

@@ -44,7 +44,9 @@ writeFileSync('dist/manifest.webmanifest', JSON.stringify({
 writeFileSync('dist/sw.js', `// Cache name moves with the version so an update replaces the shell.
 const CACHE = 'mazraati-v${VERSION}';
 const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './pdf.js'];
-self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
+// A first install takes over at once; an update waits until the user taps "Update now".
+self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
+self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
   const req = e.request;

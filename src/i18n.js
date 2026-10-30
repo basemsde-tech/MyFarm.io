@@ -325,6 +325,11 @@ const ar = {
   'hlp.title': 'المساعدة والجولات التعليمية', 'hlp.tutorials': 'تشغيل الجولات التعليمية', 'hlp.tutorialsHint': 'جولة قصيرة تشرح كل صفحة عند فتحها أول مرة.',
   'hlp.helpMode': 'إظهار علامات المساعدة (؟)', 'hlp.helpModeHint': 'علامة ؟ بجانب الميزات، تُظهر شرحًا موجزًا عند النقر. يمكن تبديلها أيضًا من زر ؟ في الأعلى.',
   'hlp.restart': 'إعادة تشغيل الجولات', 'hlp.restarted': 'ستظهر الجولات مجددًا عند فتح كل صفحة',
+  // updates
+  'upd.ready': 'تحديث جديد جاهز', 'upd.readyHint': 'يتضمن ميزات وتحسينات جديدة. بياناتك تبقى كما هي.', 'upd.now': 'تحديث الآن', 'upd.later': 'لاحقًا',
+  'upd.installing': 'جارٍ تثبيت التحديث…', 'upd.keepOpen': 'لحظات قليلة، لا تغلق التطبيق.', 'upd.done': 'تم التحديث بنجاح', 'upd.history': 'سجل التحديثات',
+  'upd.lead': 'إليك ما الجديد منذ الإصدار {v}:', 'upd.leadFresh': 'إليك أبرز ما في هذا الإصدار:', 'upd.andMore': 'وتحديثات أقدم أخرى ({n}) في سجل التحديثات.',
+  'upd.start': 'رائع، لنبدأ', 'upd.whatsNew': 'ما الجديد',
   'flip.hint': 'أبقِ المؤشر على أي مبلغ ثانيتين لعرضه بالليرة اللبنانية', 'cash.trend': 'رصيد الصندوق خلال آخر ٣٠ يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
 };
 
@@ -628,6 +633,11 @@ const en = {
   'hlp.title': 'Help & tutorials', 'hlp.tutorials': 'Show tutorials', 'hlp.tutorialsHint': 'A short tour explains each page the first time you open it.',
   'hlp.helpMode': 'Show help marks (?)', 'hlp.helpModeHint': 'A ? beside features shows a short explanation when tapped. Also toggled from the ? button at the top.',
   'hlp.restart': 'Restart tutorials', 'hlp.restarted': 'Tours will show again as you open each page',
+  // updates
+  'upd.ready': 'A new update is ready', 'upd.readyHint': 'New features and improvements. Your data stays as it is.', 'upd.now': 'Update now', 'upd.later': 'Later',
+  'upd.installing': 'Installing the update…', 'upd.keepOpen': 'Just a moment — keep the app open.', 'upd.done': 'Updated successfully', 'upd.history': 'Update history',
+  'upd.lead': 'Here is what’s new since version {v}:', 'upd.leadFresh': 'Here are the highlights of this version:', 'upd.andMore': 'And {n} earlier updates in the update history.',
+  'upd.start': 'Great, let’s go', 'upd.whatsNew': 'What’s new',
   'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 

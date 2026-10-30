@@ -567,7 +567,7 @@ export function SettingsScreen() {
       </section>
       <section className="panel">
         <h2>{t('set.about')}</h2>
-        <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]}</p>
+        <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]} <button type="button" className="link" onClick={() => ui.open('whatsNew')}>{t('upd.whatsNew')}</button></p>
         <div className="row-btns">
           {!demo ? <Button onClick={async () => { await app.enterDemo(sampleFarm(app.lang)); setPrefs({ profileId: 'pro-demo-owner' }); }}>{t('set.demo')}</Button>
             : <Button variant="primary" onClick={async () => { const held = await app.exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</Button>}

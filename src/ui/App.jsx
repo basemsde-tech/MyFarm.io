@@ -20,6 +20,7 @@ import { ReminderSheet } from './reminders.jsx';
 import { DocumentSheet } from './documents.jsx';
 import { HelpMenu, HelpModeBanner, TourHost, Help } from './help.jsx';
 import { BrandMark } from './brand.jsx';
+import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const NAV = [
@@ -34,6 +35,7 @@ const SHEETS = {
   eggs: EggsSheet, medicine: MedicineSheet, new: NewMenu, drawer: RecordDrawer, delete: DeleteDialog, purge: PurgeDialog, void: VoidDialog,
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
+  whatsNew: ({ onClose }) => <WhatsNew all onClose={onClose} />,
   order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog,
 };
 
@@ -476,6 +478,8 @@ function Shell() {
       )}
       <ModalHost />
       <TourHost />
+      <UpdatePrompt />
+      <WhatsNewGate />
       <Toasts />
     </div>
   );
