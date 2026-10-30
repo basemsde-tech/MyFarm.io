@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyFarm, autoPurge, CommandError, newId } from '../core/commands.mjs';
 import { appendAudit, changedLists } from '../core/audit.mjs';
 import { liveFileIds } from '../core/documents.mjs';
@@ -11,8 +11,8 @@ import { isoDay } from '../core/species.mjs';
 import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
-export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1' };
-export const VERSION = { name: '3.10.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
+export const VERSION = { name: '3.10.1', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -125,8 +125,10 @@ function FarmProvider({ boot, children }) {
       setSaveError(null);
       // One automatic snapshot per day.
       const day = isoDay();
-      if (!demoRef.current && f.records.length) {
+      const marks = readJSON(KEYS.snapDay, {});
+      if (!demoRef.current && f.records.length && marks[id] !== day) {
         const snaps = (await vault.get(K.snaps(id))) || [];
+        writeJSON(KEYS.snapDay, { ...marks, [id]: day });
         if (!snaps[0] || snaps[0].day !== day) {
           const keep = boot.mode === 'idb' ? 7 : 2;
           const next = [{ day, at: new Date().toISOString(), size: JSON.stringify(f).length, farm: f }, ...snaps].slice(0, keep);
@@ -140,14 +142,27 @@ function FarmProvider({ boot, children }) {
       if (q.next) flush();
     }
   }, [boot.mode]);
+  // Writing a big farm copies it; do that just after the screen has painted, and at once if the app is closing.
+  const timer = useRef(null);
+  const later = useCallback(() => {
+    if (timer.current) return;
+    const go = () => { timer.current = null; flush(); };
+    timer.current = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => { timer.current = setTimeout(go, 0); }) : setTimeout(go, 0);
+  }, [flush]);
+  useEffect(() => {
+    const now = () => { if (saving.current.next) flush(); };
+    const vis = () => document.visibilityState === 'hidden' && now();
+    window.addEventListener('pagehide', now); document.addEventListener('visibilitychange', vis);
+    return () => { window.removeEventListener('pagehide', now); document.removeEventListener('visibilitychange', vis); };
+  }, [flush]);
   const persist = useCallback((f) => {
     saving.current.next = { f, id: idRef.current };
-    flush();
+    later();
     // Keep the farm's name in the device list.
     const nm = f.settings.farmName || '';
     setReg((r) => (r.farms.some((x) => x.id === idRef.current && x.name !== nm) ? { ...r, farms: r.farms.map((x) => (x.id === idRef.current ? { ...x, name: nm } : x)) } : r));
     return true;
-  }, [flush, setReg]);
+  }, [later, setReg]);
 
   const setPrefs = useCallback((patch) => {
     setPrefsState((p) => {
@@ -167,8 +182,9 @@ function FarmProvider({ boot, children }) {
     setTimeout(() => setToasts((x) => x.filter((y) => y.id !== id)), opts.ms || (opts.action ? 10000 : 3500));
   }, []);
 
+  // The latest farm. Set wherever the farm changes (never from render), so saves made in quick
+  // succession always build on each other even while the screen catches up.
   const farmRef = useRef(farm);
-  farmRef.current = farm;
 
   const errText = useCallback((e) => {
     const code = e?.code || 'error';
@@ -191,7 +207,14 @@ function FarmProvider({ boot, children }) {
     if (lists.length && label) next = appendAudit(next, { kind: 'change', lists, label, by: actorRef.current?.id || null, byName: actorRef.current?.name || '—' });
     if (undoable) undoRef.current = [...undoRef.current.slice(-19), { prev: farmRef.current, label }];
     farmRef.current = next;
-    setFarm(next);
+    if (silent || !label) {
+      // Fields that save as you type (settings, toggles) must update at once.
+      setFarm(next);
+    } else {
+      // Saved entries: the sheet closes and the toast paints first; balances on big farms refresh right after.
+      const apply = () => startTransition(() => { if (farmRef.current === next) setFarm(next); });
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => setTimeout(apply, 0)); else apply();
+    }
     persist(next);
     if (!silent && label) toast(label, { action: undoable ? { label: t('undo'), run: () => undo() } : null });
     return next;

@@ -345,6 +345,7 @@ export function InvoiceRegister() {
   const per = usePeriod('month');
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
+  const [limit, setLimit] = useState(100);
   const all = useMemo(() => invoiceRegister(farm, snap, { today, termsDays: farm.settings.termsDays, ...per.range }), [farm, snap, today, per.range]);
   const rows = all.filter((r) => (status === 'all' || (status === 'open' ? r.dueC > 0 : r.status === status))
     && (!q || `${docNo(r.sale, farm.settings)} ${names.customer(r.customerId)}`.toLowerCase().includes(q.toLowerCase())));
@@ -374,7 +375,7 @@ export function InvoiceRegister() {
             <table className="tbl inv-tbl">
               <thead><tr><th>{t('doc.invoiceNo')}</th><th>{t('sale.customer')}</th><th>{t('doc.issued')}</th><th>{t('doc.due')}</th><th className="num">{t('total')}</th><th className="num">{t('doc.balanceDue')}</th><th>{t('status')}</th><th /></tr></thead>
               <tbody>
-                {rows.map((r) => (
+                {rows.slice(0, limit).map((r) => (
                   <tr key={r.sale.id} className={`clickable ${r.status === 'voided' ? 'is-void' : ''}`} onClick={() => ui.open('drawer', { id: r.sale.id })}>
                     <td className="num"><b>{docNo(r.sale, farm.settings)}</b></td>
                     <td>{r.customerId ? names.customer(r.customerId) : <span className="muted">{t('sale.walkin')}</span>}</td>
@@ -391,6 +392,7 @@ export function InvoiceRegister() {
                 ))}
               </tbody>
             </table>
+            {rows.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + 100)}>{t('more')} ({rows.length - limit})</Button>}
           </div>
         ) : <Empty title={t('sales.noSales')} icon="file" action={<Button variant="primary" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>

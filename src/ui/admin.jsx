@@ -154,7 +154,8 @@ export function BackupPanel({ canSet }) {
   const [snaps, setSnaps] = useState([]);
   const [est, setEst] = useState(null);
   useEffect(() => { snapshots().then(setSnaps); vault.estimate().then(setEst); }, [farm.rev]); // eslint-disable-line react-hooks/exhaustive-deps
-  const size = useMemo(() => JSON.stringify(farm).length, [farm]);
+  // Measuring by converting to text is only needed for the small browser store; the device store reports its own use.
+  const size = useMemo(() => (storageMode === 'idb' ? 0 : JSON.stringify(farm).length), [farm, storageMode]);
   const exportBackup = async () => {
     const name = `mazraati-${slug(farm.settings.farmName)}-${new Date().toISOString().slice(0, 10)}.json`;
     downloadText(name, await backupText(farm, files), 'application/json');

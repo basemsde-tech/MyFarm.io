@@ -180,11 +180,27 @@ export function invoiceDueDay(sale, termsDays = 30) {
   return d.toISOString().slice(0, 10);
 }
 
+// Records grouped by customer / supplier, built once per records array (lists are replaced on every change).
+const BY_PARTY = new WeakMap();
+function partyIndex(records) {
+  let ix = BY_PARTY.get(records);
+  if (ix) return ix;
+  ix = { sales: new Map(), bills: new Map(), pays: new Map() };
+  const push = (m, k, r) => { let a = m.get(k); if (!a) m.set(k, (a = [])); a.push(r); };
+  for (const r of records) {
+    if (!live(r)) continue;
+    if (r.type === 'sale' && r.customerId && !r.voided) push(ix.sales, r.customerId, r);
+    else if (r.type === 'expense' && r.supplierId) push(ix.bills, r.supplierId, r);
+    else if (r.type === 'supplierPay' && r.supplierId) push(ix.pays, r.supplierId, r);
+  }
+  for (const a of ix.sales.values()) a.sort((x, y) => x.day.localeCompare(y.day) || String(x.createdAt).localeCompare(String(y.createdAt)));
+  BY_PARTY.set(records, ix);
+  return ix;
+}
+
 export function customerInvoices(farm, customerId, snap, { today, termsDays = 30 } = {}) {
   const c = snap.cust[customerId] || {};
-  const sales = (farm.records || [])
-    .filter((r) => live(r) && r.type === 'sale' && r.customerId === customerId && !r.voided)
-    .sort((a, b) => a.day.localeCompare(b.day) || String(a.createdAt).localeCompare(String(b.createdAt)));
+  const sales = partyIndex(farm.records || []).sales.get(customerId) || [];
   const opening = (farm.customers || []).find((x) => x.id === customerId)?.openingC || 0;
   let pool = (c.creditC || 0) - Math.min(opening, c.creditC || 0);
   return sales.map((sale) => {
@@ -203,11 +219,10 @@ export function supplierBills(farm, supplierId, { today } = {}) {
   const sup = (farm.suppliers || []).find((x) => x.id === supplierId);
   const bills = [];
   if (sup?.openingC) bills.push({ id: `opening-${supplierId}`, day: sup.openingDay || '0000-00-00', amountC: sup.openingC, paidC: 0, category: 'opening', opening: true });
-  for (const r of farm.records || []) {
-    if (live(r) && r.type === 'expense' && r.supplierId === supplierId) bills.push({ id: r.id, day: r.day, amountC: r.amountC, paidC: Math.min(r.paidC || 0, r.amountC), category: r.category, dueDay: r.dueDay, record: r });
-  }
+  const ix = partyIndex(farm.records || []);
+  for (const r of ix.bills.get(supplierId) || []) bills.push({ id: r.id, day: r.day, amountC: r.amountC, paidC: Math.min(r.paidC || 0, r.amountC), category: r.category, dueDay: r.dueDay, record: r });
   bills.sort((a, b) => a.day.localeCompare(b.day));
-  const pays = (farm.records || []).filter((r) => live(r) && r.type === 'supplierPay' && r.supplierId === supplierId);
+  const pays = ix.pays.get(supplierId) || [];
   // Payments linked to a bill go there first, then the unlinked pool applies oldest-first.
   let pool = 0;
   for (const p of pays) {

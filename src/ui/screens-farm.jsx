@@ -75,7 +75,7 @@ function MilkTab() {
         <section className="panel">
           <h2>{t('prod.lots')} <Help k="tank" more="production" /></h2>
           <div className="lots">
-            {[...snap.milk.lots].reverse().map((l) => (
+            {[...snap.milk.lots].reverse().slice(0, 24).map((l) => (
               <div className="lot" key={l.key}>
                 <div><b className="num">{fmtQty(l.left)} {t('u.L')}</b> <span className="muted">/ {fmtQty(l.liters)}</span></div>
                 <div className="muted small">{dayLabel(l.day, lang)} · {t(`prod.${l.session}`)} · {t('fr.hours', { h: Math.round(l.hours) })}{l.by ? ` · ${l.by}` : ''}</div>
@@ -83,6 +83,7 @@ function MilkTab() {
               </div>
             ))}
           </div>
+          {snap.milk.lots.length > 24 && <p className="muted small">{t('prod.olderLots', { n: snap.milk.lots.length - 24 })}</p>}
         </section>
       )}
       <section className="panel">

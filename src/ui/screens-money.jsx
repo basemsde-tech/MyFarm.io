@@ -103,6 +103,13 @@ export function useAttention() {
 /* ───────────── Cash box ───────────── */
 const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal' };
 
+/** The big cash figure counts up on its own, so the rest of the page is not redrawn every frame. */
+function CountUpMoney({ value }) {
+  const { fmt } = useApp();
+  const shown = useCountUp(value);
+  return <div className="cash-big num" aria-live="polite">{fmt(shown)}</div>;
+}
+
 export function CashScreen() {
   const app = useApp();
   const { farm, snap, t, fmt, today, ui, nav, lang } = app;
@@ -112,7 +119,6 @@ export function CashScreen() {
   const [kind, setKind] = useState('');
   const [sel, setSel] = useState([]);
   const att = useAttention();
-  const shownCash = useCountUp(snap.cashC);
   const todayFlows = snap.flows.filter((f) => f.day === today && f.account === 'cash');
   const todayIn = todayFlows.filter((f) => f.dir > 0).reduce((s, f) => s + f.amountC, 0);
   const todayOut = todayFlows.filter((f) => f.dir < 0).reduce((s, f) => s + f.amountC, 0);
@@ -122,7 +128,7 @@ export function CashScreen() {
     return all.filter((f) => f.day >= per.range.from && f.day <= per.range.to && (dir === 'all' || (dir === 'in' ? f.dir > 0 : f.dir < 0)) && (!kind || f.kind === kind)).reverse();
   }, [snap.flows, account, per.range, dir, kind]);
   const recById = useMemo(() => new Map(farm.records.map((r) => [r.id, r])), [farm.records]);
-  const opening = (() => { let b = 0; for (const f of snap.flows) if (f.account === account && f.day < per.range.from) b += f.dir * f.amountC; return b; })();
+  const opening = useMemo(() => { let b = 0; for (const f of snap.flows) if (f.account === account && f.day < per.range.from) b += f.dir * f.amountC; return b; }, [snap.flows, per.range.from]);
   const inP = rows.filter((r) => r.dir > 0).reduce((s, r) => s + r.amountC, 0);
   const outP = rows.filter((r) => r.dir < 0).reduce((s, r) => s + r.amountC, 0);
   const milkToday = snap.milk.lots.filter((l) => l.day === today).reduce((s, l) => s + l.liters, 0);
@@ -136,6 +142,19 @@ export function CashScreen() {
     for (let i = 30; i >= 0; i--) { const d = addDays(today, -i); if (byDay.has(d)) last = byDay.get(d); out.push(last); }
     return out;
   }, [snap.flows, today]);
+  // The movement list is the heaviest part of the page: rebuild it only when its inputs change,
+  // not on every toast or animation frame.
+  const journalList = useMemo(() => (
+    <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)}
+      renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.dir * r.amountC, 0))}</span></>}
+      renderRow={(f) => {
+        const rec = recById.get(f.id);
+        if (!rec) return null;
+        return <RecordRow key={f.id + f.kind} r={rec} dir={f.dir} onOpen={() => ui.open('drawer', { id: f.id })} selectable selected={sel.includes(f.id)}
+          onSelect={(on) => setSel((cur) => (on ? [...cur, f.id] : cur.filter((x) => x !== f.id)))}
+          right={<span className="amt-stack"><span className={f.dir > 0 ? 'in' : 'out'}>{f.dir > 0 ? '+' : '−'}{fmt(f.amountC).replace('−', '')}</span><small className="muted">{fmt(f.balC)}</small></span>} />;
+      }} />
+  ), [rows, recById, sel, lang, fmt, farm.settings]); // eslint-disable-line react-hooks/exhaustive-deps
   const selTotal = rows.filter((r) => sel.includes(r.id)).reduce((s, r) => s + r.dir * r.amountC, 0);
   const exportCSV = () => downloadText(`cash-${per.range.from}-${per.range.to}.csv`, toCSV([
     [t('date'), t('details'), t('in'), t('out'), t('balance'), t('by')],
@@ -147,7 +166,7 @@ export function CashScreen() {
       <section className="cash-hero">
         <div className="cash-main">
           <div className="cash-label">{t('cash.inBox')} <Help k="page.cash" more="cash" /></div>
-          <div className="cash-big num" aria-live="polite">{fmt(shownCash)}</div>
+          <CountUpMoney value={snap.cashC} />
           <div className="cash-spark"><Sparkline points={trend} label={t('cash.trend')} /><span className="cash-spark-label">{t('cash.trend')}</span></div>
           <div className="cash-row">
             {snap.capitalC !== 0 && <span>{t('cash.capital')} <b className="num">{fmt(snap.capitalC)}</b></span>}
@@ -202,17 +221,7 @@ export function CashScreen() {
           <span className="out">{outP ? `−${fmt(outP)}` : fmt(0)}</span>
           <span>{t('cash.closing')} <b>{fmt(opening + inP - outP)}</b></span>
         </div>
-        {rows.length ? (
-          <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)}
-            renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.dir * r.amountC, 0))}</span></>}
-            renderRow={(f) => {
-              const rec = recById.get(f.id);
-              if (!rec) return null;
-              return <RecordRow key={f.id + f.kind} r={rec} dir={f.dir} onOpen={() => ui.open('drawer', { id: f.id })} selectable selected={sel.includes(f.id)}
-                onSelect={(on) => setSel(on ? [...sel, f.id] : sel.filter((x) => x !== f.id))}
-                right={<span className="amt-stack"><span className={f.dir > 0 ? 'in' : 'out'}>{f.dir > 0 ? '+' : '−'}{fmt(f.amountC).replace('−', '')}</span><small className="muted">{fmt(f.balC)}</small></span>} />;
-            }} />
-        ) : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
+        {rows.length ? journalList : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>
       </div>
       <SelectionBar selected={sel} clear={() => setSel([])} totalC={selTotal} />

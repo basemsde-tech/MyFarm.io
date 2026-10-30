@@ -149,6 +149,8 @@ export function TourHost() {
     return () => window.removeEventListener('mz-tour', fn);
   }, [start]);
   useEffect(() => { if (tour && stack.length) { setTour(null); setRect(null); } }, [stack.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Leaving the page ends its tour (without marking it done).
+  useEffect(() => { setTour((tr) => (tr && tr.name !== route.name ? null : tr)); }, [route.name, route.id]);
   const step = tour?.steps[tour.i];
   const measure = useCallback(() => {
     if (!step) return;

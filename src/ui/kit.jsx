@@ -465,14 +465,27 @@ export function readImage(file, max = 640, quality = 0.72) {
   });
 }
 
+// Date formatters are costly to build; keep one per language and style.
+const DTF = new Map();
+const dtf = (lang, opts) => {
+  const k = lang + JSON.stringify(opts);
+  let f = DTF.get(k);
+  if (!f) { f = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', opts); DTF.set(k, f); }
+  return f;
+};
+const LABELS = new Map();
 export function monthLabel(key, lang) {
-  const [y, m] = key.split('-');
-  const d = new Date(Number(y), Number(m) - 1, 15);
-  return d.toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { month: 'long', year: 'numeric' });
+  const k = `m${lang}${key}`;
+  let s = LABELS.get(k);
+  if (s == null) { const [y, m] = key.split('-'); s = dtf(lang, { month: 'long', year: 'numeric' }).format(new Date(Number(y), Number(m) - 1, 15)); LABELS.set(k, s); }
+  return s;
 }
 export function dayLabel(day, lang, opts = { day: 'numeric', month: 'short' }) {
   if (!day || day.startsWith('0000')) return '—';
-  return new Date(day + 'T12:00:00').toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', opts);
+  const k = `${lang}${day}${opts.day || ''}${opts.month || ''}${opts.year || ''}${opts.weekday || ''}`;
+  let s = LABELS.get(k);
+  if (s == null) { s = dtf(lang, opts).format(new Date(day + 'T12:00:00')); if (LABELS.size > 20000) LABELS.clear(); LABELS.set(k, s); }
+  return s;
 }
 
 /**

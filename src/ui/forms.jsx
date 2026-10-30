@@ -154,9 +154,11 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
   );
 }
 
+let audio = null; // one audio engine for the whole session
 function chime() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audio || (audio = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx.state === 'suspended') ctx.resume();
     const o = ctx.createOscillator(); const g = ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
     o.frequency.setValueAtTime(880, ctx.currentTime); o.frequency.setValueAtTime(1320, ctx.currentTime + 0.08);

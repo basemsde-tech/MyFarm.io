@@ -101,6 +101,7 @@ export function milkStock(records, now = Date.now()) {
   let produced = 0;
   let consumed = 0;
   const queue = [];
+  let head = 0; // first lot that still has milk; emptied lots are never looked at again
   for (const c of cons) {
     while (li < lots.length && lots[li].day <= c.day) {
       queue.push(lots[li]);
@@ -109,8 +110,9 @@ export function milkStock(records, now = Date.now()) {
     }
     let need = c.liters;
     consumed += c.liters;
-    for (const lot of queue) {
-      if (need <= 1e-9) break;
+    while (head < queue.length && queue[head].left <= 0.0005) head++;
+    for (let qi = head; qi < queue.length && need > 1e-9; qi++) {
+      const lot = queue[qi];
       const take = Math.min(lot.left, need);
       lot.left = r3(lot.left - take);
       need = r3(need - take);

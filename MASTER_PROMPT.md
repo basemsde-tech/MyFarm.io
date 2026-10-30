@@ -186,3 +186,4 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 29. A low-resolution JPG logo is rated low with advice; a transparent 800 px PNG is rated great and appears on invoices and their PDF.
 30. A new user sees the Cash tour once; turning tutorials off stops tours; help mode shows ? marks that open explanation bubbles; the guide searches and links to tours.
 31. Publishing a new build makes an open installed app show the update card; Update now reloads into the new version and shows What's new with that release's bullets.
+32. With 5 years of a busy farm (54,000 entries) on a 4× slower processor: keys respond under 150 ms, a saved entry confirms within 0.25 s, totals refresh within 2 s, and quick successive saves are never lost.

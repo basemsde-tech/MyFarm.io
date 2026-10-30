@@ -67,6 +67,14 @@ export const CURRENCIES = Object.keys(SYMBOL);
  * opts: { currency, view: 'base'|'second', second: { code, rate } }
  * Display conversion only. Storage is always base cents.
  */
+const NF = new Map();
+function numFmt(min, max) {
+  const k = min * 10 + max;
+  let f = NF.get(k);
+  if (!f) { f = new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }); NF.set(k, f); }
+  return f;
+}
+
 export function fmtMoney(cents, opts = {}) {
   const currency = opts.currency || 'USD';
   const sec = opts.second;
@@ -79,7 +87,7 @@ export function fmtMoney(cents, opts = {}) {
     digits = sec.rate >= 100 ? 0 : 2;
   }
   const neg = value < 0;
-  const n = Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  const n = numFmt(digits, digits).format(Math.abs(value));
   const sym = SYMBOL[code] || code;
   const body = sym.length <= 2 ? `${sym}${n}` : `${n} ${sym}`;
   return neg ? `−${body}` : body;
@@ -87,5 +95,5 @@ export function fmtMoney(cents, opts = {}) {
 
 export function fmtQty(v, digits = 1) {
   const r = Number(v) || 0;
-  return r.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  return numFmt(0, digits).format(r);
 }

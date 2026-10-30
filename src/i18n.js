@@ -89,7 +89,7 @@ const ar = {
   // production
   'prod.title': 'الإنتاج', 'prod.milk': 'الحليب', 'prod.eggs': 'البيض', 'prod.workers': 'العمال', 'prod.log': 'السجل', 'prod.tank': 'في الخزان',
   'prod.am': 'الصباح', 'prod.pm': 'المساء', 'prod.day': 'اليوم كاملًا', 'prod.dayTotal': 'إجمالي اليوم', 'prod.produced': 'المُنتَج', 'prod.sold': 'المُباع', 'prod.used': 'المُستخدَم',
-  'prod.lots': 'دفعات الحليب في الخزان', 'prod.saveDay': 'حفظ حليب اليوم', 'prod.herdMode': 'إجمالي القطيع', 'prod.animalMode': 'لكل حيوان على حدة', 'prod.species': 'النوع',
+  'prod.lots': 'دفعات الحليب في الخزان', 'prod.olderLots': 'و{n} دفعة أقدم في الخزان', 'prod.saveDay': 'حفظ حليب اليوم', 'prod.herdMode': 'إجمالي القطيع', 'prod.animalMode': 'لكل حيوان على حدة', 'prod.species': 'النوع',
   'prod.noMilk': 'لم يُسجَّل حليب بعد', 'prod.noMilkHint': 'سجّل حليب الصباح والمساء لمعرفة الكمية المتوفرة في الخزان قبل البيع.', 'prod.use': 'استخدام من الحليب',
   'prod.flock': 'القطيع', 'prod.collected': 'المُجمَّع', 'prod.broken': 'المكسور', 'prod.eggStock': 'البيض في المخزن', 'prod.noFlock': 'لا يوجد قطيع دواجن. أضف قطيعًا من صفحة الحيوانات.',
   'prod.unitHint': 'يُحوَّل الكيلوغرام إلى لتر (١ لتر ≈ ١٫٠٣ كغ)', 'prod.existsDay': 'يوجد حليب مسجّل لهذا اليوم، وسيستبدل الحفظ القيمة السابقة.',
@@ -408,7 +408,7 @@ const en = {
   'ppd.retained': 'Farm revenue that never entered the box. The farm owes them less.', 'ppd.personal': 'Cash leaves the box for personal use. Not an operating expense.',
   'prod.title': 'Production', 'prod.milk': 'Milk', 'prod.eggs': 'Eggs', 'prod.workers': 'Workers', 'prod.log': 'Log', 'prod.tank': 'In the tank',
   'prod.am': 'Morning', 'prod.pm': 'Evening', 'prod.day': 'Whole day', 'prod.dayTotal': 'Day total', 'prod.produced': 'Produced', 'prod.sold': 'Sold', 'prod.used': 'Used',
-  'prod.lots': 'Milk lots in the tank', 'prod.saveDay': "Save today's milk", 'prod.herdMode': 'Herd total', 'prod.animalMode': 'Per animal', 'prod.species': 'Species',
+  'prod.lots': 'Milk lots in the tank', 'prod.olderLots': '{n} older batches still in the tank', 'prod.saveDay': "Save today's milk", 'prod.herdMode': 'Herd total', 'prod.animalMode': 'Per animal', 'prod.species': 'Species',
   'prod.noMilk': 'No milk recorded yet', 'prod.noMilkHint': 'Record morning and evening milk so you know what is in the tank before you sell.', 'prod.use': 'Use some milk',
   'prod.flock': 'Flock', 'prod.collected': 'Collected', 'prod.broken': 'Broken', 'prod.eggStock': 'Eggs in store', 'prod.noFlock': 'No poultry flock. Add one on the Animals page.',
   'prod.unitHint': 'Kilograms convert to litres (1 L ≈ 1.03 kg)', 'prod.existsDay': 'Milk is already recorded for this day. Saving replaces the old figure.',

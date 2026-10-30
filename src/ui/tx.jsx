@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Sheet, TextInput, Seg, dayLabel } from './kit.jsx';
 import { addRecord, editRecord, deleteRecords, restoreRecords, purgeRecords, voidSale, unvoidSale, preview, changedFields, isMoney, MONEY_FIELDS } from '../core/commands.mjs';
@@ -111,14 +111,24 @@ export function TxFooter({ recs, editing, ctx = {}, extraOp, onDone, saveAndNew 
     return next;
   }, [JSON.stringify(recs), editing?.id, reason, actor?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pv = useMemo(() => (errors.length ? null : preview(farm, needsReason && reason.trim().length < 3 ? (f) => (editing ? editRecord(f, editing.id, recs[0], actor, 'preview') : f) : op, { names, today })),
-    [farm, op, errors.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The impact preview follows typing a moment later, so keys never wait for it.
+  const recKey = JSON.stringify(recs) + reason;
+  const [settled, setSettled] = useState(recKey);
+  useEffect(() => { if (settled === recKey) return undefined; const id = setTimeout(() => setSettled(recKey), 220); return () => clearTimeout(id); }, [recKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pvOp = needsReason && reason.trim().length < 3 ? (f) => (editing ? editRecord(f, editing.id, recs[0], actor, 'preview') : f) : op;
+  const pv = useMemo(() => (errors.length ? null : preview(farm, pvOp, { names, today })),
+    [farm, settled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const blockers = [...errors, ...(pv?.issues.filter((i) => i.severity === 'error') || [])];
   const reasonMissing = needsReason && reason.trim().length < 3;
   const disabled = busy || blockers.length > 0 || reasonMissing || (dup && !dupOk) || (editing && !fields.length);
 
   const save = (again) => {
+    // Saving straight after typing: check the latest figures before committing.
+    if (settled !== recKey) {
+      const fresh = preview(farm, op, { names, today });
+      if (fresh.issues.some((i) => i.severity === 'error')) { setSettled(recKey); return; }
+    }
     setBusy(true);
     const next = commit(op, { label: label || (editing ? t('ed.edited') : t('saved')) });
     setBusy(false);

@@ -254,6 +254,7 @@ export function updateSettings(farm, patch) {
  * Dry-run a change. Returns { next, impact, issues, ok }.
  * op: (farm) => farm. Errors from the command are returned as issues.
  */
+const BEFORE = new WeakMap();
 export function preview(farm, op, { names, today, now } = {}) {
   let next;
   try {
@@ -261,7 +262,10 @@ export function preview(farm, op, { names, today, now } = {}) {
   } catch (e) {
     return { ok: false, next: farm, impact: [], issues: [{ code: e.code || 'error', severity: 'error', detail: e.detail }] };
   }
-  const a = compute(farm, { now });
+  // The "before" side only changes when the farm does: work it out once per farm.
+  let base = BEFORE.get(farm);
+  if (!base || base.now !== now) { const snap = compute(farm, { now }); base = { now, snap, issues: new Set(validateFarm(farm, snap).map((i) => i.code + i.recordId)) }; BEFORE.set(farm, base); }
+  const a = base.snap;
   const b = compute(next, { now });
   const impact = diffSnapshots(a, b, names);
   // Animals that a sale marks sold, or a deleted sale puts back in the herd.
@@ -269,8 +273,7 @@ export function preview(farm, op, { names, today, now } = {}) {
   for (const x of next.animals || []) {
     if (was.has(x.id) && was.get(x.id) !== x.status) impact.push({ key: 'animal', kind: 'status', before: was.get(x.id), after: x.status, ref: { id: x.id, name: x.name ? `${x.name} · ${x.tag}` : x.tag } });
   }
-  const before = new Set(validateFarm(farm, a).map((i) => i.code + i.recordId));
-  const issues = validateFarm(next, b).filter((i) => !before.has(i.code + i.recordId));
+  const issues = validateFarm(next, b).filter((i) => !base.issues.has(i.code + i.recordId));
   return { ok: !issues.some((i) => i.severity === 'error'), next, impact, issues };
 }
 

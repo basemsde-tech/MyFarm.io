@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.10.1', date: '2026-10-30', items: [
+    ['check', 'أسرع بكثير مع سنوات من البيانات: الكتابة فورية، والحفظ يظهر خلال لحظة', 'Much faster with years of data: typing is instant and saves confirm in a moment'],
+    ['lock', 'حماية إضافية عند الحفظ السريع المتتالي', 'Extra protection when saving several entries in quick succession'],
+  ] },
   { v: '3.10.0', date: '2026-10-30', items: [
     ['download', 'إشعار عند توفر تحديث جديد، مع زر «تحديث الآن»', 'A prompt when a new version is ready, with “Update now”'],
     ['check', 'شاشة «ما الجديد» بعد كل تحديث ناجح', 'A “What’s new” screen after every successful update'],
