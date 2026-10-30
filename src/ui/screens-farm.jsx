@@ -15,6 +15,8 @@ import { hashCode, newRecoveryCode, newSalt } from '../core/security.mjs';
 import { sampleFarm } from '../core/sample.mjs';
 import { setArchived, restoreMaster, MASTER_LISTS } from '../core/removal.mjs';
 import { SoldRegister, SaleRecordPanel } from './sold.jsx';
+import { BackupPanel, SecurityPanel, FarmsPanel, MessagingPanel } from './admin.jsx';
+import { Attachments } from './documents.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
@@ -326,6 +328,7 @@ function AnimalDetail({ id }) {
         <h2>{t('ani.events')}</h2>
         {events.length ? events.map((r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />) : <p className="muted">—</p>}
       </section>
+      <Attachments list="animals" id={a.id} />
     </div>
   );
 }
@@ -438,21 +441,9 @@ export function SettingsScreen() {
   const { farm, t, commit, actor, ui, prefs, setPrefs, replaceFarm, toast, demo, today } = app;
   const s = farm.settings;
   const set = (patch) => commit((f) => updateSettings(f, patch), { silent: true, undoable: false });
-  const fileRef = useRef(null);
   const [recovery, setRecovery] = useState(null);
-  const size = JSON.stringify(farm).length;
-  const snaps = readJSON(KEYS.snaps, []);
   const canSet = can(actor?.role, 'settings');
   const lastMonthEnd = (() => { const d = new Date(today + 'T12:00:00'); d.setDate(0); return d.toISOString().slice(0, 10); })();
-  const exportBackup = () => downloadText(`mazraati-${today}.json`, JSON.stringify(backupEnvelope(farm)), 'application/json');
-  const importBackup = async (file) => {
-    const text = await file.text();
-    const res = readBackup(text);
-    if (!res.ok) { toast(t('e.error'), { tone: 'bad' }); return; }
-    exportBackup();
-    replaceFarm(res.farm);
-    toast(res.legacy ? t('set.importLegacy', { m: res.report.mapped, s: res.report.skipped }) : t('set.importOk'));
-  };
   const makeRecovery = async () => {
     const code = newRecoveryCode();
     const salt = s.salt || newSalt();
@@ -511,6 +502,7 @@ export function SettingsScreen() {
         <div className="grid3">
           <TextInput label={t('set.prefix')} value={s.doc.prefix} onChange={(v) => set({ doc: { ...s.doc, prefix: v } })} />
           <TextInput label={t('set.rctPrefix')} value={s.doc.rctPrefix ?? 'RCT-'} onChange={(v) => set({ doc: { ...s.doc, rctPrefix: v } })} />
+          <TextInput label={t('set.poPrefix')} value={s.doc.poPrefix ?? 'PO-'} onChange={(v) => set({ doc: { ...s.doc, poPrefix: v } })} />
           <TextInput label={t('set.thanks')} value={s.doc.thanks} onChange={(v) => set({ doc: { ...s.doc, thanks: v } })} />
           <TextInput label={t('set.footer')} value={s.doc.footer} onChange={(v) => set({ doc: { ...s.doc, footer: v } })} />
         </div>
@@ -547,26 +539,11 @@ export function SettingsScreen() {
           {canSet && s.lockedThrough && <Button size="sm" onClick={() => set({ lockedThrough: '' })}>{t('set.unlock')}</Button>}
         </div>
       </section>
+      <SecurityPanel canSet={canSet} />
+      <FarmsPanel />
+      <MessagingPanel canSet={canSet} />
       <CustomCategories canSet={canSet} />
-      <section className="panel">
-        <h2>{t('set.backup')}</h2>
-        <div className="row-btns">
-          <Button variant="primary" icon="download" onClick={exportBackup}>{t('set.export')}</Button>
-          <Button icon="upload" onClick={() => ui.open('restore')} disabled={!canSet}>{t('set.import')}</Button>
-          <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) importBackup(f); e.target.value = ''; }} />
-        </div>
-        {snaps.length > 0 && (
-          <div className="sub-sec">
-            <h3>{t('set.autoSnap')}</h3>
-            {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB</span>{canSet && <Button size="sm" onClick={() => { exportBackup(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
-          </div>
-        )}
-        <div className="sub-sec">
-          <h3>{t('set.storage')}</h3>
-          <div className="meter"><span style={{ inlineSize: `${Math.min(100, (size / MAX_BYTES) * 100)}%` }} className={size > MAX_BYTES * 0.8 ? 'hot' : ''} /></div>
-          <div className="muted small num">{t('set.storageUsed', { u: `${(size / 1024 / 1024).toFixed(2)} MB`, t: `${(MAX_BYTES / 1024 / 1024).toFixed(1)} MB` })}</div>
-        </div>
-      </section>
+      <BackupPanel canSet={canSet} />
       <section className="panel">
         <h2>{t('set.sync')}</h2>
         <p>{t('set.syncOff')}</p>
@@ -594,8 +571,8 @@ export function SettingsScreen() {
         <h2>{t('set.about')}</h2>
         <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]}</p>
         <div className="row-btns">
-          {!demo ? <Button onClick={() => { storage.set(KEYS.held, JSON.stringify(farm)); replaceFarm(sampleFarm(app.lang)); setPrefs({ profileId: 'pro-demo-owner' }); }}>{t('set.demo')}</Button>
-            : <Button variant="primary" onClick={() => { const held = readJSON(KEYS.held, null); storage.del(KEYS.held); replaceFarm(held || emptyFarm()); setPrefs({ profileId: held?.profiles?.[0]?.id || null }); }}>{t('set.demoExit')}</Button>}
+          {!demo ? <Button onClick={async () => { await app.enterDemo(sampleFarm(app.lang)); setPrefs({ profileId: 'pro-demo-owner' }); }}>{t('set.demo')}</Button>
+            : <Button variant="primary" onClick={async () => { const held = await app.exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</Button>}
           {can(actor?.role, 'purge') && !demo && <Button variant="danger" onClick={() => ui.open('erase')}>{t('set.reset')}</Button>}
         </div>
       </section>

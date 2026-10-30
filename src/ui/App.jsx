@@ -14,11 +14,16 @@ import { emptyFarm, upsert, updateSettings, newId } from '../core/commands.mjs';
 import { hashCode, newSalt, newRecoveryCode, validPasscode } from '../core/security.mjs';
 import { CURRENCIES } from '../core/money.mjs';
 import { sampleFarm } from '../core/sample.mjs';
+import { can } from '../core/catalog.mjs';
+import { OrderSheet, OrderView, ReceiveSheet, ReasonSheet } from './orders.jsx';
+import { ReminderSheet } from './reminders.jsx';
+import { DocumentSheet } from './documents.jsx';
+import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const NAV = [
   { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
   { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
-  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['options', 'gear'], ['trash', 'trash']] },
+  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['activity', 'history'], ['options', 'gear'], ['trash', 'trash']] },
 ];
 const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 
@@ -27,6 +32,7 @@ const SHEETS = {
   eggs: EggsSheet, medicine: MedicineSheet, new: NewMenu, drawer: RecordDrawer, delete: DeleteDialog, purge: PurgeDialog, void: VoidDialog,
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
+  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog,
 };
 
 function ModalHost() {
@@ -87,12 +93,12 @@ function Palette({ onClose }) {
 }
 
 function EraseDialog({ onClose }) {
-  const { t, replaceFarm, setPrefs, farm } = useApp();
+  const { t, replaceFarm, setPrefs, farm, clearDeviceCopies } = useApp();
   const [txt, setTxt] = useState('');
   const ok = txt.trim() && txt.trim() === (farm.settings.farmName || t('brand'));
   return (
     <Sheet title={t('set.reset')} sub={t('set.resetHint')} onClose={onClose}
-      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="danger" disabled={!ok} onClick={() => { storage.del(KEYS.snaps); storage.del(KEYS.drafts); replaceFarm(emptyFarm()); setPrefs({ profileId: null }); onClose(); }}>{t('delete')}</Button></div>}>
+      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="danger" disabled={!ok} onClick={async () => { await clearDeviceCopies(); replaceFarm(emptyFarm()); setPrefs({ profileId: null }); onClose(); }}>{t('delete')}</Button></div>}>
       <TextInput label={farm.settings.farmName || t('brand')} value={txt} onChange={setTxt} autoFocus />
     </Sheet>
   );
@@ -100,7 +106,7 @@ function EraseDialog({ onClose }) {
 
 /* ───────────── First run ───────────── */
 function Setup() {
-  const { t, prefs, setPrefs, replaceFarm, lang } = useApp();
+  const { t, prefs, setPrefs, replaceFarm, lang, enterDemo, farms, cancelNewFarm } = useApp();
   const [step, setStep] = useState(1);
   const [f, setF] = useState({ farmName: '', currency: 'USD', name: '', code: '' });
   const [recovery] = useState(() => newRecoveryCode());
@@ -118,7 +124,7 @@ function Setup() {
     replaceFarm(farm);
     setPrefs({ profileId: id });
   };
-  const demo = () => { storage.set(KEYS.held, JSON.stringify(emptyFarm())); replaceFarm(sampleFarm(lang)); setPrefs({ profileId: 'pro-demo-owner' }); };
+  const demo = async () => { await enterDemo(sampleFarm(lang)); setPrefs({ profileId: 'pro-demo-owner' }); };
   return (
     <div className="setup">
       <div className="setup-card">
@@ -129,6 +135,7 @@ function Setup() {
             <h1>{t('su.welcome')}</h1>
             <p>{t('su.welcomeHint')}</p>
             <Seg label={t('su.lang')} value={prefs.lang} onChange={(v) => setPrefs({ lang: v })} options={[{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }]} />
+            {farms.length > 1 && <div className="note info"><Icon name="plus" size={16} />{t('farms.newHint')} <button type="button" className="link" onClick={cancelNewFarm}>{t('cancel')}</button></div>}
             <div className="foot-btns"><Button onClick={demo}>{t('su.orDemo')}</Button><Button icon="upload" onClick={() => setRestoring(true)}>{t('su.restore')}</Button><Button variant="primary" onClick={() => setStep(2)}>{t('start')}</Button></div>
             {restoring && <RestoreSheet fromSetup onClose={() => setRestoring(false)} />}
           </>
@@ -196,25 +203,53 @@ function PinPad({ value, onChange, onSubmit, error, max = 8 }) {
 }
 
 function ProfileGate() {
-  const { farm, t, setPrefs, commit, lang } = useApp();
+  const { farm, t, setPrefs, commit, lang, logEvent, farms } = useApp();
   const [pick, setPick] = useState(null);
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
   const [forgot, setForgot] = useState(false);
   const [q, setQ] = useState('');
+  const [setPin, setSetPin] = useState(null); // profile that must choose a code first
+  const [, tick] = useState(0);
+  const sec = farm.settings.security || {};
+  const max = sec.maxAttempts || 5;
+  const wait = pick ? Math.max(0, Math.ceil((attemptState(pick.id).until - Date.now()) / 1000)) : 0;
+  useEffect(() => { if (!wait) return undefined; const id = setInterval(() => tick((x) => x + 1), 1000); return () => clearInterval(id); }, [wait]);
+  const signIn = (p) => { recordAttempt(p.id, true); logEvent('signin', {}, p); setPrefs({ profileId: p.id }); };
   const enter = async (p, c = code) => {
-    if (!p.passHash) return setPrefs({ profileId: p.id });
+    if (!p.passHash) {
+      if (sec.requirePins) { setPick(p); setSetPin(p); setCode(''); setErr(''); return undefined; }
+      return signIn(p);
+    }
+    if (attemptState(p.id).until > Date.now()) return undefined;
     const h = await hashCode(c, p.salt != null ? p.salt : farm.settings.salt);
-    if (h === p.passHash) setPrefs({ profileId: p.id }); else { setErr(t('pf.wrong')); setCode(''); }
+    if (h === p.passHash) return signIn(p);
+    const a = recordAttempt(p.id, false, max);
+    logEvent(a.until ? 'lockout' : 'failed', { label: p.name }, p);
+    setErr(a.until ? t('sec.lockedFor', { s: Math.ceil((a.until - Date.now()) / 1000) }) : t('sec.wrongLeft', { n: Math.max(0, max - a.n) }));
+    setCode('');
+    return undefined;
+  };
+  const chooseCode = async () => {
+    if (!validPasscode(code)) { setErr(t('su.passHint')); return; }
+    const salt = farm.settings.salt || newSalt();
+    const passHash = await hashCode(code, salt);
+    const p = setPin;
+    commit((f) => upsert({ ...f, settings: { ...f.settings, salt } }, 'profiles', { id: p.id, passHash, salt: null }, p), { silent: true, undoable: false });
+    logEvent('pinSet', {}, p);
+    setSetPin(null);
+    signIn(p);
   };
   const recover = async () => {
     const h = await hashCode(code.trim().toUpperCase(), farm.settings.salt);
     if (farm.recovery && h === farm.recovery) {
       commit((f) => upsert(f, 'profiles', { id: pick.id, passHash: null }, pick), { label: t('restored') });
+      recordAttempt(pick.id, true);
+      logEvent('signin', { label: 'recovery' }, pick);
       setPrefs({ profileId: pick.id });
     } else setErr(t('pf.wrong'));
   };
-  const back = () => { setPick(null); setCode(''); setForgot(false); setErr(''); };
+  const back = () => { setPick(null); setCode(''); setForgot(false); setErr(''); setSetPin(null); };
   const order = { owner: 0, book: 1, health: 2, milker: 3, worker: 4 };
   const people = [...farm.profiles].sort((a, b) => (order[a.role] ?? 9) - (order[b.role] ?? 9) || a.name.localeCompare(b.name))
     .filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()));
@@ -227,6 +262,7 @@ function ProfileGate() {
           <h2>{t(greet)}</h2>
           <p>{t('pf.pitch')}</p>
         </div>
+        {farms.length > 1 && <SignInFarms />}
         <div className="signin-foot">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
       </aside>
       <main className="signin-main">
@@ -259,7 +295,12 @@ function ProfileGate() {
                 <b>{pick.name}</b>
                 <span className="muted">{t(`role.${pick.role}`)}</span>
               </div>
-              {forgot ? (
+              {setPin ? (
+                <>
+                  <p className="muted center">{t('sec.chooseCode')}</p>
+                  <PinPad value={code} onChange={(v) => { setErr(''); setCode(v); }} onSubmit={() => code.length >= 4 && chooseCode()} error={err} />
+                </>
+              ) : forgot ? (
                 <>
                   <p className="muted center">{t('pf.forgotHint')}</p>
                   <TextInput autoFocus value={code} onChange={(v) => { setErr(''); setCode(v); }} placeholder="XXXX-XXXX-XXXX-XXXX" error={err}
@@ -272,7 +313,7 @@ function ProfileGate() {
               ) : (
                 <>
                   <p className="muted center">{t('pf.enterCode', { n: pick.name })}</p>
-                  <PinPad value={code} onChange={(v) => { setErr(''); setCode(v); }} onSubmit={() => code.length >= 4 && enter(pick)} error={err} />
+                  <PinPad value={code} onChange={(v) => { setErr(''); setCode(v); }} onSubmit={() => code.length >= 4 && !wait && enter(pick)} error={wait ? t('sec.lockedFor', { s: wait }) : err} />
                   <button type="button" className="link center" onClick={() => { setForgot(true); setCode(''); setErr(''); }}>{t('pf.forgot')}</button>
                 </>
               )}
@@ -284,10 +325,25 @@ function ProfileGate() {
   );
 }
 
+function SignInFarms() {
+  const { t, farms, farmId, switchFarm } = useApp();
+  return (
+    <div className="signin-farms">
+      <div className="fs-label">{t('farms.title')}</div>
+      {farms.map((f) => (
+        <button type="button" key={f.id} className={f.id === farmId ? 'on' : ''} onClick={() => switchFarm(f.id)}>
+          <span className="brand-mark xs">م</span><span>{f.name || t('farms.unnamed')}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Account chip in the sidebar and top bar: who is signed in, and a short menu. */
 function AccountMenu({ compact }) {
-  const { actor, t, setPrefs, nav, farm } = useApp();
+  const { actor, t, setPrefs, nav, farm, logEvent, farms } = useApp();
   const [open, setOpen] = useState(false);
+  const leave = () => { setOpen(false); logEvent('signout'); setPrefs({ profileId: null }); };
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return undefined;
@@ -311,8 +367,9 @@ function AccountMenu({ compact }) {
           </div>
           <p className="acct-pop-role">{t(`role.${actor?.role}.d`)}</p>
           <button type="button" role="menuitem" onClick={() => { setOpen(false); nav('options'); }}><Icon name="people" size={17} />{t('pf.team')}</button>
-          <button type="button" role="menuitem" onClick={() => { setOpen(false); setPrefs({ profileId: null }); }}><Icon name="swap" size={17} />{t('pf.switch')}</button>
-          {actor?.passHash && <button type="button" role="menuitem" onClick={() => { setOpen(false); setPrefs({ profileId: null }); }}><Icon name="lock" size={17} />{t('pf.lockNow')}</button>}
+          <button type="button" role="menuitem" onClick={leave}><Icon name="swap" size={17} />{t('pf.switch')}</button>
+          {actor?.passHash && <button type="button" role="menuitem" onClick={leave}><Icon name="lock" size={17} />{t('pf.lockNow')}</button>}
+          {(farms.length > 1 || can(actor?.role, 'settings')) && <FarmSwitch onPick={() => setOpen(false)} />}
         </div>
       )}
     </div>
@@ -322,7 +379,8 @@ function AccountMenu({ compact }) {
 /* ───────────── The desk ───────────── */
 function Shell() {
   const app = useApp();
-  const { t, route, nav, ui, prefs, setPrefs, actor, farm, demo, saveError, retrySave, undo, stack, replaceFarm, ws, wsApi } = app;
+  const { t, route, nav, ui, prefs, setPrefs, actor, farm, demo, saveError, retrySave, undo, stack, replaceFarm, ws, wsApi, exitDemo } = app;
+  const bk = useBackup();
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [more, setMore] = useState(false);
   const cfgRef = useRef(null);
@@ -362,7 +420,7 @@ function Shell() {
           {NAV.map((g) => (
             <div className="nav-group" key={g.group}>
               <div className="nav-group-label">{t(g.group)}</div>
-              {g.items.map(([k, ic]) => (
+              {g.items.filter(([k]) => k !== 'activity' || can(actor?.role, 'settings')).map(([k, ic]) => (
                 <button type="button" key={k} title={t(navLabel(k))} data-tip={t(navLabel(k))} className={`nav-item ${route.name === k ? 'on' : ''}`} onClick={() => go(k)} onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); nav(k, null, null, { newTab: true }); } }} aria-current={route.name === k ? 'page' : undefined}>
                   <Icon name={ic} /><span>{t(navLabel(k))}</span>{k === 'trash' && trashCount > 0 && <span className="nav-count num">{trashCount}</span>}
                 </button>
@@ -386,7 +444,8 @@ function Shell() {
           </div>
         </header>
         <TabBar />
-        {demo && <div className="banner info"><span>{t('set.demoOn')}</span><button type="button" onClick={() => { const held = JSON.parse(storage.get(KEYS.held) || 'null'); storage.del(KEYS.held); replaceFarm(held || emptyFarm()); setPrefs({ profileId: held?.profiles?.[0]?.id || null }); }}>{t('set.demoExit')}</button></div>}
+        {demo && <div className="banner info"><span>{t('set.demoOn')}</span><button type="button" onClick={async () => { const held = await exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</button></div>}
+        <BackupBanner bk={bk} />
         {!online && <div className="banner warn"><Icon name="wifi" size={16} /><span>{t('offline')}</span></div>}
         {saveError && <div className="banner bad"><Icon name="alert" size={16} /><span>{t(`e.${saveError.code}`)}</span><button type="button" onClick={retrySave}>{t('e.retry')}</button></div>}
         {!demo && !prefs.dismissed?.deviceOnly && <div className="banner quiet"><span>{t('deviceOnly')}</span><button type="button" onClick={() => setPrefs({ dismissed: { ...prefs.dismissed, deviceOnly: true } })}>{t('dismiss')}</button></div>}
@@ -404,7 +463,7 @@ function Shell() {
       {more && (
         <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setMore(false)}>
           <div className="more-sheet">
-            {NAV.flatMap((g) => g.items).filter(([k]) => !['cash', 'sales', 'production', 'animals'].includes(k)).map(([k, ic]) => (
+            {NAV.flatMap((g) => g.items).filter(([k]) => !['cash', 'sales', 'production', 'animals'].includes(k) && (k !== 'activity' || can(actor?.role, 'settings'))).map(([k, ic]) => (
               <button type="button" key={k} onClick={() => go(k)}><Icon name={ic} /><span>{t(navLabel(k))}</span></button>
             ))}
             <button type="button" onClick={() => { setMore(false); setPrefs({ profileId: null }); }}><Icon name="swap" /><span>{t('pf.switch')}</span></button>
@@ -428,7 +487,7 @@ function Root() {
   }, [lang, dir, prefs.theme, prefs.palette]);
   if (!farm.settings.setupDone) return <><Setup /><Toasts /></>;
   if (!actor) return <><ProfileGate /><Toasts /></>;
-  return <Shell />;
+  return <BackupProvider><Shell /></BackupProvider>;
 }
 
 export default function App() {

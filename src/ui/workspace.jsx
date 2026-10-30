@@ -4,10 +4,11 @@ import { Icon, IconButton } from './kit.jsx';
 import { CashScreen, SalesScreen, ExpensesScreen, SuppliersScreen, PeopleScreen } from './screens-money.jsx';
 import { ProductionScreen, AnimalsScreen, ReportsScreen, SettingsScreen, TrashScreen } from './screens-farm.jsx';
 import { AccountsScreen } from './screens-accounts.jsx';
+import { ActivityScreen } from './admin.jsx';
 import { snapFor, routeKey, clickModifiers } from './ws.mjs';
 
-export const SCREENS = { cash: CashScreen, people: PeopleScreen, animals: AnimalsScreen, production: ProductionScreen, expenses: ExpensesScreen, suppliers: SuppliersScreen, sales: SalesScreen, reports: ReportsScreen, accounts: AccountsScreen, options: SettingsScreen, trash: TrashScreen };
-export const ROUTE_ICON = { cash: 'cash', people: 'people', animals: 'cow', production: 'milk', expenses: 'receipt', suppliers: 'truck', sales: 'cart', reports: 'chart', accounts: 'ledger', options: 'gear', trash: 'trash' };
+export const SCREENS = { cash: CashScreen, people: PeopleScreen, animals: AnimalsScreen, production: ProductionScreen, expenses: ExpensesScreen, suppliers: SuppliersScreen, sales: SalesScreen, reports: ReportsScreen, accounts: AccountsScreen, activity: ActivityScreen, options: SettingsScreen, trash: TrashScreen };
+export const ROUTE_ICON = { cash: 'cash', people: 'people', animals: 'cow', production: 'milk', expenses: 'receipt', suppliers: 'truck', sales: 'cart', reports: 'chart', accounts: 'ledger', activity: 'history', options: 'gear', trash: 'trash' };
 export const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 
 export function entityName(r, names) {

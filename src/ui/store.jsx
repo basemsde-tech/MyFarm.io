@@ -1,5 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { emptyFarm, autoPurge, CommandError } from '../core/commands.mjs';
+import { emptyFarm, autoPurge, CommandError, newId } from '../core/commands.mjs';
+import { appendAudit, changedLists } from '../core/audit.mjs';
+import { liveFileIds } from '../core/documents.mjs';
+import { vault, K } from './vault.js';
 import { compute } from '../core/ledger.mjs';
 import { visibleFarm } from '../core/removal.mjs';
 import { normalise } from '../core/backup.mjs';
@@ -8,8 +11,8 @@ import { isoDay } from '../core/species.mjs';
 import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
-export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4' };
-export const VERSION = { name: '3.7.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1' };
+export const VERSION = { name: '3.8.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -20,18 +23,62 @@ export const storage = {
 export function readJSON(k, fallback) {
   try { const s = storage.get(k); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
 }
+const writeJSON = (k, v) => { try { storage.set(k, JSON.stringify(v)); } catch { /* small device keys */ } };
 
-function loadFarm() {
-  const f = readJSON(KEYS.farm, null);
-  if (f && Array.isArray(f.records)) return autoPurge(normalise(f));
-  return emptyFarm();
+/* ── Farms on this device ── */
+export function readRegistry() {
+  const r = readJSON(KEYS.farms, null);
+  return r && Array.isArray(r.farms) && r.farms.length ? r : null;
+}
+const writeRegistry = (r) => writeJSON(KEYS.farms, r);
+const ready = (raw) => (raw && Array.isArray(raw.records) ? autoPurge(normalise(raw)) : emptyFarm());
+
+/** First start of this version: move the single farm kept in localStorage into the vault. */
+async function bootRegistry() {
+  let reg = readRegistry();
+  if (reg) return reg;
+  const id = 'main';
+  const legacy = readJSON(KEYS.farm, null);
+  reg = { active: id, farms: [{ id, name: legacy?.settings?.farmName || '', createdAt: new Date().toISOString(), demo: !!storage.get(KEYS.held) }] };
+  if ((await vault.mode()) === 'idb') {
+    if (legacy) await vault.set(K.farm(id), legacy);
+    const held = readJSON(KEYS.held, null); if (held) await vault.set(K.held(id), held);
+    const snaps = readJSON(KEYS.snaps, null); if (snaps) await vault.set(K.snaps(id), snaps);
+    storage.del(KEYS.farm); storage.del(KEYS.held); storage.del(KEYS.snaps);
+  } else if (legacy) {
+    try { await vault.set(K.farm(id), legacy); storage.del(KEYS.farm); } catch { /* stays where it was; loadFarm reads it */ }
+  }
+  writeRegistry(reg);
+  return reg;
+}
+
+async function loadFarmById(id) {
+  let raw = await vault.get(K.farm(id));
+  if (!raw && id === 'main') raw = readJSON(KEYS.farm, null);
+  return ready(raw);
 }
 
 export const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
 export function AppProvider({ children }) {
-  const [farm, setFarm] = useState(loadFarm);
+  const [boot, setBoot] = useState(null); // { reg, farm } once loaded
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const reg = await bootRegistry();
+      const farm = await loadFarmById(reg.active);
+      if (live) setBoot({ reg, farm, mode: await vault.mode() });
+    })().catch(() => live && setBoot({ reg: { active: 'main', farms: [{ id: 'main', name: '' }] }, farm: emptyFarm(), mode: 'ls' }));
+    return () => { live = false; };
+  }, []);
+  if (!boot) return <div className="boot" aria-busy="true"><span className="brand-mark">م</span></div>;
+  return <FarmProvider boot={boot}>{children}</FarmProvider>;
+}
+
+function FarmProvider({ boot, children }) {
+  const [farm, setFarm] = useState(boot.farm);
+  const [reg, setRegState] = useState(boot.reg);
   const [prefs, setPrefsState] = useState(() => ({ lang: 'ar', theme: 'system', money: 'base', profileId: null, dismissed: {}, ...readJSON(KEYS.device, {}) }));
   const [saveError, setSaveError] = useState(null);
   const [toasts, setToasts] = useState([]);
@@ -51,7 +98,10 @@ export function AppProvider({ children }) {
   const route = WS.activeTab(ws).route;
   const undoRef = useRef([]);
   const [today, setToday] = useState(isoDay());
-  const demo = !!storage.get(KEYS.held);
+  const farmId = reg.active;
+  const regFarm = reg.farms.find((x) => x.id === farmId) || reg.farms[0];
+  const demo = !!regFarm?.demo;
+  const setReg = useCallback((fn) => setRegState((r) => { const n = typeof fn === 'function' ? fn(r) : fn; writeRegistry(n); return n; }), []);
 
   useEffect(() => {
     const id = setInterval(() => setToday(isoDay()), 60000);
@@ -60,25 +110,44 @@ export function AppProvider({ children }) {
     return () => { clearInterval(id); window.removeEventListener('hashchange', onHash); };
   }, []);
 
-  const persist = useCallback((f) => {
+  // Saves go to the vault one at a time; the newest waiting farm wins.
+  const saving = useRef({ busy: false, next: null });
+  const idRef = useRef(farmId); idRef.current = farmId;
+  const demoRef = useRef(demo); demoRef.current = demo;
+  const flush = useCallback(async () => {
+    const q = saving.current;
+    if (q.busy || !q.next) return;
+    q.busy = true;
+    const { f, id } = q.next; q.next = null;
     try {
-      const s = JSON.stringify(f);
-      if (s.length > MAX_BYTES) throw new CommandError('storage');
-      storage.set(KEYS.farm, s);
+      if (boot.mode !== 'idb' && JSON.stringify(f).length > MAX_BYTES) throw new CommandError('storage');
+      await vault.set(K.farm(id), f);
       setSaveError(null);
-      // One automatic snapshot per day, last three kept.
-      const snaps = readJSON(KEYS.snaps, []);
+      // One automatic snapshot per day.
       const day = isoDay();
-      if (!demo && f.records.length && (!snaps[0] || snaps[0].day !== day)) {
-        const next = [{ day, at: new Date().toISOString(), size: s.length, farm: f }, ...snaps].slice(0, 3);
-        try { storage.set(KEYS.snaps, JSON.stringify(next)); } catch { storage.set(KEYS.snaps, JSON.stringify(next.slice(0, 1))); }
+      if (!demoRef.current && f.records.length) {
+        const snaps = (await vault.get(K.snaps(id))) || [];
+        if (!snaps[0] || snaps[0].day !== day) {
+          const keep = boot.mode === 'idb' ? 7 : 2;
+          const next = [{ day, at: new Date().toISOString(), size: JSON.stringify(f).length, farm: f }, ...snaps].slice(0, keep);
+          try { await vault.set(K.snaps(id), next); } catch { try { await vault.set(K.snaps(id), next.slice(0, 1)); } catch { /* snapshots are a convenience */ } }
+        }
       }
-      return true;
     } catch (e) {
       setSaveError({ code: e.code === 'storage' || e.name === 'QuotaExceededError' ? 'storage' : 'saveFailed', farm: f });
-      return false;
+    } finally {
+      q.busy = false;
+      if (q.next) flush();
     }
-  }, [demo]);
+  }, [boot.mode]);
+  const persist = useCallback((f) => {
+    saving.current.next = { f, id: idRef.current };
+    flush();
+    // Keep the farm's name in the device list.
+    const nm = f.settings.farmName || '';
+    setReg((r) => (r.farms.some((x) => x.id === idRef.current && x.name !== nm) ? { ...r, farms: r.farms.map((x) => (x.id === idRef.current ? { ...x, name: nm } : x)) } : r));
+    return true;
+  }, [flush, setReg]);
 
   const setPrefs = useCallback((patch) => {
     setPrefsState((p) => {
@@ -90,6 +159,7 @@ export function AppProvider({ children }) {
 
   const t = useMemo(() => makeT(prefs.lang), [prefs.lang]);
   const actor = useMemo(() => farm.profiles.find((p) => p.id === prefs.profileId) || null, [farm.profiles, prefs.profileId]);
+  const actorRef = useRef(actor); actorRef.current = actor;
 
   const toast = useCallback((msg, opts = {}) => {
     const id = Math.random().toString(36).slice(2);
@@ -116,6 +186,9 @@ export function AppProvider({ children }) {
       return null;
     }
     if (next === farmRef.current) return next;
+    // Changes outside the records (lists, settings) go in the activity log.
+    const lists = changedLists(farmRef.current, next);
+    if (lists.length && label) next = appendAudit(next, { kind: 'change', lists, label, by: actorRef.current?.id || null, byName: actorRef.current?.name || '—' });
     if (undoable) undoRef.current = [...undoRef.current.slice(-19), { prev: farmRef.current, label }];
     farmRef.current = next;
     setFarm(next);
@@ -124,12 +197,22 @@ export function AppProvider({ children }) {
     return next;
   }, [persist, toast, errText, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** Record an event (sign-in, backup, …) without touching the undo history. */
+  const logEvent = useCallback((kind, extra = {}, who = actorRef.current) => {
+    const next = appendAudit(farmRef.current, { kind, by: who?.id || null, byName: who?.name || '—', ...extra });
+    farmRef.current = next;
+    setFarm(next);
+    persist(next);
+  }, [persist]);
+
   const undo = useCallback(() => {
     const last = undoRef.current.pop();
     if (!last) return;
-    farmRef.current = last.prev;
-    setFarm(last.prev);
-    persist(last.prev);
+    // The activity log is never undone.
+    const prev = appendAudit({ ...last.prev, audit: farmRef.current.audit }, { kind: 'undo', label: last.label || '', by: actorRef.current?.id || null, byName: actorRef.current?.name || '—' });
+    farmRef.current = prev;
+    setFarm(prev);
+    persist(prev);
     toast(`${t('undo')}: ${last.label || ''}`.trim());
   }, [persist, toast, t]);
 
@@ -141,6 +224,107 @@ export function AppProvider({ children }) {
   }, [persist]);
 
   const retrySave = useCallback(() => { if (saveError?.farm) persist(saveError.farm); }, [saveError, persist]);
+
+  /* ── Files (attached documents) ── */
+  const files = useMemo(() => ({
+    async save(dataUrl) { const id = newId('file'); await vault.set(K.file(id), dataUrl); return id; },
+    get: (id) => vault.get(K.file(id)),
+    del: (id) => vault.del(K.file(id)),
+    async collect(f) { const out = {}; for (const id of liveFileIds(f)) { const v = await vault.get(K.file(id)); if (v) out[id] = v; } return out; },
+    async put(map) { for (const [id, v] of Object.entries(map || {})) await vault.set(K.file(id), v); },
+  }), []);
+
+  /* ── Demo farm ── */
+  const enterDemo = useCallback(async (sample) => {
+    await vault.set(K.held(idRef.current), farmRef.current);
+    setReg((r) => ({ ...r, farms: r.farms.map((x) => (x.id === idRef.current ? { ...x, demo: true } : x)) }));
+    demoRef.current = true;
+    replaceFarm(sample);
+  }, [replaceFarm, setReg]);
+  const exitDemo = useCallback(async () => {
+    let held = await vault.get(K.held(idRef.current));
+    if (!held && idRef.current === 'main') held = readJSON(KEYS.held, null);
+    await vault.del(K.held(idRef.current)); storage.del(KEYS.held);
+    setReg((r) => ({ ...r, farms: r.farms.map((x) => (x.id === idRef.current ? { ...x, demo: false } : x)) }));
+    demoRef.current = false;
+    const f = ready(held);
+    replaceFarm(f);
+    return f;
+  }, [replaceFarm, setReg]);
+
+  /* ── Several farms on one device ── */
+  const switchFarm = useCallback(async (id) => {
+    if (id === idRef.current) return;
+    logEvent('switchFarm', { to: id });
+    await new Promise((r) => setTimeout(r, 30));
+    const next = await loadFarmById(id);
+    undoRef.current = [];
+    idRef.current = id;
+    farmRef.current = next;
+    setReg((r) => ({ ...r, active: id }));
+    setFarm(next);
+    setStack([]);
+    setPrefs({ profileId: null });
+  }, [logEvent, setReg, setPrefs]);
+  const addFarm = useCallback(async () => {
+    const id = newId('farm');
+    const f = emptyFarm();
+    await vault.set(K.farm(id), f);
+    setReg((r) => ({ ...r, active: id, farms: [...r.farms, { id, name: '', createdAt: new Date().toISOString() }] }));
+    undoRef.current = [];
+    idRef.current = id;
+    farmRef.current = f;
+    setFarm(f);
+    setStack([]);
+    setPrefs({ profileId: null });
+  }, [setReg, setPrefs]);
+  const removeFarm = useCallback(async (id) => {
+    if (reg.farms.length < 2) return false;
+    const f = id === idRef.current ? farmRef.current : await vault.get(K.farm(id));
+    for (const fid of liveFileIds(f || {})) await vault.del(K.file(fid));
+    await vault.del(K.farm(id)); await vault.del(K.snaps(id)); await vault.del(K.held(id)); await vault.del(K.backupDir(id));
+    const rest = reg.farms.filter((x) => x.id !== id);
+    if (id === idRef.current) {
+      const to = rest[0].id;
+      const next = await loadFarmById(to);
+      idRef.current = to; farmRef.current = next; undoRef.current = [];
+      setFarm(next); setStack([]); setPrefs({ profileId: null });
+      setReg({ ...reg, active: to, farms: rest });
+    } else setReg({ ...reg, farms: rest });
+    return true;
+  }, [reg, setReg, setPrefs]);
+  const cancelNewFarm = useCallback(async () => {
+    // Leaving a farm that was never set up removes it.
+    const cur = reg.farms.find((x) => x.id === idRef.current);
+    if (!cur || farmRef.current.settings.setupDone || reg.farms.length < 2) return;
+    const id = cur.id;
+    await vault.del(K.farm(id));
+    const rest = reg.farms.filter((x) => x.id !== id);
+    const to = rest[0].id;
+    const next = await loadFarmById(to);
+    idRef.current = to; farmRef.current = next; undoRef.current = [];
+    setFarm(next); setReg({ ...reg, active: to, farms: rest });
+  }, [reg, setReg]);
+  const snapshots = useCallback(async () => (await vault.get(K.snaps(idRef.current))) || (idRef.current === 'main' ? readJSON(KEYS.snaps, []) : []), []);
+  const clearDeviceCopies = useCallback(async () => { await vault.del(K.snaps(idRef.current)); storage.del(KEYS.snaps); storage.del(KEYS.drafts); }, []);
+
+  /* ── Auto-lock after inactivity ── */
+  const lockMin = farm.settings.security?.autoLockMin || 0;
+  useEffect(() => {
+    if (!lockMin || !actor) return undefined;
+    let last = Date.now();
+    const touch = () => { last = Date.now(); };
+    const evs = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+    evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    const id = setInterval(() => {
+      if (Date.now() - last >= lockMin * 60000) {
+        logEvent('autolock', {}, actorRef.current);
+        setStack([]);
+        setPrefs({ profileId: null });
+      }
+    }, 15000);
+    return () => { clearInterval(id); evs.forEach((e) => window.removeEventListener(e, touch)); };
+  }, [lockMin, actor, logEvent, setPrefs]);
 
   const view = useMemo(() => visibleFarm(farm), [farm]);
   const snap = useMemo(() => compute(view), [view]);
@@ -196,18 +380,19 @@ export function AppProvider({ children }) {
     farm: view, rawFarm: farm, snap, prefs, setPrefs, t, lang: prefs.lang, dir: prefs.lang === 'ar' ? 'rtl' : 'ltr', actor, today,
     commit, undo, replaceFarm, toast, toasts, setToasts, errText, fmt, names, route, nav, ui, stack, layer, ws, wsApi,
     saveError, retrySave, demo, canUndo: undoRef.current.length > 0,
+    logEvent, files, enterDemo, exitDemo, farms: reg.farms, farmId, switchFarm, addFarm, removeFarm, cancelNewFarm, snapshots, clearDeviceCopies, storageMode: boot.mode,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'accounts', 'reports', 'options', 'trash'];
+const ROUTES = ['cash', 'people', 'animals', 'production', 'expenses', 'suppliers', 'sales', 'accounts', 'reports', 'activity', 'options', 'trash'];
 function parseHash() {
   const h = (typeof location !== 'undefined' ? location.hash.slice(1) : '') || 'cash';
   const parts = h.split('-');
   const name = ROUTES.includes(parts[0]) ? parts[0] : 'cash';
   // ids themselves contain dashes; the last part may be a tab name
   const rest = parts.slice(1);
-  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations', 'pl', 'bs', 'aging', 'journal', 'tax', 'sold'];
+  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations', 'pl', 'bs', 'aging', 'journal', 'tax', 'sold', 'orders', 'reminders'];
   let tab = null;
   if (rest.length && tabs.includes(rest[rest.length - 1])) tab = rest.pop();
   const id = rest.length ? rest.join('-') : null;

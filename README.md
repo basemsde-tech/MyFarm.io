@@ -63,3 +63,10 @@ src/i18n.js every string in Arabic and English
 ## Not yet connected
 
 Company sync. The merge logic is written and tested, but the Firebase connection itself needs your project's config in `dist/firebase-config.js` and a small adapter. Until then each device keeps its own farm, and the backup file moves data between devices.
+
+## 3.8 — office tools
+- Purchase orders with deliveries, matching and supplier bills (Suppliers → Purchase orders).
+- WhatsApp and PDF sending for invoices, receipts, statements and orders; payment reminders (Sales → Reminders).
+- Attached documents with expiry alerts on animals, customers, suppliers, people and orders.
+- IndexedDB storage, several farms per device, automatic backups to a cloud-synced folder, sign-in protection and an activity log.
+- `dist/pdf.js` holds the PDF tools and loads only when a PDF is made.

@@ -16,6 +16,9 @@ mkdirSync('preview', { recursive: true });
 // PWA bundle
 const pwa = await build({ entryPoints: ['src/main.jsx'], bundle: true, minify: true, format: 'iife', target: 'es2020', write: false, jsx: 'transform', define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'none' });
 writeFileSync('dist/app.js', pwa.outputFiles[0].text);
+// PDF tools, fetched only when a document is saved or shared as PDF.
+const pdfLib = await build({ entryPoints: ['src/pdf-entry.js'], bundle: true, minify: true, format: 'iife', target: 'es2020', write: false, legalComments: 'none', external: ['canvg', 'dompurify'], logLevel: 'error' });
+writeFileSync('dist/pdf.js', pdfLib.outputFiles[0].text);
 writeFileSync('dist/index.html', `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -40,7 +43,7 @@ writeFileSync('dist/manifest.webmanifest', JSON.stringify({
 }, null, 2));
 writeFileSync('dist/sw.js', `// Cache name moves with the version so an update replaces the shell.
 const CACHE = 'mazraati-v${VERSION}';
-const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './pdf.js'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
@@ -76,6 +79,7 @@ ${BOOT}
 #root{min-height:100%}
 </style>
 <div id="root"></div>
+<script>window.MAZRAATI_PDF=['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script>${js}</script>

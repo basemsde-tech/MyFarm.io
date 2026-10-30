@@ -29,11 +29,14 @@ export function emptyFarm() {
       milkPriceC: 100, eggPriceC: 15, wageC: 2000, milkMode: 'herd', milkUnit: 'L',
       termsDays: 30, lockedThrough: '',
       tax: { enabled: false, rate: 0, label: 'VAT', labelAr: 'ضريبة', number: '', registration: '', inclusive: false, show: true },
-      doc: { prefix: 'INV-', thanks: '', footer: '', signatures: true, showParty: true, showRate: false },
+      doc: { prefix: 'INV-', rctPrefix: 'RCT-', poPrefix: 'PO-', thanks: '', footer: '', signatures: true, showParty: true, showRate: false },
+      messaging: { countryCode: '961', remindAfterDays: 7, signature: '' },
+      security: { requirePins: false, autoLockMin: 0, maxAttempts: 5 },
+      backup: { everyDays: 1, lastAt: null, lastMethod: null, keep: 14 },
       categories: [], milkUseReasons: [], setupDone: false, updatedAt: nowIso(),
     },
     profiles: [], customers: [], suppliers: [], people: [], animals: [], workers: [], obligations: [],
-    records: [], recovery: null,
+    orders: [], documents: [], audit: [], records: [], recovery: null,
   };
 }
 

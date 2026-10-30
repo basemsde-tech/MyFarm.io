@@ -1,7 +1,7 @@
 // Per-record merge. Two devices never erase each other's work:
 // each record and list row wins by its own updatedAt; tombstones keep purged rows gone.
 
-export const LISTS = ['records', 'customers', 'suppliers', 'people', 'animals', 'workers', 'profiles', 'obligations'];
+export const LISTS = ['records', 'customers', 'suppliers', 'people', 'animals', 'workers', 'profiles', 'obligations', 'orders', 'documents'];
 
 const ts = (x) => x?.updatedAt || x?.createdAt || '';
 

@@ -50,6 +50,8 @@ const P = {
   swap: 'M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7',
   history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
   ledger: 'M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13zM6.5 8h2M6.5 11h2M15.5 8h2M15.5 11h2M15.5 14h2',
+  whatsapp: 'M20.5 11.6a8.6 8.6 0 0 1-12.7 7.6L3.5 20.5l1.3-4.1A8.6 8.6 0 1 1 20.5 11.6zM9.1 7.9c-.4 0-.9.4-.9 1.2 0 2.6 3.4 6 6.4 6.3.8.1 1.4-.4 1.5-1l.1-.7-2-1-1 .9c-1.1-.5-2.2-1.6-2.6-2.6l.8-1-.9-2.1z',
+  image: 'M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5zM4 16l4.5-4.5 4 4 2.5-2.5L20 18M15.5 9.5h.01',
   file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.8-4 4-6.5 8-6.5s7.2 2.5 8 6.5',
   calendar: 'M4 6h16v15H4zM4 10h16M9 3v4M15 3v4',
@@ -110,12 +112,12 @@ export function TextArea({ label, value, onChange, id, ...rest }) {
   );
 }
 
-export function Select({ label, value, onChange, options, id, hint, error, className, placeholder }) {
+export function Select({ label, value, onChange, options, id, hint, error, className, placeholder, disabled }) {
   const auto = useId();
   const fid = id || auto;
   return (
     <Field label={label} id={fid} hint={hint} error={error} className={className}>
-      <select id={fid} className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
+      <select id={fid} className="input" value={value ?? ''} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
         {placeholder != null && <option value="">{placeholder}</option>}
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>

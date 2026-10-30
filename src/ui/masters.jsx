@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useApp, inFrame } from './store.jsx';
 import { Button, Icon, Pill, MoneyInput, QtyInput, DateInput, Seg, Select, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton, Avatar, dayLabel } from './kit.jsx';
 import { TxFooter } from './tx.jsx';
 import { upsert, newId } from '../core/commands.mjs';
 import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
 import { saleOfAnimal } from '../core/animals.mjs';
+import { saleText, receiptText, statementText } from '../core/messages.mjs';
+import { ShareBar } from './share.jsx';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { partyLines, statement, periodRange } from '../core/statement.mjs';
 import { compute } from '../core/ledger.mjs';
@@ -355,9 +357,19 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
   const cust = sale?.customerId ? farm.customers.find((c) => c.id === sale.customerId) : null;
   const longDate = (d) => dayLabel(d, lang, { day: 'numeric', month: 'long', year: 'numeric' });
   const docTitle = isStatement ? t('cust.statement') : isPayment ? t('doc.paymentReceipt') : kind === 'receipt' ? t('sale.receipt') : t('sale.invoice');
+  const docRef = useRef(null);
+  const partyRow = isStatement ? (farm[party === 'customer' ? 'customers' : party === 'supplier' ? 'suppliers' : 'people'] || []).find((x) => x.id === partyId) : cust;
+  const productName = (l) => `${t(`pr.${l.product}`)} ${fmtQty(l.qty)} ${t(`u.${l.unit}`)}`;
+  const msg = (() => {
+    if (isStatement) return st ? statementText({ farm, customer: { name: meta.partyName || pName }, st, t, fmt, lang, from: range.from, to: range.to.startsWith('9999') ? today : range.to }) : '';
+    if (!sale) return '';
+    if (isPayment) { const c = app.snap.cust[sale.customerId] || {}; return receiptText({ farm, pay: sale, t, fmt, lang, number: no(sale), balanceC: (c.dueC || 0) - (c.creditBalC || 0) }); }
+    return saleText({ farm, sale, inv, t, fmt, lang, number: no(sale), productName });
+  })();
+  const fileName = `${isStatement ? `${t('cust.statement')}-${meta.partyName || pName}` : no(sale)}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
   return (
     <Sheet title={docTitle} sub={!isStatement && sale ? no(sale) : undefined} onClose={onClose} wide
-      footer={<div className="foot-btns">{inFrame ? <span className="muted small">{t('printNote')}</span> : <Button variant="primary" icon="print" onClick={() => window.print()}>{t('print')}</Button>}</div>}>
+      footer={<div className="foot-btns doc-foot-btns"><ShareBar getEl={() => docRef.current} fileName={fileName} text={msg} phone={partyRow?.phone} />{inFrame ? <span className="muted small">{t('printNote')}</span> : <Button variant="primary" icon="print" onClick={() => window.print()}>{t('print')}</Button>}</div>}>
       {isStatement && (
         <div className="doc-controls">
           <Seg small wrap value={period} onChange={(v) => { setPeriod(v); if (v !== 'custom') setRange(periodRange(v, today)); }} options={['month', '30', 'lastMonth', 'year', 'all', 'custom'].map((p) => ({ value: p, label: t(`p.${p}`) }))} />
@@ -379,7 +391,7 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
           ))}
         </div>
       )}
-      <article className="print-doc" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <article className="print-doc" ref={docRef} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <header className="doc-head">
           <div className="doc-farm">
             {s.logo && <img src={s.logo} alt="" className="doc-logo" />}

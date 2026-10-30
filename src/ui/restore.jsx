@@ -7,7 +7,7 @@ import { compute } from '../core/ledger.mjs';
 
 /** Pick a backup file, review exactly what will be restored and how balances compare, then replace the farm. */
 export function RestoreSheet({ onClose, fromSetup }) {
-  const { t, lang, farm, replaceFarm, setPrefs, toast, fmt, today } = useApp();
+  const { t, lang, farm, replaceFarm, setPrefs, toast, fmt, today, files, logEvent } = useApp();
   const [res, setRes] = useState(null);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
@@ -31,10 +31,12 @@ export function RestoreSheet({ onClose, fromSetup }) {
     setBusy(false);
   };
 
-  const restore = () => {
+  const restore = async () => {
     if (!res) return;
-    if (hasData && keepCopy && !fromSetup) downloadText(`mazraati-before-restore-${today}.json`, JSON.stringify(backupEnvelope(farm)), 'application/json');
+    if (hasData && keepCopy && !fromSetup) downloadText(`mazraati-before-restore-${today}.json`, JSON.stringify(backupEnvelope(farm, new Date(), await files.collect(farm))), 'application/json');
+    if (res.files) await files.put(res.files);
     replaceFarm(res.farm);
+    logEvent('restore', { label: fileName });
     const profiles = res.farm.profiles || [];
     setPrefs({ profileId: profiles.length === 1 && !profiles[0].passHash ? profiles[0].id : null });
     toast(t('rs.done', { n: res.farm.records.length }));

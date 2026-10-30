@@ -1,5 +1,6 @@
 // A realistic sample farm for the walkthrough. Built through the same commands as real entries.
 import { emptyFarm, addRecord, upsert } from './commands.mjs';
+import { saveOrder, receiveDelivery } from './orders.mjs';
 import { saleTotals, compute } from './ledger.mjs';
 import { isoDay, addDays } from './species.mjs';
 
@@ -27,7 +28,7 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
   f = upsert(f, 'customers', { id: 'c-fadi', accountNo: 'C-0001', name: ar ? 'ألبان أبو فادي' : 'Abu Fadi Dairy', phone: '+961 3 444 120', defaultPriceC: 85, defaultQty: 140 }, owner);
   f = upsert(f, 'customers', { id: 'c-hanan', accountNo: 'C-0002', name: ar ? 'متجر حنان' : "Hanan's Shop", phone: '+961 76 220 981', defaultPriceC: 100 }, owner);
   f = upsert(f, 'customers', { id: 'c-shams', accountNo: 'C-0003', name: ar ? 'مطعم شمس' : 'Shams Restaurant', phone: '+961 81 330 117', defaultPriceC: 95, openingC: 12000 }, owner);
-  f = upsert(f, 'suppliers', { id: 's-feed', name: ar ? 'شركة أعلاف البقاع' : 'Bekaa Feed Co', tags: ['feed'], openingC: 45000 }, owner);
+  f = upsert(f, 'suppliers', { id: 's-feed', name: ar ? 'شركة أعلاف البقاع' : 'Bekaa Feed Co', phone: '+961 8 812 330', tags: ['feed'], openingC: 45000 }, owner);
   f = upsert(f, 'suppliers', { id: 's-vet', name: ar ? 'صيدلية الريف البيطرية' : 'Rural Vet Pharmacy', tags: ['medicine'] }, owner);
   const cows = [
     ['101', ar ? 'زهرة' : 'Zahra', 'Holstein', 'lactating', 3], ['102', ar ? 'غزالة' : 'Ghazale', 'Holstein', 'lactating', 2], ['103', ar ? 'شامة' : 'Shama', 'Friesian', 'pregnant', 4],
@@ -84,6 +85,18 @@ export function sampleFarm(lang = 'ar', today = isoDay(), days = 40) {
     if (i === 30) f = addRecord(f, { type: 'capital', kind: 'withdraw', purpose: 'personal', personId: 'm-owner', amountC: 20000, account: 'cash', day, note: ar ? 'مصروف منزلي' : 'Household' }, owner, at(day, 20));
   }
   f.rev = 1;
+  // A grocer who buys cheese on account and is behind — shows up under Sales → Reminders.
+  f = upsert(f, 'customers', { id: 'c-karim', accountNo: 'C-0004', name: ar ? 'ميني ماركت كريم' : 'Karim Mini Market', phone: '+961 3 512 774' }, owner);
+  for (const [back, kg] of [[52, 8], [41, 6], [12, 5]]) {
+    const d = addDays(today, -back);
+    f = addRecord(f, { type: 'sale', day: d, customerId: 'c-karim', lines: [{ product: 'cheese', qty: kg, unit: 'kg', priceC: 600, amountC: kg * 600 }], discountC: 0, taxC: 0, totalC: kg * 600, paidNowC: 0, method: 'cash', dueDay: addDays(d, 30) }, owner, at(d, 11));
+  }
+  f = addRecord(f, { type: 'payment', day: addDays(today, -30), customerId: 'c-karim', cashC: 2000, method: 'cash', offsets: [] }, owner, at(addDays(today, -30), 17));
+  // A feed order, half delivered — Suppliers → Purchase orders.
+  f = saveOrder(f, { supplierId: 's-feed', day: addDays(today, -9), expectedDay: addDays(today, -2), note: ar ? 'التسليم إلى المستودع الشمالي' : 'Deliver to the north store',
+    lines: [{ category: 'feed', desc: ar ? 'علف أبقار حلوب 18%' : 'Dairy cow mix 18%', qty: 60, unit: 'bag', priceC: 1850 }, { category: 'hay', desc: ar ? 'بالات تبن' : 'Hay bales', qty: 40, unit: 'item', priceC: 450 }] }, owner, at(addDays(today, -9), 10));
+  { const o = f.orders[f.orders.length - 1];
+    f = receiveDelivery(f, o.id, { day: addDays(today, -4), deliveryNo: 'DN-2291', lines: [{ lineId: o.lines[0].id, qty: 30 }, { lineId: o.lines[1].id, qty: 40 }], dueDay: addDays(today, 26) }, owner, at(addDays(today, -4), 9)); }
   // A steer bought as a calf, treated, weighed and sold — kept on record in Animals → Sold.
   const soldDay = addDays(today, -12);
   f = upsert(f, 'animals', { id: 'a-107', species: 'cow', tag: '107', name: '', breed: 'Baladi', status: 'healthy', dob: addDays(today, -560), weight: 380, source: 'bought', priceC: 45000, boughtDay: addDays(today, -400) }, owner);

@@ -2,6 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
+import { RemindersPanel, useOverdue } from './reminders.jsx';
+import { OrdersList } from './orders.jsx';
+import { Attachments } from './documents.jsx';
+import { orderList, poNo } from '../core/orders.mjs';
+import { expiringDocs } from '../core/documents.mjs';
 import { RecordRow, SelectionBar, describe } from './tx.jsx';
 import { customerInvoices, supplierBills, live } from '../core/ledger.mjs';
 import { partyLines } from '../core/statement.mjs';
@@ -70,7 +75,7 @@ export function useAttention() {
       if (!snap.cust[c.id]?.dueC) continue;
       if (customerInvoices(farm, c.id, snap, { today, termsDays: terms }).some((i) => i.status === 'overdue')) overdueCust++;
     }
-    if (overdueCust) out.push({ tone: 'bad', text: t('att.custDue', { n: overdueCust }), go: ['sales', null, 'customers'] });
+    if (overdueCust) out.push({ tone: 'bad', text: t('att.custDue', { n: overdueCust }), go: ['sales', null, 'reminders'] });
     let supOver = 0;
     for (const s of farm.suppliers) supOver += supplierBills(farm, s.id, { today }).bills.filter((b) => b.status === 'overdue').length;
     if (supOver) out.push({ tone: 'bad', text: t('att.supOverdue', { n: supOver }), go: ['suppliers'] });
@@ -85,6 +90,10 @@ export function useAttention() {
     if (milkers && !farm.records.some((r) => r.type === 'milk' && r.day === today && !r.deletedAt) && new Date().getHours() >= 10) out.push({ tone: 'info', text: t('att.noMilk'), go: ['production', null, 'milk'], action: 'milk' });
     const openBills = farm.records.filter((r) => live(r) && r.type === 'expense' && !r.supplierId && r.source !== 'person' && (r.paidC || 0) < r.amountC);
     if (openBills.length) out.push({ tone: 'warn', text: `${t('att.openBills', { n: openBills.length })} · ${fmt(snap.payablesC)}`, go: ['expenses', null, 'open'] });
+    const lateOrders = orderList(farm).filter((o) => o.late).length;
+    if (lateOrders) out.push({ tone: 'warn', text: t('att.lateOrders', { n: lateOrders }), go: ['suppliers', null, 'orders'] });
+    const docs = expiringDocs(farm, today);
+    if (docs.length) out.push({ tone: docs.some((d) => d.state === 'expired') ? 'bad' : 'warn', text: t('att.docs', { n: docs.length, d: docs[0].title }), go: docs[0].owner.list === 'animals' ? ['animals', docs[0].owner.id] : docs[0].owner.list === 'customers' ? ['sales', docs[0].owner.id] : docs[0].owner.list === 'orders' ? ['suppliers', null, 'orders'] : [docs[0].owner.list, docs[0].owner.id] });
     return out;
   }, [farm, snap, today, t, fmt]);
 }
@@ -222,6 +231,7 @@ function SalesHome({ tab, setTab }) {
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
   const [sort, setSort] = useState('due');
+  const overdue = useOverdue();
   const custs = farm.customers.filter((c) => !!c.archived === arch && (!q || `${c.name} ${c.phone} ${c.accountNo}`.toLowerCase().includes(q.toLowerCase())))
     .map((c) => {
       const last = farm.records.filter((r) => live(r) && (r.customerId === c.id)).reduce((m, r) => (r.day > m ? r.day : m), '');
@@ -232,7 +242,7 @@ function SalesHome({ tab, setTab }) {
   return (
     <div className="screen">
       <PageHead title={t('nav.sales')} actions={<><Button icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button><Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button></>} />
-      <Tabs value={tab} onChange={setTab} tabs={[{ value: 'customers', label: t('sales.customers'), count: farm.customers.filter((c) => !c.archived).length }, { value: 'invoices', label: t('sales.invoices') }]} />
+      <Tabs value={tab} onChange={setTab} tabs={[{ value: 'customers', label: t('sales.customers'), count: farm.customers.filter((c) => !c.archived).length }, { value: 'invoices', label: t('sales.invoices') }, { value: 'reminders', label: t('rem.tab'), count: overdue.filter((r) => r.remindNow).length || undefined }]} />
       {tab === 'customers' ? (
         <section className="panel">
           <FilterPanel id="customers" onReset={() => { setQ(''); setArch(false); setSort('due'); }}
@@ -255,7 +265,7 @@ function SalesHome({ tab, setTab }) {
             </div>
           ) : <Empty title={t('sales.noCustomers')} body={t('sales.noCustomersHint')} icon="people" action={<Button variant="primary" icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button>} />}
         </section>
-      ) : <InvoiceRegister />}
+      ) : tab === 'reminders' ? <RemindersPanel /> : <InvoiceRegister />}
     </div>
   );
 }
@@ -282,6 +292,7 @@ function CustomerAccount({ id, tab = 'activity' }) {
       <section className="account-head sticky-bal">
         <div><div className="muted">{s.creditBalC ? t('cust.credit') : t('cust.due')}</div><div className="acct-big num">{fmt(s.creditBalC || s.dueC || 0)}</div></div>
         <div className="row-btns">
+          {s.dueC > 0 && <Button icon="whatsapp" onClick={() => ui.open('reminder', { customerId: id })}>{t('rem.send')}</Button>}
           <Button icon="cart" onClick={() => ui.open('sale', { customerId: id })}>{t('cust.newSale')}</Button>
           <Button variant="primary" icon="cash" onClick={() => ui.open('payment', { customerId: id })}>{t('cust.takePayment')}</Button>
         </div>
@@ -294,6 +305,7 @@ function CustomerAccount({ id, tab = 'activity' }) {
             right={r.type === 'sale' ? <span className="amt-stack"><span>{r.voided ? <s>{fmt(r.totalC)}</s> : fmt(r.totalC)}</span>{i && <Pill status={i.status}>{t(`st.${i.status}`)}{i.status !== 'paid' && ` · ${fmt(i.dueC)}`}</Pill>}</span> : undefined} />;
         }) : <Empty title={t('sales.noSales')} icon="cart" />}
       </section>
+      <Attachments list="customers" id={id} />
     </div>
   );
 }
@@ -428,11 +440,12 @@ function Obligations() {
 /* ───────────── Suppliers ───────────── */
 export function SuppliersScreen() {
   const { route } = useApp();
-  return route.id ? <SupplierAccount id={route.id} tab={route.tab || 'bills'} /> : <SupplierList />;
+  return route.id ? <SupplierAccount id={route.id} tab={route.tab || 'bills'} /> : <SupplierList tab={route.tab === 'orders' ? 'orders' : 'suppliers'} />;
 }
 
-function SupplierList() {
+function SupplierList({ tab }) {
   const { farm, snap, t, fmt, ui, nav, today, lang } = useApp();
+  const activeOrders = orderList(farm).filter((o) => ['open', 'partial'].includes(o.status)).length;
   const [arch, setArch] = useState(false);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState('due');
@@ -449,7 +462,9 @@ function SupplierList() {
   const totalOver = rows.reduce((a, r) => a + r.over, 0);
   return (
     <div className="screen">
-      <PageHead title={t('sup.title')} actions={<><Button icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button><Button variant="primary" icon="truck" onClick={() => ui.open('supplierPay')}>{t('sup.pay')}</Button></>} />
+      <PageHead title={t('sup.title')} actions={<><Button icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button><Button icon="file" onClick={() => ui.open('order')}>{t('po.new')}</Button><Button variant="primary" icon="truck" onClick={() => ui.open('supplierPay')}>{t('sup.pay')}</Button></>} />
+      <Tabs value={tab} onChange={(x) => nav('suppliers', null, x === 'suppliers' ? null : x)} tabs={[{ value: 'suppliers', label: t('sup.title'), count: farm.suppliers.filter((s) => !s.archived).length }, { value: 'orders', label: t('po.title'), count: activeOrders || undefined }]} />
+      {tab === 'orders' ? <OrdersList /> : (<>
       <section className="stats-row">
         <Stat label={t('sup.totalOwe')} value={fmt(snap.supplierDueC)} />
         <Stat label={t('sup.overdue')} value={fmt(totalOver)} tone={totalOver ? 'out' : null} />
@@ -476,6 +491,7 @@ function SupplierList() {
           </div>
         ) : <Empty title={t('sup.none')} body={t('sup.noneHint')} icon="truck" action={<Button variant="primary" icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button>} />}
       </section>
+      </>)}
     </div>
   );
 }
@@ -501,17 +517,18 @@ function SupplierAccount({ id, tab }) {
       <section className="account-head sticky-bal">
         <div><div className="muted">{creditC ? t('sup.credit') : t('sup.we_owe')}</div><div className="acct-big num">{fmt(creditC || due)}</div></div>
         <div className="row-btns">
+          <Button icon="file" onClick={() => ui.open('order', { supplierId: id })}>{t('po.new')}</Button>
           <Button icon="receipt" onClick={() => ui.open('expense', { supplierId: id })}>{t('sup.bill')}</Button>
           <Button variant="primary" icon="cash" onClick={() => ui.open('supplierPay', { supplierId: id })}>{t('sup.pay')}</Button>
         </div>
       </section>
-      <Tabs value={tab} onChange={(x) => nav('suppliers', id, x)} tabs={[{ value: 'bills', label: t('sup.bills'), count: bills.filter((b) => b.dueC > 0).length }, { value: 'payments', label: t('sup.payments'), count: pays.length }]} />
-      <section className="panel">
+      <Tabs value={tab} onChange={(x) => nav('suppliers', id, x)} tabs={[{ value: 'bills', label: t('sup.bills'), count: bills.filter((b) => b.dueC > 0).length }, { value: 'payments', label: t('sup.payments'), count: pays.length }, { value: 'orders', label: t('po.title'), count: orderList(farm).filter((o) => o.order.supplierId === id).length || undefined }]} />
+      {tab === 'orders' ? <OrdersList supplierId={id} /> : <section className="panel">
         {tab === 'bills' ? (bills.length ? [...bills].reverse().map((b) => (
           <div className="row" key={b.id}>
             <button type="button" className="row-main" onClick={() => (b.record ? ui.open('drawer', { id: b.id }) : ui.open('supplier', { record: s }))}>
               <span className="row-ico emoji">{CATEGORY_ICON[b.category] || '•'}</span>
-              <span className="row-text"><span className="row-title">{b.opening ? t('c.opening') : t(`c.${b.category}`)}</span><span className="row-sub">{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}</span></span>
+              <span className="row-text"><span className="row-title">{b.opening ? t('c.opening') : t(`c.${b.category}`)}</span><span className="row-sub">{b.record?.orderId && <span className="row-no num">{poNo((farm.orders || []).find((o) => o.id === b.record.orderId), farm.settings)}{b.record.deliveryNo ? ` · ${b.record.deliveryNo}` : ''}</span>}{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}</span></span>
               <span className="amt-stack"><span className="num">{fmt(b.amountC)}</span><Pill status={b.status}>{t(`st.${b.status}`)}{b.dueC > 0 && b.dueC < b.amountC ? ` · ${fmt(b.dueC)}` : ''}</Pill></span>
             </button>
             {b.dueC > 0 && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: id, billId: b.id })}>{t('exp.payBill')}</Button>}
@@ -520,7 +537,8 @@ function SupplierAccount({ id, tab }) {
           pays.length ? (showAll ? pays : pays.slice(0, 12)).map((r) => <RecordRow key={r.id} r={r} dir={-1} onOpen={() => ui.open('drawer', { id: r.id })} />) : <Empty title={t('sup.payments')} icon="cash" />
         )}
         {tab === 'payments' && pays.length > 12 && !showAll && <Button className="more-btn" onClick={() => setShowAll(true)}>{t('more')} ({pays.length - 12})</Button>}
-      </section>
+      </section>}
+      <Attachments list="suppliers" id={id} />
     </div>
   );
 }
@@ -583,6 +601,7 @@ function PersonAccount({ id }) {
             right={<span className={`num ${l.chargeC ? 'in' : 'out'}`}>{l.chargeC ? `+${fmt(l.chargeC)}` : `−${fmt(l.creditC).replace('−', '')}`}</span>} />
         )) : <Empty title={t('cash.empty')} icon="people" action={<Button variant="primary" onClick={() => ui.open('capital', { personId: id })}>{t('ppl.what')}</Button>} />}
       </section>
+      <Attachments list="people" id={id} />
     </div>
   );
 }
