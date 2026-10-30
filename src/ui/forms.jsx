@@ -295,12 +295,21 @@ export function SupplierPaySheet({ record, supplierId, billId, personId, onClose
   const set = (p) => setF((x) => ({ ...x, ...p }));
   const open = f.supplierId ? supplierBills(farm, f.supplierId, { today }).bills.filter((b) => b.dueC > 0) : [];
   const dueC = (snap.sup[f.supplierId]?.dueC || 0) + (record && record.supplierId === f.supplierId ? record.amountC : 0);
-  const rec = { type: 'supplierPay', day: f.day, supplierId: f.supplierId, billId: f.billId || null, amountC: f.amountC, source: f.source, personId: f.source === 'person' ? f.personId : null, note: f.note };
-  const issues = validateRecord(rec, { today, dueC });
+  // Paying more than is open: either an advance (credit with the supplier) or a new purchase.
+  // A purchase becomes its own bill, paid in full, so it is counted as an expense exactly once.
+  const extraC = f.supplierId && !record ? Math.max(0, f.amountC - Math.max(0, dueC)) : 0;
+  const [extra, setExtra] = useState({ mode: 'purchase', category: '' });
+  const asPurchase = extraC > 0 && extra.mode === 'purchase';
+  const payC = asPurchase ? f.amountC - extraC : f.amountC;
+  const pay = { type: 'supplierPay', day: f.day, supplierId: f.supplierId, billId: f.billId || null, amountC: payC, source: f.source, personId: f.source === 'person' ? f.personId : null, note: f.note, ...(extraC > 0 && !asPurchase ? { allowCredit: true } : {}) };
+  const buy = asPurchase ? { type: 'expense', day: f.day, category: extra.category || 'other', amountC: extraC, paidC: extraC, source: f.source, personId: f.source === 'person' ? f.personId : null, supplierId: f.supplierId, note: f.note } : null;
+  const recs = [payC > 0 || !buy ? pay : null, buy].filter(Boolean);
+  const rec = pay;
+  const issues = validateRecord(rec, { today, dueC }).filter((i) => !(extraC > 0 && i.code === 'supplierPay.overDue'));
   const bill = open.find((b) => b.id === f.billId);
   return (
     <Sheet title={record ? t('sp.edit') : t('sp.title')} onClose={onClose}
-      footer={<TxFooter recs={[rec]} editing={record} ctx={{ dueC }} onDone={(m) => { clearDraft(); if (m === 'close' || record) onClose(); }} />}>
+      footer={<TxFooter recs={recs} editing={record} ctx={{ dueC: asPurchase ? undefined : dueC }} onDone={(m) => { clearDraft(); if (m === 'close' || record) onClose(); }} />}>
       <div className="grid2">
         <Picker label={t('exp.supplier')} value={f.supplierId} onChange={(v) => set({ supplierId: v, billId: '' })} options={parties.suppliers} error={issuesFor(issues, 'supplierId', t, f.amountC)} />
         <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
@@ -310,6 +319,19 @@ export function SupplierPaySheet({ record, supplierId, billId, personId, onClose
         options={open.map((b) => ({ value: b.id, label: `${b.opening ? t('c.opening') : t(`c.${b.category}`)} · ${b.day.startsWith('0000') ? '' : b.day}`, sub: fmt(b.dueC) }))} />}
       <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad
         chips={[bill && { label: t('exp.payBill'), cents: bill.dueC }, dueC > 0 && { label: t('sale.payFull'), cents: dueC }].filter(Boolean)} error={issuesFor(issues, 'amount', t, f.amountC)} />
+      {extraC > 0 && (
+        <div className="extra-box">
+          <b>{t('spx.title', { a: fmt(extraC) })}</b>
+          <Seg value={extra.mode} onChange={(v) => setExtra({ ...extra, mode: v })} options={[{ value: 'purchase', label: t('spx.purchase') }, { value: 'advance', label: t('spx.advance') }]} />
+          {asPurchase ? (
+            <>
+              <Select label={t('exp.item')} value={extra.category} onChange={(v) => setExtra({ ...extra, category: v })} placeholder={t('select')}
+                options={Object.values(EXPENSE_GROUPS).flat().filter((c) => c !== 'opening').map((c) => ({ value: c, label: `${CATEGORY_ICON[c] || ''} ${t(`c.${c}`)}` }))} />
+              <p className="muted small">{dueC > 0 ? t('spx.purchaseHint', { a: fmt(dueC), b: fmt(extraC) }) : t('spx.purchaseHint0', { b: fmt(extraC) })}</p>
+            </>
+          ) : <p className="muted small">{t('spx.advanceHint', { a: fmt(extraC) })}</p>}
+        </div>
+      )}
       <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'person'], t, 'exp.src.')} />
       {f.source === 'person' && <Select label={t('exp.person')} value={f.personId} onChange={(v) => set({ personId: v })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />}
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />

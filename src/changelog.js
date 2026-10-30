@@ -2,6 +2,14 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.13.0', date: '2026-10-30', items: [
+    ['ledger', 'الأقسام مترابطة بحساب واحد: كل تكلفة تُحسب مرة واحدة، والدفع للمورد يسدّد الفاتورة دون تكرار', 'One set of books: every cost counts once, and paying a supplier settles the bill without double counting'],
+    ['receipt', 'الفواتير المدفوعة لاحقًا للمورد تظهر مدفوعة في المصروفات', 'Supplier bills paid later now show as paid in Expenses'],
+    ['truck', 'الدفع للمورد بأكثر من المستحق: سجّل الزيادة مشتريات جديدة أو دفعة مقدّمة', 'Paying a supplier more than is open: record the extra as a purchase or an advance'],
+    ['cow', 'شراء حيوان يُسجَّل في المصروفات تلقائيًا ويتبع السعر', 'Buying an animal goes into Expenses and follows its price'],
+    ['chart', 'التقارير تطابق الأرباح والخسائر تمامًا، والضريبة خارج المبيعات', 'Reports match the profit and loss exactly, with tax kept out of sales'],
+    ['image', 'النقر على الشعار يعيدك إلى الصفحة الرئيسية (الصندوق)', 'Tap the logo to go home (the cash box)'],
+  ] },
   { v: '3.12.3', date: '2026-10-30', items: [
     ['image', 'الشعار يتحرك عند مرور المؤشر عليه: تمايل خفيف ولمعة', 'The logo comes alive on hover: a gentle sway and a shine'],
   ] },

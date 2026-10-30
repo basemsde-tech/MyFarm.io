@@ -423,9 +423,9 @@ export function ReportsScreen() {
         <Seg small wrap value={per.p} onChange={per.onChange} options={['week', 'month', 'lastMonth', 'year', 'all'].map((p) => ({ value: p, label: t(`p.${p}`) }))} />
       </FilterPanel>
       <section className="stats-row">
-        <Stat label={t('rep.sales')} value={fmt(rep.salesC)} sub={rep.walkinC ? `${t('rep.walkin')} ${fmt(rep.walkinC)}` : null} />
+        <Stat label={t('rep.sales')} value={fmt(rep.netSalesC)} sub={[rep.taxC ? t('rep.taxApart', { a: fmt(rep.taxC) }) : null, rep.walkinC ? `${t('rep.walkin')} ${fmt(rep.walkinC)}` : null].filter(Boolean).join(' · ') || null} />
         <Stat label={t('rep.expenses')} value={fmt(rep.expenseC)} />
-        <Stat label={t('rep.profit')} value={fmt(rep.profitC)} sub={t('rep.profitHint')} tone={rep.profitC >= 0 ? 'in' : 'out'} />
+        <Stat label={t('rep.profit')} value={fmt(rep.profitC)} sub={rep.otherIncomeC ? t('rep.profitHintOther', { a: fmt(rep.otherIncomeC) }) : t('rep.profitHint')} tone={rep.profitC >= 0 ? 'in' : 'out'} />
         <Stat label={t('rep.production')} value={`${milkQ(rep.milkL)}`} sub={rep.eggs ? `${fmtQty(rep.eggs, 0)} ${t('rep.eggsN')}` : `${t('prod.sold')} ${fmtQty(rep.milkSoldL)}`} />
       </section>
       <div className="two-col">
@@ -443,7 +443,7 @@ export function ReportsScreen() {
             <dt>{t('out')}</dt><dd className="num out">−{fmt(rep.cash.outC).replace('−', '')}</dd>
             <dt><b>{t('cash.closing')}</b></dt><dd className="num"><b>{fmt(rep.cash.closingC)}</b></dd>
             <dt>{t('rep.receivable')}</dt><dd className="num">{fmt(rep.receivableC)}</dd>
-            <dt>{t('rep.payable')}</dt><dd className="num">{fmt(rep.supplierDueC)}</dd>
+            <dt>{t('rep.payableAll')}</dt><dd className="num">{fmt(rep.payableC)}</dd>
           </dl>
         </section>
       </div>

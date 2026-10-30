@@ -197,3 +197,13 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 ## 21. 3.12 — Milk use cards, log off with backup
 - Milk use: "Used for" cards (built-ins + the farm's own). Create, rename, pick an emoji, remove. A removed card that entries point to is hidden, never deleted, so old entries keep their name. Each card shows the last 30 days' amount. Quantity is typed in the farm's milk unit and stored in litres.
 - Log off (account menu, phone More sheet): a dialog offers "Back up and log off" — writes to the connected backup folder, or to one remembered backup file that is replaced each time (picked once), or downloads — then "Log off without backup" or Cancel. Log off returns to the profile screen; profiles with a passcode ask for it, others enter with one tap.
+
+## 22. 3.13 — One set of books across departments
+- Rule: a cost is counted once, when the bill (expense) is recorded. Paying a supplier later (supplierPay) moves cash and settles the bill; it is never a second expense. Customer-paid costs (payment offsets) and medicine costs are expenses once.
+- Supplier payments are allocated to bills (named bill first, then oldest first, opening balance as the oldest bill) inside the ledger snapshot, so the Expenses list shows real paid status; the same allocation drives the supplier statement and payables aging.
+- Reports take income, expenses and profit from the journal P&L (tax kept out of sales; customer-paid costs as other income), so Reports = Accounts P&L = Expenses total. "We owe" everywhere (cash box, reports, expenses, balance sheet, aging) = supplier balances + other unpaid bills.
+- Expenses screen explains each period: costs = paid when recorded + on credit / paid later, plus what was paid to suppliers.
+- Paying a supplier more than is open asks what the extra is: a new purchase (a paid supplier bill, counted once) or an advance (supplier credit, not an expense until billed).
+- A bought animal's price becomes a linked livestock expense (opt-out to avoid duplicates); later price edits update it.
+- Home is the cash box: the logo (sidebar, phone top bar) goes there.
+- test/integration.test.mjs builds a farm with every flow and checks the screens against each other (with and without tax).

@@ -147,6 +147,19 @@ export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = 
       default:
     }
   }
+  // Supplier bills show what has really been paid on them, including payments made later.
+  {
+    const bills = new Map(); const pays = new Map();
+    const push = (m, k, v) => { let x = m.get(k); if (!x) m.set(k, (x = [])); x.push(v); };
+    for (const p of farm.suppliers || []) if (p.openingC) push(bills, p.id, { id: `opening-${p.id}`, day: p.openingDay || '0000-00-00', amountC: p.openingC, paidC: 0, opening: true });
+    for (const e of s.expenses) if (e.recordType === 'expense' && e.supplierId) { e.paidAtEntryC = e.paidC; push(bills, e.supplierId, e); }
+    for (const r of recs) if (r.type === 'supplierPay' && r.supplierId) push(pays, r.supplierId, r);
+    for (const [id, list] of bills) {
+      allocateSupplier(list, pays.get(id) || [], now ? new Date(now).toISOString().slice(0, 10) : null);
+      const op = list.find((b) => b.opening);
+      if (op) bump(s.sup, id, 'openingDueC', op.dueC);
+    }
+  }
   for (const v of Object.values(s.cust)) {
     const net = (v.chargeC || 0) - (v.creditC || 0);
     v.dueC = Math.max(0, net);
@@ -214,6 +227,34 @@ export function customerInvoices(farm, customerId, snap, { today, termsDays = 30
   });
 }
 
+
+/**
+ * Spread a supplier's payments over their bills: a payment that names a bill goes there first,
+ * everything else pays the oldest bills first. Bills carry {id, day, amountC, paidC} (paidC = paid
+ * when the bill was entered); they come back with paidC, dueC and status filled in.
+ */
+function allocateSupplier(bills, pays, today) {
+  bills.sort((a, b) => a.day.localeCompare(b.day));
+  let pool = 0;
+  for (const p of pays) {
+    const b = p.billId && bills.find((x) => x.id === p.billId);
+    if (b) {
+      const take = Math.max(0, Math.min(b.amountC - b.paidC, p.amountC));
+      b.paidC += take;
+      pool += p.amountC - take;
+    } else pool += p.amountC || 0;
+  }
+  for (const b of bills) {
+    const take = Math.max(0, Math.min(b.amountC - b.paidC, pool));
+    b.paidC += take;
+    pool -= take;
+    b.dueC = b.amountC - b.paidC;
+    b.status = b.dueC <= 0 ? 'paid' : b.paidC > 0 ? 'partial' : 'unpaid';
+    if (b.dueC > 0 && b.dueDay && today && b.dueDay < today) b.status = 'overdue';
+  }
+  return pool; // paid ahead of any bill: the supplier owes the farm goods or money
+}
+
 /** Open supplier bills, with opening balance as a bill like any other. */
 export function supplierBills(farm, supplierId, { today } = {}) {
   const sup = (farm.suppliers || []).find((x) => x.id === supplierId);
@@ -221,28 +262,7 @@ export function supplierBills(farm, supplierId, { today } = {}) {
   if (sup?.openingC) bills.push({ id: `opening-${supplierId}`, day: sup.openingDay || '0000-00-00', amountC: sup.openingC, paidC: 0, category: 'opening', opening: true });
   const ix = partyIndex(farm.records || []);
   for (const r of ix.bills.get(supplierId) || []) bills.push({ id: r.id, day: r.day, amountC: r.amountC, paidC: Math.min(r.paidC || 0, r.amountC), category: r.category, dueDay: r.dueDay, record: r });
-  bills.sort((a, b) => a.day.localeCompare(b.day));
-  const pays = ix.pays.get(supplierId) || [];
-  // Payments linked to a bill go there first, then the unlinked pool applies oldest-first.
-  let pool = 0;
-  for (const p of pays) {
-    const b = p.billId && bills.find((x) => x.id === p.billId);
-    if (b) {
-      const room = b.amountC - b.paidC;
-      const take = Math.min(room, p.amountC);
-      b.paidC += take;
-      pool += p.amountC - take;
-    } else pool += p.amountC;
-  }
-  for (const b of bills) {
-    const room = b.amountC - b.paidC;
-    const take = Math.min(room, pool);
-    b.paidC += take;
-    pool -= take;
-    b.dueC = b.amountC - b.paidC;
-    b.status = b.dueC <= 0 ? 'paid' : b.dueC < b.amountC ? 'partial' : 'unpaid';
-    if (b.dueC > 0 && b.dueDay && today && b.dueDay < today) b.status = 'overdue';
-  }
+  const pool = allocateSupplier(bills, ix.pays.get(supplierId) || [], today);
   return { bills, creditC: pool };
 }
 

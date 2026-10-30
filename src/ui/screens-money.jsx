@@ -177,7 +177,7 @@ export function CashScreen() {
           <Stat label={t('cash.todayIn')} value={todayIn ? `+${fmt(todayIn)}` : fmt(0)} tone="in" />
           <Stat label={t('cash.todayOut')} value={todayOut ? `−${fmt(todayOut)}` : fmt(0)} tone="out" />
           <Stat label={t('cash.owedToUs')} value={fmt(snap.receivableC)} onClick={() => nav('sales', null, 'customers')} />
-          <Stat label={t('cash.weOwe')} value={fmt(snap.supplierDueC)} onClick={() => nav('suppliers')} />
+          <Stat label={t('cash.weOweAll')} value={fmt(snap.supplierDueC + snap.payablesC)} sub={snap.payablesC && snap.supplierDueC ? `${t('nav.suppliers')} ${fmt(snap.supplierDueC)}` : null} onClick={() => nav('expenses', null, 'open')} />
         </div>
       </section>
 
@@ -357,6 +357,28 @@ export function ExpensesScreen() {
             <Stat label={t('exp.dailyAvg')} value={fmt(Math.round(total / days))} />
             <Stat label={t('exp.open')} value={fmt(snap.payablesC + snap.supplierDueC)} onClick={() => nav('expenses', null, 'open')} />
           </section>
+          {(() => {
+            // How this period's costs were paid: once a cost is a bill, paying it later only settles it.
+            const inP = (d) => d >= per.range.from && d <= per.range.to;
+            const all = snap.expenses.filter((e) => inP(e.day));
+            const costs = all.reduce((x, e) => x + e.amountC, 0);
+            const atOnce = all.reduce((x, e) => x + (e.paidAtEntryC ?? e.paidC), 0);
+            const supPaid = snap.flows.filter((fl) => fl.kind === 'supplierPay' && inP(fl.day)).reduce((x, fl) => x + fl.amountC, 0)
+              + farm.records.filter((r) => !r.deletedAt && r.type === 'supplierPay' && r.source === 'person' && inP(r.day)).reduce((x, r) => x + (r.amountC || 0), 0);
+            if (!costs && !supPaid) return null;
+            return (
+              <section className="panel exp-flow">
+                <div className="ef-row">
+                  <div><span className="muted small">{t('ef.costs')}</span><b className="num">{fmt(costs)}</b></div>
+                  <span className="ef-op" aria-hidden="true">=</span>
+                  <div><span className="muted small">{t('ef.atOnce')}</span><b className="num">{fmt(atOnce)}</b></div>
+                  <span className="ef-op" aria-hidden="true">+</span>
+                  <div><span className="muted small">{t('ef.later')}</span><b className="num">{fmt(costs - atOnce)}</b></div>
+                </div>
+                <p className="muted small">{t('ef.rule')}{supPaid ? ` ${t('ef.supPaid', { a: fmt(supPaid) })}` : ''}</p>
+              </section>
+            );
+          })()}
           {Object.keys(byGroup).length > 1 && (
             <section className="panel bars">
               <h2>{t('exp.byGroup')}</h2>

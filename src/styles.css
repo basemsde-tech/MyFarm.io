@@ -1602,3 +1602,20 @@ button.bar-row:hover { background: var(--surface-2); }
 @keyframes logo-shine { 0% { opacity: 1; background-position: 160% 0; } 100% { opacity: 1; background-position: -60% 0; } }
 .boot .brand-mark.app-logo::after { animation: logo-shine 1.6s var(--ease) infinite; }
 @media (prefers-reduced-motion: reduce) { .brand-mark.app-logo img, .brand-mark.app-logo::after { animation: none !important; } }
+
+/* Expenses: how this period's costs were paid */
+.exp-flow { gap: 8px; }
+.ef-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ef-row > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-2); min-inline-size: 130px; }
+.ef-row b { font-size: 1.05rem; }
+.ef-op { font-size: 1.2rem; color: var(--muted); font-weight: 600; }
+.exp-flow p { margin: 0; }
+.extra-box { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--gold-bright) 55%, transparent); background: color-mix(in srgb, var(--gold-bright) 10%, var(--surface)); animation: pop-in .28s var(--spring); }
+.extra-box p { margin: 0; }
+
+/* The logo is the way home (the cash box) */
+.brand-home { border: 0; background: none; color: inherit; text-align: start; padding: 4px; margin: -4px; border-radius: 14px; cursor: pointer; font: inherit; transition: background var(--t-fast); }
+.brand-home:hover { background: rgba(255, 255, 255, .05); }
+.brand-home:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.top-home { display: none; border: 0; background: none; padding: 2px; border-radius: 10px; }
+@media (max-width: 720px) { .top-home { display: inline-flex; } }

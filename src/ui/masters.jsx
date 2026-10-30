@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useApp, inFrame } from './store.jsx';
 import { Button, Icon, Pill, MoneyInput, QtyInput, DateInput, Seg, Select, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton, Avatar, dayLabel } from './kit.jsx';
 import { TxFooter } from './tx.jsx';
-import { upsert, newId } from '../core/commands.mjs';
+import { upsert, newId, addRecord, editRecord } from '../core/commands.mjs';
 import { SPECIES, statusesFor, addDays } from '../core/species.mjs';
 import { saleOfAnimal } from '../core/animals.mjs';
 import { saleText, receiptText, statementText } from '../core/messages.mjs';
@@ -102,7 +102,7 @@ export function PersonMasterSheet({ record, onClose }) {
 }
 
 export function AnimalSheet({ record, species: presetSpecies, onClose }) {
-  const { farm, t, today } = useApp();
+  const { farm, t, today, fmt, ui } = useApp();
   const [f, setF] = useState(record || { species: presetSpecies || 'cow', tag: '', name: '', breed: '', status: presetSpecies === 'chicken' ? 'laying' : 'healthy', dob: '', weight: 0, yieldL: 0, parity: 0, source: 'born', priceC: 0, birds: 0, coop: '', photo: '', medicine: '', notes: '', startDay: today });
   const set = (p) => setF((x) => ({ ...x, ...p }));
   const save = useSaveMaster('animals', onClose);
@@ -115,9 +115,31 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
   const saleLocked = !!(record && record.status === 'sold' && saleOfAnimal(farm, record.id));
   const sold = f.sold || {};
   const setSold = (p) => set({ sold: { ...sold, ...p } });
+  // Buying an animal is a cost like any other: it goes into Expenses (livestock) once, linked to the animal.
+  const { commit, actor } = useApp();
+  const buyRec = record && farm.records.find((r) => r.type === 'expense' && !r.deletedAt && r.purchaseOf === record.id);
+  const priceChanged = !record || (record.priceC || 0) !== (f.priceC || 0) || record.source !== f.source;
+  const canLink = f.source === 'bought' && f.priceC > 0 && !buyRec && priceChanged;
+  const [linkBuy, setLinkBuy] = useState(true);
+  const saveAll = () => {
+    const item = { ...f, tag: f.tag.trim(), id: f.id || newId('ani') };
+    const next = commit((x) => {
+      let n = upsert(x, 'animals', item, actor);
+      const day = (flock ? null : f.boughtDay) || f.startDay || today;
+      if (canLink && linkBuy) {
+        n = addRecord(n, { type: 'expense', day: day > today ? today : day, category: 'livestock', amountC: f.priceC, paidC: f.priceC, source: 'cash', qty: flock ? (f.birds || 1) : 1, unit: 'head', note: item.tag, purchaseOf: item.id }, actor);
+      } else if (buyRec && f.source === 'bought' && (buyRec.amountC !== f.priceC)) {
+        // Keep the linked expense in step with the price on the card.
+        const fully = (buyRec.paidC || 0) >= buyRec.amountC;
+        n = editRecord(n, buyRec.id, { amountC: f.priceC, ...(fully ? { paidC: f.priceC } : {}) }, actor, t('ani.price'));
+      }
+      return n;
+    }, { label: t('saved') });
+    if (next) onClose?.(next);
+  };
   return (
     <Sheet title={record ? t('ani.edit') : t('ani.new')} onClose={onClose} wide
-      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err} onClick={() => save({ ...f, tag: f.tag.trim() })}>{t('save')}</Button></div>}>
+      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err} onClick={saveAll}>{t('save')}</Button></div>}>
       {!record && <Seg value={f.species} onChange={(v) => set({ species: v, status: SPECIES[v].mode === 'flock' ? 'laying' : 'healthy', breed: '' })} options={Object.keys(SPECIES).map((s) => ({ value: s, label: t(`sp.${s}`) }))} />}
       <div className="animal-form">
         <label className="photo-pick">
@@ -153,6 +175,8 @@ export function AnimalSheet({ record, species: presetSpecies, onClose }) {
       )}
       <Seg label={t('ani.source')} value={f.source} onChange={(v) => set({ source: v })} options={[{ value: 'born', label: t('ani.born') }, { value: 'bought', label: t('ani.bought') }]} />
       {f.source === 'bought' && <MoneyInput label={t('ani.price')} cents={f.priceC} onCents={(c) => set({ priceC: c })} />}
+      {canLink && <Check label={t('ani.buyAsExp', { a: fmt(f.priceC) })} hint={t('ani.buyAsExpHint')} checked={linkBuy} onChange={setLinkBuy} />}
+      {buyRec && f.source === 'bought' && <p className="muted small linked-note"><Icon name="receipt" size={14} /> {t('ani.buyLinked', { a: fmt(buyRec.amountC) })} <button type="button" className="link" onClick={() => ui.open('drawer', { id: buyRec.id })}>{t('nav.open')}</button></p>}
       {f.source === 'bought' && !flock && <DateInput label={t('sold.boughtDay')} value={f.boughtDay || ''} max={today} onChange={(v) => set({ boughtDay: v })} />}
       {f.status === 'sold' && (
         <section className="sub-sec sold-sec">

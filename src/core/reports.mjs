@@ -1,5 +1,6 @@
 // Period reports using the same day keys and cent maths as the screens.
 import { live, compute } from './ledger.mjs';
+import { profitAndLoss } from './accounts.mjs';
 import { milkLots, saleMilkL } from './milk.mjs';
 
 export function periodReport(farm, from, to) {
@@ -23,24 +24,27 @@ export function periodReport(farm, from, to) {
     }
     // Attribute the invoice total across lines proportionally for the product split.
     const gross = r.lines.reduce((s, l) => s + (l.amountC || 0), 0) || 1;
-    for (const l of r.lines) byProduct[l.product].amountC += Math.round((r.totalC * (l.amountC || 0)) / gross);
+    const net = (r.totalC || 0) - Math.max(0, Math.min(r.totalC || 0, r.taxC || 0));
+    for (const l of r.lines) byProduct[l.product].amountC += Math.round((net * (l.amountC || 0)) / gross);
   }
+  // Income, costs and profit come from the same journal as the Accounts screen, so the
+  // report, the profit and loss and the Expenses list can never disagree.
+  const pl = profitAndLoss(farm, { from, to });
   const byCategory = {};
-  for (const e of snapEnd.expenses) {
-    if (e.day < from || e.day > to) continue;
-    byCategory[e.category] = (byCategory[e.category] || 0) + e.amountC;
-  }
+  for (const [k, v] of Object.entries(pl.expenses)) if (v) byCategory[k] = v;
+  const otherIncomeC = pl.income.customerPaid || 0;
   const flows = snapEnd.flows.filter((f) => f.day >= from && f.day <= to && f.account === 'cash');
   const cashIn = flows.filter((f) => f.dir > 0).reduce((s, f) => s + f.amountC, 0);
   const cashOut = flows.filter((f) => f.dir < 0).reduce((s, f) => s + f.amountC, 0);
   const eggs = recs.filter((r) => r.type === 'eggs').reduce((s, r) => s + (Number(r.count) || 0) - (Number(r.broken) || 0), 0);
-  const expenseC = Object.values(byCategory).reduce((s, v) => s + v, 0);
+  const taxC = recs.reduce((s, r) => s + (r.type === 'sale' && !r.voided ? Math.max(0, Math.min(r.totalC || 0, r.taxC || 0)) : 0), 0);
   return {
     from, to, milkL, milkSoldL, eggs,
-    salesC, walkinC, collectedAtSaleC, byProduct,
-    expenseC, byCategory, profitC: salesC - expenseC,
+    // salesC: invoiced, as the customer sees it (with any tax). netSalesC: what the farm earns from sales.
+    salesC, netSalesC: salesC - taxC, taxC, otherIncomeC, incomeC: pl.incomeC, walkinC, collectedAtSaleC, byProduct,
+    expenseC: pl.expenseC, byCategory, profitC: pl.profitC,
     cash: { openingC: snapStart.cashC, inC: cashIn, outC: cashOut, closingC: snapStart.cashC + cashIn - cashOut },
-    receivableC: snapEnd.receivableC, supplierDueC: snapEnd.supplierDueC,
+    receivableC: snapEnd.receivableC, supplierDueC: snapEnd.supplierDueC, payableC: snapEnd.supplierDueC + snapEnd.payablesC,
   };
 }
 

@@ -442,7 +442,7 @@ function Shell() {
     <div className={`desk has-tabs ${prefs.rail === 'mini' ? 'rail-mini' : ''} ${ws.windows.length ? 'has-taskbar' : ''}`}>
       <aside className="sidebar" aria-label={t('brand')}>
         <button type="button" className="rail-toggle" onClick={() => setPrefs({ rail: prefs.rail === 'mini' ? 'full' : 'mini' })} aria-label={t('nav.more')} title={t('nav.more')}><Icon name="menu" size={18} /></button>
-        <div className="brand-lockup small"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="farm-name">{farm.settings.farmName}</div></div></div>
+        <button type="button" className="brand-lockup small brand-home" onClick={() => go('cash')} title={t('nav.home')} aria-label={`${t('nav.home')} · ${t('nav.cash')}`}><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="farm-name">{farm.settings.farmName}</div></div></button>
         <SideNav go={go} nav={nav} />
         <div className="side-foot">
           <AccountMenu />
@@ -450,6 +450,7 @@ function Shell() {
       </aside>
       <div className="main">
         <header className="topbar">
+          <button type="button" className="top-home" onClick={() => go('cash')} title={t('nav.home')} aria-label={t('nav.home')}><BrandMark className="sm" /></button>
           <Crumb />
           <button type="button" className="search-btn" onClick={() => ui.open('palette')}><Icon name="search" size={16} /><span>{t('cmd.placeholder')}</span><kbd>Ctrl K</kbd></button>
           <div className="top-actions">
