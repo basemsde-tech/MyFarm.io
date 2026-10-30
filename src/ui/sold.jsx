@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { milkQ, milkN } from './units.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Seg, DateInput, FilterPanel, dayLabel } from './kit.jsx';
 import { usePeriod, downloadText } from './screens-money.jsx';
@@ -68,7 +69,7 @@ export function SaleRecordPanel({ a }) {
         {row(t('sold.onFarm'), info.daysOnFarm != null ? age(info.daysOnFarm) : null)}
         {row(t('sold.purchase'), info.purchaseC ? fmt(info.purchaseC) : null)}
         {row(t('sold.treatments'), info.treatments ? `${fmt(info.treatC)} · ${t('sold.nTreat', { n: info.treatments })}` : null)}
-        {SPECIES[a.species].product === 'milk' && row(t('sold.milk'), info.milkL ? `${fmtQty(info.milkL)} ${t('u.L')}` : null)}
+        {SPECIES[a.species].product === 'milk' && row(t('sold.milk'), info.milkL ? `${milkQ(info.milkL)}` : null)}
         {flock && row(t('sold.eggs'), info.eggs ? fmtQty(info.eggs) : null)}
         {row(t('sold.births'), info.births || null)}
         {row(t('sold.prevStatus'), a.prevStatus ? t(`as.${a.prevStatus}`) : null)}

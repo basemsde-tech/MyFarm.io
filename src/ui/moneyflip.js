@@ -1,4 +1,4 @@
-// Hover any USD amount for 2 seconds and it flips in 3D to show the same amount in LBP.
+// Hover any USD amount for 2 seconds and the value itself turns over to show the same amount in LBP.
 // Works on every money figure in the app without touching each call site: it reads the
 // rendered text, draws a flip card exactly over it, and never edits React-managed nodes.
 
@@ -39,12 +39,19 @@ export function initMoneyFlip(getConfig) {
     const card = document.createElement('div');
     card.className = 'money-flip';
     card.setAttribute('aria-hidden', 'true');
+    // Copy the longhands: the 'font' shorthand reads back empty when tabular numbers are on.
     Object.assign(card.style, {
       left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`,
-      font: cs.font, letterSpacing: cs.letterSpacing, color: cs.color, direction: cs.direction,
-      fontVariantNumeric: 'tabular-nums',
+      fontFamily: cs.fontFamily, fontSize: cs.fontSize, fontWeight: cs.fontWeight, fontStyle: cs.fontStyle, lineHeight: cs.lineHeight,
+      letterSpacing: cs.letterSpacing, color: cs.color, direction: cs.direction, fontVariantNumeric: 'tabular-nums',
     });
-    const align = cs.textAlign === 'center' ? 'center' : cs.justifyContent === 'center' ? 'center' : (cs.direction === 'rtl' ? (cs.textAlign === 'left' || cs.textAlign === 'end' ? 'flex-start' : 'flex-end') : (cs.textAlign === 'right' || cs.textAlign === 'end' ? 'flex-end' : 'flex-start'));
+    const rtl = cs.direction === 'rtl';
+    const ta = cs.textAlign;
+    const align = ta === 'center' || cs.justifyContent === 'center' ? 'center'
+      : ta === 'end' ? 'flex-end'
+      : ta === 'left' ? (rtl ? 'flex-end' : 'flex-start')
+      : ta === 'right' ? (rtl ? 'flex-start' : 'flex-end')
+      : 'flex-start';
     const inner = document.createElement('div');
     inner.className = 'money-flip-inner';
     const front = document.createElement('div');
@@ -52,13 +59,17 @@ export function initMoneyFlip(getConfig) {
     front.textContent = el.textContent;
     const back = document.createElement('div');
     back.className = 'money-flip-face back';
-    back.textContent = convert(el.textContent, cfg);
-    const bar = document.createElement('span');
-    bar.className = 'money-flip-bar';
+    // The amount reads left to right ("1,250,000 LBP") even inside Arabic text.
+    const val = document.createElement('bdi');
+    const text = convert(el.textContent, cfg);
+    val.dir = /[\u0600-\u06FF]/.test(text) ? 'rtl' : 'ltr';
+    val.textContent = text;
+    back.append(val);
+
     front.style.justifyContent = align;
     back.style.justifyContent = align;
     inner.append(front, back);
-    card.append(inner, bar);
+    card.append(inner);
     document.body.appendChild(card);
     return card;
   };
@@ -85,12 +96,10 @@ export function initMoneyFlip(getConfig) {
     finish();
     const card = build(el, cfg);
     if (!card) return;
-    requestAnimationFrame(() => card.classList.add('is-arming'));
     const timer = setTimeout(() => {
       if (!active || active.el !== el) return;
       active.flipped = true;
       el.style.opacity = '0';
-      card.classList.remove('is-arming');
       card.classList.add('is-flipped');
     }, HOLD_MS);
     active = { el, card, timer, flipped: false };

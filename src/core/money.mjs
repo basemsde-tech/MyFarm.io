@@ -59,8 +59,10 @@ export function sumC(list, pick = (x) => x) {
   return s;
 }
 
-const SYMBOL = { USD: '$', EUR: '€', GBP: '£', LBP: 'ل.ل', SYP: 'ل.س', JOD: 'د.أ', SAR: 'ر.س', AED: 'د.إ', EGP: 'ج.م', AUD: 'A$', TRY: '₺', IQD: 'ع.د' };
-export const CURRENCIES = Object.keys(SYMBOL);
+// Values and currencies always read in English: a Latin symbol where one exists, otherwise the code (LBP, SAR…).
+const SYMBOL = { USD: '$', EUR: '€', GBP: '£', AUD: 'A$', TRY: '₺' };
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'LBP', 'SYP', 'JOD', 'SAR', 'AED', 'EGP', 'AUD', 'TRY', 'IQD'];
+export const currencyMark = (code) => SYMBOL[code] || code;
 
 /**
  * Format cents for display.
@@ -90,7 +92,8 @@ export function fmtMoney(cents, opts = {}) {
   const n = numFmt(digits, digits).format(Math.abs(value));
   const sym = SYMBOL[code] || code;
   const body = sym.length <= 2 ? `${sym}${n}` : `${n} ${sym}`;
-  return neg ? `−${body}` : body;
+  // The left-to-right mark keeps the minus sign in front of the number inside Arabic text.
+  return neg ? `\u200E−${body}` : body;
 }
 
 export function fmtQty(v, digits = 1) {

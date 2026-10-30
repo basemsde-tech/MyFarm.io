@@ -2,6 +2,15 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.11.0', date: '2026-10-30', items: [
+    ['sliders', 'تصميم جديد للتنقل: إبراز متحرك، وأقسام قابلة للطي، وشارات لما يحتاج إلى متابعة', 'New navigation: a gliding highlight, folding groups and badges for what needs attention'],
+    ['menu', 'شريط سفلي عائم على الهاتف مع زر «+» في الوسط، يختفي أثناء التمرير', 'A floating phone dock with “+” in the middle that tucks away while you scroll'],
+    ['cash', 'أصوات للنجاح والخطأ، ورنّة صندوق المحاسبة عند كل بيع (تُطفأ من الإعدادات)', 'Sounds for success and errors, and a cash-register ring on every sale (switch off in Settings)'],
+    ['swap', 'المبلغ نفسه ينقلب إلى LBP دون بطاقة إضافية', 'The amount itself flips to LBP, with no extra card'],
+    ['globe', 'الأرقام ورموز العملات بالإنجليزية دائمًا (USD، LBP)', 'Numbers and currency codes always in English (USD, LBP)'],
+    ['milk', 'سجل الحليب: فرز وتصفية، وملخص ذكي، وإخفاء القوائم الطويلة بسلاسة', 'Milk log: sort and filter, a smart summary, and long lists that fold away smoothly'],
+    ['milk', 'وحدة الحليب الافتراضية الكيلوغرام (يمكن تغييرها إلى اللتر من الإعدادات)', 'Milk unit now defaults to kilograms (switch to litres in Settings)'],
+  ] },
   { v: '3.10.2', date: '2026-10-30', items: [
     ['history', 'استيراد بيانات مزرعتي القديمة من الجهاز نفسه بنقرة واحدة، مع مطابقة الأرصدة', 'One-click import of the old Mazraati data on the same device, with balance checks'],
   ] },

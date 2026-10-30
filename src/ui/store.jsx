@@ -1,4 +1,6 @@
 import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { play as playSound, setSoundOn } from './sound.js';
+import { setMilkView } from './units.js';
 import { emptyFarm, autoPurge, CommandError, newId } from '../core/commands.mjs';
 import { appendAudit, changedLists } from '../core/audit.mjs';
 import { liveFileIds } from '../core/documents.mjs';
@@ -12,7 +14,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.10.2', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.11.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -173,12 +175,15 @@ function FarmProvider({ boot, children }) {
   }, []);
 
   const t = useMemo(() => makeT(prefs.lang), [prefs.lang]);
+  setSoundOn(prefs.sound);
+  setMilkView(farm.settings.milkUnit, t);
   const actor = useMemo(() => farm.profiles.find((p) => p.id === prefs.profileId) || null, [farm.profiles, prefs.profileId]);
   const actorRef = useRef(actor); actorRef.current = actor;
 
   const toast = useCallback((msg, opts = {}) => {
     const id = Math.random().toString(36).slice(2);
     setToasts((x) => [...x.slice(-2), { id, msg, ...opts }]);
+    playSound(opts.sound || (opts.tone === 'bad' ? 'fail' : null));
     setTimeout(() => setToasts((x) => x.filter((y) => y.id !== id)), opts.ms || (opts.action ? 10000 : 3500));
   }, []);
 
@@ -195,6 +200,7 @@ function FarmProvider({ boot, children }) {
   /** Apply a pure command. Returns the new farm, or null when the command refused. */
   const commit = useCallback((op, { label, silent, undoable = true } = {}) => {
     let next;
+    const before = farmRef.current;
     try {
       next = op(farmRef.current);
     } catch (e) {
@@ -216,7 +222,11 @@ function FarmProvider({ boot, children }) {
       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => setTimeout(apply, 0)); else apply();
     }
     persist(next);
-    if (!silent && label) toast(label, { action: undoable ? { label: t('undo'), run: () => undo() } : null });
+    if (!silent && label) {
+      // A new sale rings the till; everything else gets the soft success note.
+      const sold = next.records.length > before.records.length && next.records.slice(before.records.length).some((r) => r.type === 'sale' && !r.deletedAt);
+      toast(label, { sound: sold ? 'cash' : 'success', action: undoable ? { label: t('undo'), run: () => undo() } : null });
+    }
     return next;
   }, [persist, toast, errText, t]); // eslint-disable-line react-hooks/exhaustive-deps
 

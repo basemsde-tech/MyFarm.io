@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { initMoneyFlip } from './moneyflip.js';
+import { play as playSound } from './sound.js';
 import { RestoreSheet } from './restore.jsx';
 import { SCREENS, Crumb, TabBar, WindowLayer, Taskbar } from './workspace.jsx';
 import { routeKey } from './ws.mjs';
@@ -20,15 +21,10 @@ import { ReminderSheet } from './reminders.jsx';
 import { DocumentSheet } from './documents.jsx';
 import { HelpMenu, HelpModeBanner, TourHost, Help } from './help.jsx';
 import { BrandMark } from './brand.jsx';
+import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
-const NAV = [
-  { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
-  { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
-  { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['activity', 'history'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']] },
-];
-const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 
 const SHEETS = {
   sale: SaleSheet, payment: PaymentSheet, expense: ExpenseSheet, supplierPay: SupplierPaySheet, capital: PersonSheet, milk: MilkSheet, milkUse: MilkUseSheet,
@@ -256,6 +252,7 @@ function ProfileGate() {
     const h = await hashCode(c, p.salt != null ? p.salt : farm.settings.salt);
     if (h === p.passHash) return signIn(p);
     const a = recordAttempt(p.id, false, max);
+    playSound('fail');
     logEvent(a.until ? 'lockout' : 'failed', { label: p.name }, p);
     setErr(a.until ? t('sec.lockedFor', { s: Math.ceil((a.until - Date.now()) / 1000) }) : t('sec.wrongLeft', { n: Math.max(0, max - a.n) }));
     setCode('');
@@ -417,7 +414,7 @@ function Shell() {
   const cfgRef = useRef(null);
   const wsRef = useRef(ws); wsRef.current = ws;
   const routeRef = useRef(route); routeRef.current = route;
-  cfgRef.current = { enabled: farm.settings.currency === 'USD' && farm.settings.second?.code === 'LBP' && farm.settings.second?.rate > 0, rate: farm.settings.second?.rate || 0, symbol: 'ل.ل' };
+  cfgRef.current = { enabled: farm.settings.currency === 'USD' && farm.settings.second?.code === 'LBP' && farm.settings.second?.rate > 0, rate: farm.settings.second?.rate || 0, symbol: 'LBP' };
   useEffect(() => { initMoneyFlip(() => cfgRef.current); }, []);
   useEffect(() => {
     const on = () => setOnline(true); const off = () => setOnline(false);
@@ -439,7 +436,6 @@ function Shell() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); window.removeEventListener('keydown', key); };
   }, [ui, undo, wsApi, nav]);
   const Screen = SCREENS[route.name] || SCREENS.cash;
-  const trashCount = farm.records.filter((r) => r.deletedAt && r.deleteReason !== 'replaced').length;
   const go = (k) => { setMore(false); nav(k); };
   const theme = prefs.theme === 'system' ? 'system' : prefs.theme;
   return (
@@ -447,18 +443,7 @@ function Shell() {
       <aside className="sidebar" aria-label={t('brand')}>
         <button type="button" className="rail-toggle" onClick={() => setPrefs({ rail: prefs.rail === 'mini' ? 'full' : 'mini' })} aria-label={t('nav.more')} title={t('nav.more')}><Icon name="menu" size={18} /></button>
         <div className="brand-lockup small"><BrandMark /><div><div className="brand-name">{t('brand')}</div><div className="farm-name">{farm.settings.farmName}</div></div></div>
-        <nav>
-          {NAV.map((g) => (
-            <div className="nav-group" key={g.group}>
-              <div className="nav-group-label">{t(g.group)}</div>
-              {g.items.filter(([k]) => k !== 'activity' || can(actor?.role, 'settings')).map(([k, ic]) => (
-                <button type="button" key={k} title={t(navLabel(k))} data-tip={t(navLabel(k))} className={`nav-item ${route.name === k ? 'on' : ''}`} onClick={() => go(k)} onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); nav(k, null, null, { newTab: true }); } }} aria-current={route.name === k ? 'page' : undefined}>
-                  <Icon name={ic} /><span>{t(navLabel(k))}</span>{k === 'trash' && trashCount > 0 && <span className="nav-count num">{trashCount}</span>}
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
+        <SideNav go={go} nav={nav} />
         <div className="side-foot">
           <AccountMenu />
         </div>
@@ -487,22 +472,8 @@ function Shell() {
         <Taskbar />
       </div>
       <button type="button" className="fab" onClick={() => ui.open('new')} aria-label={t('new')}><Icon name="plus" size={26} /><span>{t('new')}</span></button>
-      <nav className="bottom-nav" aria-label={t('nav.more')}>
-        {[['cash', 'cash'], ['sales', 'cart'], ['production', 'milk'], ['animals', 'cow']].map(([k, ic]) => (
-          <button type="button" key={k} className={route.name === k ? 'on' : ''} onClick={() => go(k)}><Icon name={ic} /><span>{t(navLabel(k))}</span></button>
-        ))}
-        <button type="button" className={more ? 'on' : ''} onClick={() => setMore(!more)}><Icon name="menu" /><span>{t('nav.more')}</span></button>
-      </nav>
-      {more && (
-        <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setMore(false)}>
-          <div className="more-sheet">
-            {NAV.flatMap((g) => g.items).filter(([k]) => !['cash', 'sales', 'production', 'animals'].includes(k) && (k !== 'activity' || can(actor?.role, 'settings'))).map(([k, ic]) => (
-              <button type="button" key={k} onClick={() => go(k)}><Icon name={ic} /><span>{t(navLabel(k))}</span></button>
-            ))}
-            <button type="button" onClick={() => { setMore(false); setPrefs({ profileId: null }); }}><Icon name="swap" /><span>{t('pf.switch')}</span></button>
-          </div>
-        </div>
-      )}
+      <Dock go={go} onNew={() => { setMore(false); ui.open('new'); }} more={more} setMore={setMore} />
+      {more && <MoreSheet go={go} onClose={() => setMore(false)} onSwitch={() => { setMore(false); setPrefs({ profileId: null }); }} />}
       <ModalHost />
       <TourHost />
       <UpdatePrompt />

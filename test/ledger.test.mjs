@@ -38,7 +38,7 @@ test('money parses without floating drift and accepts Arabic digits', () => {
   assert.equal(toCents(19.99), 1999);
   assert.equal(normDigits('٣ ٤'), '34');
   assert.equal(fmtMoney(123456), '$1,234.56');
-  assert.equal(fmtMoney(100, { view: 'second', second: { code: 'LBP', rate: 89500 } }), '89,500 ل.ل');
+  assert.equal(fmtMoney(100, { view: 'second', second: { code: 'LBP', rate: 89500 } }), '89,500 LBP');
 });
 
 test('1. milk: am + pm, sale in kg, farm use; tank = production − both, in litres', () => {

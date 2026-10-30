@@ -26,7 +26,7 @@ export function emptyFarm() {
     settings: {
       farmName: '', farmPhone: '', farmAddress: '', farmEmail: '', logo: '', location: '',
       currency: 'USD', second: { code: 'LBP', rate: 89500 },
-      milkPriceC: 100, eggPriceC: 15, wageC: 2000, milkMode: 'herd', milkUnit: 'L',
+      milkPriceC: 100, eggPriceC: 15, wageC: 2000, milkMode: 'herd', milkUnit: 'kg',
       termsDays: 30, lockedThrough: '',
       tax: { enabled: false, rate: 0, label: 'VAT', labelAr: 'ضريبة', number: '', registration: '', inclusive: false, show: true },
       doc: { prefix: 'INV-', rctPrefix: 'RCT-', poPrefix: 'PO-', thanks: '', footer: '', signatures: true, showParty: true, showRate: false },

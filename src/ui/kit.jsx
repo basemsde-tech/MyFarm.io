@@ -526,3 +526,33 @@ export function FilterPanel({ id, chips = [], onReset, children, extra }) {
     </div>
   );
 }
+
+/**
+ * A panel whose body folds away smoothly. Remembers its state per device.
+ * `summary` shows in the header while folded, so the key numbers stay visible.
+ */
+export function Fold({ id, title, summary, extra, children, defaultOpen = true, className = '' }) {
+  const { t, prefs, setPrefs } = useApp();
+  const saved = prefs.folds?.[id];
+  const open = saved === undefined ? defaultOpen : saved;
+  const toggle = () => setPrefs({ folds: { ...(prefs.folds || {}), [id]: !open } });
+  const bodyId = `fold-${id}`;
+  return (
+    <section className={`panel fold ${open ? 'open' : 'shut'} ${className}`}>
+      <div className="fold-head">
+        <button type="button" className="fold-toggle" onClick={toggle} aria-expanded={open} aria-controls={bodyId} title={open ? t('fold.hide') : t('fold.show')}>
+          <span className="fold-chev"><Icon name="down" size={16} /></span>
+          <h2>{title}</h2>
+        </button>
+        <div className="fold-summary" aria-hidden={open}>{summary}</div>
+        {extra && <div className="fold-extra">{extra}</div>}
+        <button type="button" className="fold-pill" onClick={toggle} aria-controls={bodyId}>{open ? t('fold.hide') : t('fold.show')}</button>
+      </div>
+      <div className="fold-body" id={bodyId}>
+        <div className="fold-inner" ref={(el) => { if (el) { if (open) el.removeAttribute('inert'); else el.setAttribute('inert', ''); } }}>
+          <div className="fold-content">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}

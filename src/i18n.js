@@ -16,7 +16,7 @@ const ar = {
   method: 'طريقة الدفع', 'm.cash': 'نقدًا', 'm.card': 'بطاقة', 'm.transfer': 'تحويل', account: 'الحساب', 'acc.cash': 'الصندوق', 'acc.bank': 'البنك',
   in: 'وارد', out: 'صادر', balance: 'الرصيد', select: 'اختر', change: 'الباقي', items: 'بنود', more_actions: 'خيارات',
   // periods
-  'p.today': 'اليوم', 'p.week': 'هذا الأسبوع', 'p.month': 'هذا الشهر', 'p.lastMonth': 'الشهر الماضي', 'p.30': 'آخر ٣٠ يومًا', 'p.year': 'هذه السنة', 'p.all': 'كل الفترات', 'p.custom': 'فترة مخصصة',
+  'p.today': 'اليوم', 'p.week': 'هذا الأسبوع', 'p.month': 'هذا الشهر', 'p.lastMonth': 'الشهر الماضي', 'p.30': 'آخر 30 يومًا', 'p.year': 'هذه السنة', 'p.all': 'كل الفترات', 'p.custom': 'فترة مخصصة',
   // status
   'st.paid': 'مدفوع', 'st.partial': 'مدفوع جزئيًا', 'st.unpaid': 'غير مدفوع', 'st.overdue': 'متأخر', 'st.clear': 'مسدَّد', 'st.owing': 'مدين', 'st.credit': 'رصيد دائن',
   'st.voided': 'ملغى', 'st.deleted': 'محذوف', 'st.edited': 'معدَّل', 'st.afterClose': 'معدَّل بعد الإقفال', 'st.owesUs': 'دائن للمزرعة', 'st.weOwe': 'مدين للمزرعة',
@@ -26,7 +26,7 @@ const ar = {
   'cash.journal': 'حركة الصندوق', 'cash.capital': 'رأس المال', 'cash.milkToday': 'حليب اليوم', 'cash.empty': 'لا توجد حركات في الصندوق خلال هذه الفترة.',
   'cash.emptyHint': 'سجّل أول عملية بيع أو مصروف لتظهر هنا.', 'cash.transfer': 'تحويل بين الصندوق والبنك', 'cash.opening': 'رصيد افتتاحي', 'cash.closing': 'رصيد ختامي',
   'att.custDue': 'عملاء لديهم مبالغ متأخرة: {n}', 'att.supOverdue': 'فواتير موردين متأخرة: {n}', 'att.obligation': 'التزام مستحق: {name}', 'att.lowTank': 'حليب قديم في الخزان: {l}',
-  'att.oldMilk': 'يوجد حليب في الخزان منذ أكثر من ٣ أيام', 'att.noMilk': 'لم يُسجَّل حليب اليوم', 'att.openBills': 'فواتير مفتوحة: {n}',
+  'att.oldMilk': 'يوجد حليب في الخزان منذ أكثر من 3 أيام', 'att.noMilk': 'لم يُسجَّل حليب اليوم', 'att.openBills': 'فواتير مفتوحة: {n}',
   'kind.sale': 'عملية بيع', 'kind.payment': 'دفعة عميل', 'kind.expense': 'مصروف', 'kind.supplierPay': 'دفعة لمورد', 'kind.capitalIn': 'رأس مال وارد',
   'kind.capitalOut': 'رأس مال صادر', 'kind.personal': 'سحب شخصي', 'kind.transferIn': 'تحويل وارد', 'kind.transferOut': 'تحويل صادر',
   // record types
@@ -92,7 +92,7 @@ const ar = {
   'prod.lots': 'دفعات الحليب في الخزان', 'prod.olderLots': 'و{n} دفعة أقدم في الخزان', 'prod.saveDay': 'حفظ حليب اليوم', 'prod.herdMode': 'إجمالي القطيع', 'prod.animalMode': 'لكل حيوان على حدة', 'prod.species': 'النوع',
   'prod.noMilk': 'لم يُسجَّل حليب بعد', 'prod.noMilkHint': 'سجّل حليب الصباح والمساء لمعرفة الكمية المتوفرة في الخزان قبل البيع.', 'prod.use': 'استخدام من الحليب',
   'prod.flock': 'القطيع', 'prod.collected': 'المُجمَّع', 'prod.broken': 'المكسور', 'prod.eggStock': 'البيض في المخزن', 'prod.noFlock': 'لا يوجد قطيع دواجن. أضف قطيعًا من صفحة الحيوانات.',
-  'prod.unitHint': 'يُحوَّل الكيلوغرام إلى لتر (١ لتر ≈ ١٫٠٣ كغ)', 'prod.existsDay': 'يوجد حليب مسجّل لهذا اليوم، وسيستبدل الحفظ القيمة السابقة.',
+  'prod.unitHint': 'يُحوَّل الكيلوغرام إلى لتر (1 لتر ≈ 1٫03 كغ)', 'prod.existsDay': 'يوجد حليب مسجّل لهذا اليوم، وسيستبدل الحفظ القيمة السابقة.',
   'fr.fresh': 'طازج', 'fr.good': 'جيد', 'fr.aging': 'يتقادم', 'fr.old': 'قديم', 'fr.hours': 'منذ {h} ساعة',
   'use.home': 'استهلاك منزلي', 'use.calves': 'للعجول', 'use.waste': 'تالف', 'use.other': 'أخرى',
   'wk.title': 'العمال', 'wk.new': 'عامل جديد', 'wk.daily': 'يومي', 'wk.monthly': 'شهري', 'wk.wage': 'الأجر', 'wk.present': 'حاضر', 'wk.absent': 'غائب',
@@ -121,16 +121,16 @@ const ar = {
   'imp.custCredit': 'رصيد {n}', 'imp.supDue': 'المستحق لـ {n}', 'imp.supCredit': 'رصيدنا لدى {n}', 'imp.personOwed': 'رصيد {n}', 'imp.payables': 'فواتير مفتوحة', 'imp.animal': 'حالة الحيوان {n}',
   'imp.expenses': 'المصروفات', 'imp.revenue': 'المبيعات', 'imp.milk': 'الحليب في الخزان', 'imp.eggs': 'البيض في المخزن', 'imp.alsoChanges': 'سيؤثر ذلك أيضًا على:', 'imp.did': 'أثر هذه الحركة',
   // edit/delete
-  'ed.reason': 'ما سبب التعديل؟', 'ed.reasonHint': 'ثلاثة أحرف على الأقل، ويُحفظ في سجل التعديلات.', 'ed.delTitle': 'حذف {t}؟', 'ed.delHint': 'ستُنقل إلى المحذوفات ويمكن استعادتها خلال ٣٠ يومًا.',
+  'ed.reason': 'ما سبب التعديل؟', 'ed.reasonHint': 'ثلاثة أحرف على الأقل، ويُحفظ في سجل التعديلات.', 'ed.delTitle': 'حذف {t}؟', 'ed.delHint': 'ستُنقل إلى المحذوفات ويمكن استعادتها خلال 30 يومًا.',
   'ed.delReason': 'سبب الحذف', 'ed.purge': 'حذف نهائي', 'ed.purgeHint': 'لا يمكن الاستعادة بعد ذلك. متاح للمالك فقط.', 'ed.bulk': 'حذف {n} حركات', 'ed.selected': '{n} محدد',
   'ed.created': 'أُنشئت', 'ed.edited': 'عُدّلت', 'ed.lockedNote': 'هذا الشهر مُقفل، وسيُعلَّم التعديل.', 'ed.draft': 'تمت استعادة المسودة غير المحفوظة', 'ed.discard': 'تجاهل المسودة',
   'ed.dup': 'توجد حركة مماثلة في اليوم نفسه وبالمبلغ نفسه. هل أنت متأكد؟', 'ed.dupOk': 'نعم، سجّلها', 'ed.changes': 'التغييرات', 'ed.wasVal': 'القيمة السابقة', 'ed.nowVal': 'القيمة الجديدة',
-  'trash.title': 'المحذوفات', 'trash.none': 'لا توجد عناصر محذوفة.', 'trash.hint': 'تبقى الحركات المحذوفة هنا ٣٠ يومًا قبل مسحها نهائيًا.', 'trash.deletedBy': 'حذفها {n}', 'trash.left': 'متبقٍ {n} يوم',
+  'trash.title': 'المحذوفات', 'trash.none': 'لا توجد عناصر محذوفة.', 'trash.hint': 'تبقى الحركات المحذوفة هنا 30 يومًا قبل مسحها نهائيًا.', 'trash.deletedBy': 'حذفها {n}', 'trash.left': 'متبقٍ {n} يوم',
   // errors
   'e.locked': 'هذه الفترة مُقفلة حتى {d}. لا يملك صلاحية التعديل إلا المالك أو المحاسب.', 'e.forbidden': 'لا يسمح دورك بهذه العملية. يُرجى مراجعة المالك أو المحاسب.', 'e.reasonRequired': 'اكتب سبب التعديل (ثلاثة أحرف على الأقل).',
   'e.milk.oversell': 'كمية الحليب في الخزان غير كافية. النقص {l}.', 'e.eggs.oversell': 'كمية البيض في المخزن غير كافية.', 'e.day.required': 'اختر التاريخ', 'e.day.future': 'لا يمكن اختيار تاريخ مستقبلي',
   'e.sale.noLines': 'أضف صنفًا واحدًا على الأقل', 'e.qty.positive': 'يجب أن تكون الكمية أكبر من صفر', 'e.price.positive': 'يجب أن يكون السعر أكبر من صفر', 'e.amount.positive': 'يجب أن يكون المبلغ أكبر من صفر',
-  'e.discount.overNet': 'الخصم أكبر من المبلغ', 'e.discount.percent': 'يجب أن تكون النسبة بين ٠ و١٠٠', 'e.walkin.mustPayFull': 'يجب على العميل النقدي دفع المبلغ كاملًا', 'e.tender.short': 'المبلغ المستلم أقل من المطلوب',
+  'e.discount.overNet': 'الخصم أكبر من المبلغ', 'e.discount.percent': 'يجب أن تكون النسبة بين 0 و100', 'e.walkin.mustPayFull': 'يجب على العميل النقدي دفع المبلغ كاملًا', 'e.tender.short': 'المبلغ المستلم أقل من المطلوب',
   'e.sale.overpaid': 'المبلغ المستلم أكبر من قيمة الفاتورة', 'e.amount.negative': 'لا يمكن أن يكون المبلغ سالبًا', 'e.customer.required': 'اختر العميل', 'e.offset.desc': 'اكتب وصف المصروف', 'e.pay.overDue': 'المبلغ أكبر من الدين. فعّل خيار الرصيد الدائن إذا رغبت.',
   'e.category.required': 'اختر البند', 'e.paid.overAmount': 'المدفوع أكبر من قيمة الفاتورة', 'e.person.required': 'اختر الشخص', 'e.supplier.required': 'اختر المورد',
   'e.supplierPay.overDue': 'المبلغ يتجاوز المستحق، وستُسجَّل الزيادة رصيدًا لنا لديه.', 'e.session.required': 'اختر الصباح أو المساء', 'e.reason.required': 'اختر السبب',
@@ -162,7 +162,7 @@ const ar = {
   // setup
   'su.welcome': 'مرحبًا بك في مزرعتي', 'su.welcomeHint': 'نظام واحد للمبيعات والإنتاج والمصروفات والصندوق، يعمل دون اتصال بالإنترنت.', 'su.lang': 'اللغة',
   'su.farm': 'اسم المزرعة', 'su.farmHint': 'يظهر على الفواتير والكشوفات.', 'su.you': 'من أنت؟', 'su.youHint': 'اسمك كما يُعرف في المزرعة. تُحفظ كل حركة باسمك.',
-  'su.passHint': 'رمز من ٤ أرقام أو أكثر (اختياري)', 'su.recovery': 'رمز الاسترداد', 'su.recoveryHint': 'احفظه في مكان آمن؛ ستحتاج إليه إذا نسيت رمز المالك.', 'su.finish': 'فتح المزرعة',
+  'su.passHint': 'رمز من 4 أرقام أو أكثر (اختياري)', 'su.recovery': 'رمز الاسترداد', 'su.recoveryHint': 'احفظه في مكان آمن؛ ستحتاج إليه إذا نسيت رمز المالك.', 'su.finish': 'فتح المزرعة',
   'su.orDemo': 'أو جرّب مزرعة تجريبية', 'su.step': 'الخطوة {a} من {b}',
   // profiles
   'pf.who': 'من يستخدم هذا الجهاز اليوم؟', 'pf.enterCode': 'أدخل رمز {n}', 'pf.wrong': 'الرمز غير صحيح', 'pf.switch': 'تبديل المستخدم', 'pf.forgot': 'نسيت الرمز',
@@ -175,7 +175,7 @@ const ar = {
   'ae.service': 'تلقيح', 'ae.check': 'فحص حمل', 'ae.dry': 'تجفيف', 'ae.birth': 'ولادة', 'ae.loss': 'نفوق', 'ae.weight': 'وزن',
   'rs.title': 'الاستعادة من نسخة احتياطية', 'rs.sub': 'من الإصدار القديم أو الجديد من مزرعتي. ستراجع كل شيء قبل الاستبدال.', 'rs.pick': 'اختر ملف النسخة أو اسحبه إلى هنا',
   'rs.pickHint': 'ملف JSON من «تنزيل نسخة احتياطية»', 'rs.reading': 'جارٍ قراءة الملف…', 'rs.notJson': 'الملف ليس بصيغة JSON. اختر ملف النسخة الاحتياطية.',
-  'rs.unknown': 'هذا الملف ليس نسخة احتياطية من مزرعتي.', 'rs.unreadable': 'تعذّرت قراءة الملف.', 'rs.fromOld': 'نسخة من الإصدار القديم لمزرعتي (الإصدار ٢)', 'rs.fromNew': 'نسخة من مزرعتي 3',
+  'rs.unknown': 'هذا الملف ليس نسخة احتياطية من مزرعتي.', 'rs.unreadable': 'تعذّرت قراءة الملف.', 'rs.fromOld': 'نسخة من الإصدار القديم لمزرعتي (الإصدار 2)', 'rs.fromNew': 'نسخة من مزرعتي 3',
   'rs.savedOn': 'تاريخ الحفظ', 'rs.allMatch': 'جميع الأرصدة متطابقة', 'rs.differ': '{n} أرصدة مختلفة', 'rs.checksTitle': 'مطابقة الأرصدة',
   'rs.checksHint': 'احتُسب كل رصيد وفق قواعد الإصدار القديم وقورن بالإصدار الجديد.', 'rs.oldApp': 'القديم', 'rs.newApp': 'الجديد', 'rs.totals': 'الإجماليات',
   'rs.customers': 'العملاء', 'rs.suppliers': 'الموردون', 'rs.people': 'المديرون والممولون', 'rs.cashBox': 'الصندوق',
@@ -198,7 +198,7 @@ const ar = {
   'del.m.withRecords': 'حذفه مع حركاته', 'del.mh.withRecords': 'يُنقل هو و{n} حركة إلى المحذوفات، وتتغير الأرصدة كما هو موضح.',
   'del.mh.withRecordsAnimal': 'يُنقل هو وسجلات الحليب والبيض والأحداث ({n}) إلى المحذوفات، وتبقى المبيعات والمصروفات.',
   'del.recommended': 'الخيار الموصى به', 'del.partyHint': 'لا يمكن حذف عميل أو مورد أو شخص له حركات بمفرده لأن حسابه سيضيع. يمكنك أرشفته أو حذفه مع حركاته.',
-  'del.restoreHint': 'يُنقل إلى المحذوفات ويمكن استعادته مع حركاته خلال ٣٠ يومًا.',
+  'del.restoreHint': 'يُنقل إلى المحذوفات ويمكن استعادته مع حركاته خلال 30 يومًا.',
   'del.do.archive': 'أرشفة', 'del.do.only': 'حذف', 'del.do.withRecords': 'حذف مع الحركات',
   'ani.archive': 'أرشفة', 'ani.archiveSold': 'أرشفة النافقة ({n})', 'ani.archivedNote': 'هذا الحيوان مؤرشف، وسجلّه محفوظ.', 'ani.delete': 'إزالة الحيوان',
   'trash.masters': 'قوائم محذوفة', 'trash.records': 'حركات محذوفة', 'trash.withN': 'مع {n} حركة',
@@ -234,7 +234,7 @@ const ar = {
   'bs.opening': 'أرصدة افتتاحية', 'bs.earnings': 'الأرباح المحتجزة', 'bs.earningsHint': 'إجمالي الإيرادات مطروحًا منه إجمالي المصروفات حتى هذا التاريخ', 'bs.adjust': 'تسويات',
   'bs.noDebts': 'لا توجد التزامات على المزرعة', 'bs.balanced': 'الميزانية متوازنة: الأصول = الالتزامات + صافي القيمة.', 'bs.notBalanced': 'الميزانية غير متوازنة — يُرجى التواصل مع الدعم.',
   'ag.ar': 'ذمم العملاء', 'ag.ap': 'ذمم الموردين', 'ag.arTitle': 'المستحق على كل عميل حسب مدة التأخير', 'ag.apTitle': 'المستحق لكل مورد حسب مدة التأخير', 'ag.total': 'الإجمالي',
-  'ag.current': 'غير مستحق بعد', 'ag.d30': '١–٣٠ يومًا', 'ag.d60': '٣١–٦٠ يومًا', 'ag.d90': '٦١–٩٠ يومًا', 'ag.d90p': 'أكثر من ٩٠ يومًا', 'ag.otherBills': 'فواتير دون مورد',
+  'ag.current': 'غير مستحق بعد', 'ag.d30': '1–30 يومًا', 'ag.d60': '31–60 يومًا', 'ag.d90': '61–90 يومًا', 'ag.d90p': 'أكثر من 90 يومًا', 'ag.otherBills': 'فواتير دون مورد',
   'ag.noneAr': 'لا توجد مستحقات على العملاء', 'ag.noneAp': 'لا توجد التزامات على المزرعة', 'ag.arHint': 'يُحتسب التأخير من تاريخ الاستحقاق (مهلة {n} يومًا عند عدم تحديده). ويُعدّ الرصيد الافتتاحي الأقدم.', 'ag.apHint': 'يُحتسب التأخير من تاريخ استحقاق كل فاتورة.',
   'tax.off': 'الضريبة غير مفعّلة. يمكنك تفعيلها من', 'tax.collected': 'الضريبة المحصّلة', 'tax.taxable': 'المبيعات الخاضعة للضريبة (صافي)', 'tax.invoices': 'عدد الفواتير', 'tax.month': 'الشهر', 'tax.none': 'لا توجد فواتير خاضعة للضريبة خلال هذه الفترة',
   'inv.invoiced': 'قيمة الفواتير', 'inv.count': '{n} فاتورة', 'inv.collected': 'المحصَّل', 'inv.outstanding': 'المتبقي للتحصيل', 'inv.open': 'غير مسددة', 'inv.collect': 'تحصيل', 'inv.search': 'ابحث برقم الفاتورة أو اسم العميل',
@@ -331,7 +331,14 @@ const ar = {
   'upd.installing': 'جارٍ تثبيت التحديث…', 'upd.keepOpen': 'لحظات قليلة، لا تغلق التطبيق.', 'upd.done': 'تم التحديث بنجاح', 'upd.history': 'سجل التحديثات',
   'upd.lead': 'إليك ما الجديد منذ الإصدار {v}:', 'upd.leadFresh': 'إليك أبرز ما في هذا الإصدار:', 'upd.andMore': 'وتحديثات أقدم أخرى ({n}) في سجل التحديثات.',
   'upd.start': 'رائع، لنبدأ', 'upd.whatsNew': 'ما الجديد',
-  'flip.hint': 'أبقِ المؤشر على أي مبلغ ثانيتين لعرضه بالليرة اللبنانية', 'cash.trend': 'رصيد الصندوق خلال آخر ٣٠ يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
+  'dock.cash': 'الصندوق', 'dock.sales': 'المبيعات', 'dock.production': 'الإنتاج', 'dock.animals': 'الحيوانات',
+  'nb.overdue': '{n} من العملاء متأخرون في السداد', 'nb.orders': '{n} من أوامر الشراء بانتظار الاستلام', 'nb.docs': '{n} من المستندات تنتهي قريبًا', 'nb.find': 'ابحث عن صفحة…',
+  'fold.hide': 'إخفاء', 'fold.show': 'إظهار', 'fold.lots': 'دفعة', 'fold.oldest': 'الأقدم:', 'fold.lastN': 'آخر {n} يومًا', 'fold.nDays': '{n} يومًا', 'fold.days': 'يومًا', 'fold.avg': 'المتوسط اليومي', 'fold.best': 'أعلى يوم',
+  'fold.showing': 'يُعرض {a} من {b}', 'fold.more': 'عرض {n} أخرى', 'fold.all': 'عرض الكل', 'fold.less': 'عرض أقل', 'fold.entries': 'إدخالًا',
+  'prod.milkDays': 'سجل الحليب اليومي', 'prod.eggLog': 'سجل البيض', 'flt.period': 'الفترة', 'flt.session': 'الحلبة', 'flt.none': 'لا توجد نتائج بهذه الشروط',
+  'flt.sort.m.new': 'الأحدث', 'flt.sort.m.old': 'الأقدم', 'flt.sort.m.high': 'الأعلى إنتاجًا', 'flt.sort.m.low': 'الأقل إنتاجًا',
+  'set.sound': 'الأصوات', 'set.soundHint': 'صوت عند نجاح الحفظ، وعند الخطأ، وصوت صندوق المحاسبة عند كل عملية بيع.', 'set.sndOk': 'نجاح', 'set.sndCash': 'بيع', 'set.sndFail': 'خطأ',
+  'flip.hint': 'أبقِ المؤشر على أي مبلغ ثانيتين ليتحوّل إلى LBP', 'cash.trend': 'رصيد الصندوق خلال آخر 30 يومًا', 'printNote': 'تعمل الطباعة من التطبيق المثبّت أو من المتصفح.',
 };
 
 const en = {
@@ -640,6 +647,13 @@ const en = {
   'upd.installing': 'Installing the update…', 'upd.keepOpen': 'Just a moment — keep the app open.', 'upd.done': 'Updated successfully', 'upd.history': 'Update history',
   'upd.lead': 'Here is what’s new since version {v}:', 'upd.leadFresh': 'Here are the highlights of this version:', 'upd.andMore': 'And {n} earlier updates in the update history.',
   'upd.start': 'Great, let’s go', 'upd.whatsNew': 'What’s new',
+  'dock.cash': 'Cash', 'dock.sales': 'Sales', 'dock.production': 'Milk & eggs', 'dock.animals': 'Animals',
+  'nb.overdue': '{n} customers are late paying', 'nb.orders': '{n} purchase orders awaiting delivery', 'nb.docs': '{n} documents expiring soon', 'nb.find': 'Find a page…',
+  'fold.hide': 'Hide', 'fold.show': 'Show', 'fold.lots': 'lots', 'fold.oldest': 'oldest:', 'fold.lastN': 'Last {n} days', 'fold.nDays': '{n} days', 'fold.days': 'days', 'fold.avg': 'Daily average', 'fold.best': 'Best day',
+  'fold.showing': 'Showing {a} of {b}', 'fold.more': 'Show {n} more', 'fold.all': 'Show all', 'fold.less': 'Show less', 'fold.entries': 'entries',
+  'prod.milkDays': 'Daily milk log', 'prod.eggLog': 'Egg log', 'flt.period': 'Period', 'flt.session': 'Milking', 'flt.none': 'Nothing matches these filters',
+  'flt.sort.m.new': 'Newest', 'flt.sort.m.old': 'Oldest', 'flt.sort.m.high': 'Highest yield', 'flt.sort.m.low': 'Lowest yield',
+  'set.sound': 'Sounds', 'set.soundHint': 'A sound when a save succeeds, when something fails, and a cash-register ring on every sale.', 'set.sndOk': 'Success', 'set.sndCash': 'Sale', 'set.sndFail': 'Error',
   'flip.hint': 'Hover any amount for 2 seconds to see it in LBP', 'cash.trend': 'Cash box balance, last 30 days', 'printNote': 'Printing works from the installed app or a browser tab.',
 };
 

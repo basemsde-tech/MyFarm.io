@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { milkQ, milkN } from './units.js';
 import { useApp, useDraft } from './store.jsx';
 import { Button, Icon, MoneyInput, QtyInput, DateInput, Seg, Select, Picker, TextInput, TextArea, Check, Sheet, Field, readImage, IconButton } from './kit.jsx';
 import { TxFooter, issuesFor } from './tx.jsx';
@@ -78,7 +79,7 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
   return (
     <Sheet title={record ? t('sale.edit') : t('sale.title')} onClose={onClose} wide
       footer={<TxFooter recs={[rec]} editing={record} ctx={{}} onSaved={(next) => {
-        if (!record) { chime(); const last = next.records[next.records.length - 1]; if (walkin) setDone({ totalC: tot.totalC, change, id: last.id }); }
+        if (!record) { const last = next.records[next.records.length - 1]; if (walkin) setDone({ totalC: tot.totalC, change, id: last.id }); }
       }} onDone={(m) => { if (record) return onClose(); clearDraft(); if (m === 'close' && !walkin) onClose(); }} />}>
       {restored && <div className="note info">{t('ed.draft')} <button type="button" className="link" onClick={clearDraft}>{t('ed.discard')}</button></div>}
       <div className="grid2">
@@ -97,8 +98,8 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
               ) : (
                 <>
                   <QtyInput label={t('qty')} value={l.qty} onValue={(v) => setLine(i, { qty: v })} unit={isMilk ? null : t(`u.${l.unit}`)}
-                    hint={isMilk ? t('sale.inStock', { l: `${fmtQty(tank)} ${t('u.L')}` }) : null}
-                    error={short ? t('e.milk.oversell', { l: `${fmtQty(litresOf(l.qty, l.unit) - tank)} ${t('u.L')}` }) : issuesFor(issues, `lines.${i}.qty`, t, l.qty)} />
+                    hint={isMilk ? t('sale.inStock', { l: `${milkQ(tank)}` }) : null}
+                    error={short ? t('e.milk.oversell', { l: `${milkQ(litresOf(l.qty, l.unit) - tank)}` }) : issuesFor(issues, `lines.${i}.qty`, t, l.qty)} />
                   {isMilk && <Seg small value={l.unit} onChange={(v) => setLine(i, { unit: v })} options={[{ value: 'L', label: t('u.L') }, { value: 'kg', label: t('u.kg') }]} />}
                   <MoneyInput label={`${t('price')} / ${t(`u.${l.unit}`)}`} cents={l.priceC} onCents={(c) => setLine(i, { priceC: c })} error={issuesFor(issues, `lines.${i}.price`, t, l.priceC)} />
                 </>
@@ -152,19 +153,6 @@ export function SaleSheet({ record, customerId: presetCustomer, animalId: preset
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
   );
-}
-
-let audio = null; // one audio engine for the whole session
-function chime() {
-  try {
-    const ctx = audio || (audio = new (window.AudioContext || window.webkitAudioContext)());
-    if (ctx.state === 'suspended') ctx.resume();
-    const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.setValueAtTime(880, ctx.currentTime); o.frequency.setValueAtTime(1320, ctx.currentTime + 0.08);
-    g.gain.setValueAtTime(0.06, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
-    o.start(); o.stop(ctx.currentTime + 0.3);
-  } catch { /* sound is optional */ }
 }
 
 /* ───────────── Customer payment ───────────── */
@@ -403,7 +391,7 @@ export function MilkSheet({ record, onClose }) {
             <QtyInput autoFocus label={t('prod.am')} value={f.am} onValue={(v) => set({ am: v })} unit={t(`u.${f.unit}`)} />
             <QtyInput label={t('prod.pm')} value={f.pm} onValue={(v) => set({ pm: v })} unit={t(`u.${f.unit}`)} />
           </div>
-          <div className="totals"><div className="grand"><span>{t('prod.dayTotal')}</span><span className="num">{fmtQty(L(f.am) + L(f.pm))} {t('u.L')}</span></div></div>
+          <div className="totals"><div className="grand"><span>{t('prod.dayTotal')}</span><span className="num">{milkQ(L(f.am) + L(f.pm))}</span></div></div>
           {existing.length > 0 && <div className="note warn">{t('prod.existsDay')}</div>}
         </>
       ) : (
@@ -413,7 +401,7 @@ export function MilkSheet({ record, onClose }) {
           <QtyInput autoFocus label={t('qty')} value={f.liters} onValue={(v) => set({ liters: v })} unit={t(`u.${f.unit}`)} />
         </>
       )}
-      <div className="muted small">{t('prod.tank')}: <b className="num">{fmtQty(snap.milk.stockL)} {t('u.L')}</b></div>
+      <div className="muted small">{t('prod.tank')}: <b className="num">{milkQ(snap.milk.stockL)}</b></div>
     </Sheet>
   );
 }
@@ -427,7 +415,7 @@ export function MilkUseSheet({ record, onClose }) {
   return (
     <Sheet title={t('prod.use')} onClose={onClose} footer={<TxFooter recs={[rec]} editing={record} saveAndNew={false} onDone={onClose} />}>
       <DateInput label={t('date')} value={f.day} max={today} onChange={(v) => set({ day: v })} />
-      <QtyInput autoFocus label={t('qty')} value={f.liters} onValue={(v) => set({ liters: v })} unit={t('u.L')} hint={t('sale.inStock', { l: `${fmtQty(snap.milk.stockL + (record?.liters || 0))} ${t('u.L')}` })} />
+      <QtyInput autoFocus label={t('qty')} value={f.liters} onValue={(v) => set({ liters: v })} unit={t('u.L')} hint={t('sale.inStock', { l: `${milkQ(snap.milk.stockL + (record?.liters || 0))}` })} />
       <Seg wrap value={f.reason} onChange={(v) => set({ reason: v })} options={reasons.map((r) => ({ value: r, label: t(`use.${r}`) !== `use.${r}` ? t(`use.${r}`) : r }))} />
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>

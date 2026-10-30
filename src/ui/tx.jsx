@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { milkQ, milkN } from './units.js';
+import { play as playSound } from './sound.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Sheet, TextInput, Seg, dayLabel } from './kit.jsx';
 import { addRecord, editRecord, deleteRecords, restoreRecords, purgeRecords, voidSale, unvoidSale, preview, changedFields, isMoney, MONEY_FIELDS } from '../core/commands.mjs';
@@ -25,9 +27,9 @@ export function describe(r, { t, names, fmt }) {
     case 'capital':
       return { title: names.person(r.personId), sub: t(r.kind === 'inject' ? 'pp.inject' : r.purpose === 'personal' ? 'pp.personal' : 'pp.cashOut'), amountC: r.amountC, icon: 'people', kind: t('t.capital') };
     case 'milk':
-      return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: r.animalId ? names.animal(r.animalId) : t('prod.herdMode'), qty: `${fmtQty(r.liters)} ${t('u.L')}`, icon: 'milk', kind: t('t.milk') };
+      return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: r.animalId ? names.animal(r.animalId) : t('prod.herdMode'), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milk') };
     case 'milkUse':
-      return { title: t('t.milkUse'), sub: t(`use.${r.reason}`) !== `use.${r.reason}` ? t(`use.${r.reason}`) : r.reason, qty: `${fmtQty(r.liters)} ${t('u.L')}`, icon: 'milk', kind: t('t.milkUse') };
+      return { title: t('t.milkUse'), sub: t(`use.${r.reason}`) !== `use.${r.reason}` ? t(`use.${r.reason}`) : r.reason, qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milkUse') };
     case 'eggUse':
       return { title: t('t.eggUse'), sub: r.note || t(`use.${r.reason || 'waste'}`), qty: `−${r.count}`, icon: 'egg', kind: t('t.eggUse') };
     case 'eggs':
@@ -47,7 +49,7 @@ export function ImpactList({ impact, compact }) {
   const { t, fmt } = useApp();
   if (!impact) return null;
   if (!impact.length) return <div className="impact-none">{t('imp.none')}</div>;
-  const show = (i, v) => (i.kind === 'qty' ? `${fmtQty(v)} ${t('u.L')}` : i.kind === 'count' ? fmtQty(v, 0) : fmt(v));
+  const show = (i, v) => (i.kind === 'qty' ? `${milkQ(v)}` : i.kind === 'count' ? fmtQty(v, 0) : fmt(v));
   return (
     <ul className={`impact ${compact ? 'compact' : ''}`}>
       {impact.map((i) => {
@@ -75,7 +77,7 @@ export function ImpactList({ impact, compact }) {
 }
 
 function issueText(i, t) {
-  if (i.code === 'milk.oversell') return t('e.milk.oversell', { l: `${fmtQty(i.shortL)} ${t('u.L')}` });
+  if (i.code === 'milk.oversell') return t('e.milk.oversell', { l: `${milkQ(i.shortL)}` });
   if (i.code === 'locked') return t('e.locked', { d: i.detail?.lock });
   return t(`e.${i.code}`);
 }
@@ -127,7 +129,7 @@ export function TxFooter({ recs, editing, ctx = {}, extraOp, onDone, saveAndNew 
     // Saving straight after typing: check the latest figures before committing.
     if (settled !== recKey) {
       const fresh = preview(farm, op, { names, today });
-      if (fresh.issues.some((i) => i.severity === 'error')) { setSettled(recKey); return; }
+      if (fresh.issues.some((i) => i.severity === 'error')) { setSettled(recKey); playSound('fail'); return; }
     }
     setBusy(true);
     const next = commit(op, { label: label || (editing ? t('ed.edited') : t('saved')) });
@@ -327,7 +329,7 @@ export function DeleteDialog({ ids, onClose, onDone }) {
     const next = commit(op(reason.trim()), { label: t('deleted'), undoable: true });
     if (next) { onClose(); onDone?.(); }
   };
-  const what = [produce.milkL > 0 && `${fmtQty(produce.milkL)} ${t('u.L')} ${t('pr.milk')}`, produce.eggs > 0 && `${fmtQty(produce.eggs, 0)} ${t('u.egg')}`].filter(Boolean).join(' + ');
+  const what = [produce.milkL > 0 && `${milkQ(produce.milkL)} ${t('pr.milk')}`, produce.eggs > 0 && `${fmtQty(produce.eggs, 0)} ${t('u.egg')}`].filter(Boolean).join(' + ');
   return (
     <Sheet title={title} sub={t('ed.delHint')} onClose={onClose}
       footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="danger" icon="trash" disabled={(money && reason.trim().length < 3) || blocked.length > 0} onClick={go}>{t('delete')}</Button></div>}>

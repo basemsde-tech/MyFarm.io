@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { milkQ, milkN } from './units.js';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
@@ -87,7 +88,7 @@ export function useAttention() {
       if (d <= 3) out.push({ tone: d < 0 ? 'bad' : 'warn', text: `${t('att.obligation', { name: o.party })} · ${d < 0 ? t('obl.overdue', { n: -d }) : d === 0 ? t('obl.dueToday') : t('obl.dueIn', { n: d })}`, go: ['expenses', null, 'obligations'] });
     }
     const old = snap.milk.lots.filter((l) => l.fresh === 'old');
-    if (old.length) out.push({ tone: 'warn', text: t('att.lowTank', { l: `${fmtQty(old.reduce((s, l) => s + l.left, 0))} ${t('u.L')}` }), go: ['production', null, 'milk'] });
+    if (old.length) out.push({ tone: 'warn', text: t('att.lowTank', { l: `${milkQ(old.reduce((s, l) => s + l.left, 0))}` }), go: ['production', null, 'milk'] });
     const milkers = farm.animals.some((a) => SPECIES[a.species]?.product === 'milk' && !['sold', 'dead'].includes(a.status));
     if (milkers && !farm.records.some((r) => r.type === 'milk' && r.day === today && !r.deletedAt) && new Date().getHours() >= 10) out.push({ tone: 'info', text: t('att.noMilk'), go: ['production', null, 'milk'], action: 'milk' });
     const openBills = farm.records.filter((r) => live(r) && r.type === 'expense' && !r.supplierId && r.source !== 'person' && (r.paidC || 0) < r.amountC);
@@ -184,7 +185,7 @@ export function CashScreen() {
         <Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>
         <Button icon="cash" onClick={() => ui.open('payment')}>{t('new.payment')}</Button>
         <Button icon="receipt" onClick={() => ui.open('expense')}>{t('new.expense')}</Button>
-        <Button icon="milk" onClick={() => ui.open('milk')}>{t('new.milk')}{milkToday > 0 && <span className="badge num">{fmtQty(milkToday)}</span>}</Button>
+        <Button icon="milk" onClick={() => ui.open('milk')}>{t('new.milk')}{milkToday > 0 && <span className="badge num">{milkN(milkToday)}</span>}</Button>
       </div>
       </div>
 

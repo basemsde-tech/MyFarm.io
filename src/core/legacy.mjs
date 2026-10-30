@@ -234,7 +234,7 @@ export function importLegacy(raw, { lang = 'ar', exportedAt } = {}) {
     location: s.loc ? [s.loc.name, s.loc.lat, s.loc.lon].filter((x) => x != null).join(' ') : '',
     currency: 'USD', second: { code: 'LBP', rate: Number(s.rate) || 0 },
     milkPriceC: C(s.milkPrice), eggPriceC: C(s.eggPrice), wageC: C(s.wage),
-    milkMode: s.milkMode === 'animal' || s.milkMode === 'perAnimal' ? 'animal' : 'herd', milkUnit: s.milkUnit === 'kg' ? 'kg' : 'L',
+    milkMode: s.milkMode === 'animal' || s.milkMode === 'perAnimal' ? 'animal' : 'herd', milkUnit: s.milkUnit === 'L' ? 'L' : 'kg',
     tax: { enabled: !!tax.enabled, rate: Number(tax.ratePct) || 0, label: tax.label || 'VAT', labelAr: tax.labelAr || 'ضريبة', number: tax.taxNumber || '', registration: tax.companyReg || '', inclusive: !!tax.pricesIncludeTax, show: tax.showTaxOnDocs !== false },
     doc: { prefix: tax.invoicePrefix || 'INV-', thanks: docTpl.thanks || '', footer: docTpl.footerNote || '', signatures: docTpl.showSigns !== false, showParty: docTpl.showParty !== false, showRate: !!docTpl.showRate },
     categories: (s.categories || []).filter((c) => c && c.key).map((c) => ({ key: c.key, name: (lang === 'ar' ? c.ar || c.en : c.en || c.ar) || c.key, group: c.group || 'otherGrp', icon: c.icon || '•' })),

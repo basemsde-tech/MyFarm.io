@@ -1,6 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { milkQ, milkN } from './units.js';
+import { play as playSound, setSoundOn } from './sound.js';
 import { useApp, KEYS, storage, readJSON, VERSION, MAX_BYTES } from './store.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, readImage, IconButton, FilterPanel } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, readImage, IconButton, FilterPanel, Fold } from './kit.jsx';
 import { RecordRow, SelectionBar } from './tx.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
@@ -41,77 +43,138 @@ function MilkTab() {
   const recs = farm.records.filter(live);
   const soldToday = recs.filter((r) => r.type === 'sale' && r.day === today && !r.voided).reduce((s, r) => s + saleMilkL(r), 0);
   const usedToday = recs.filter((r) => r.type === 'milkUse' && r.day === today).reduce((s, r) => s + Number(r.liters), 0);
-  const byDay = {};
-  for (const r of recs) {
-    if (r.type !== 'milk') continue;
-    const d = (byDay[r.day] ||= { am: 0, pm: 0, day: 0, rows: [] });
-    d.rows.push(r);
-  }
-  // Use the deduplicated lots for day totals so the table matches the tank.
-  const lotsAll = useMemo(() => {
-    const m = {};
-    for (const r of recs) if (r.type === 'milk') (m[r.day] ||= []).push(r);
-    return m;
-  }, [farm.records]); // eslint-disable-line react-hooks/exhaustive-deps
-  const days = Object.keys(lotsAll).sort().reverse().slice(0, 21);
   const lots = milkLots(recs);
-  const dayTotals = {};
-  for (const l of lots) { const d = (dayTotals[l.day] ||= { am: 0, pm: 0, day: 0, total: 0 }); d[l.session] += l.liters; d.total += l.liters; }
-  const producedToday = dayTotals[today]?.total || 0;
+  const producedToday = lots.filter((l) => l.day === today).reduce((x, l) => x + l.liters, 0);
+  const tankLots = [...snap.milk.lots].reverse();
+  const oldest = tankLots[tankLots.length - 1];
   return (
     <>
       <section className="stats-row">
-        <Stat big label={t('prod.tank')} value={`${fmtQty(snap.milk.stockL)} ${t('u.L')}`} tone="teal" />
-        <Stat label={`${t('prod.produced')} · ${t('today')}`} value={fmtQty(producedToday)} />
-        <Stat label={`${t('prod.sold')} · ${t('today')}`} value={fmtQty(soldToday)} />
-        <Stat label={`${t('prod.used')} · ${t('today')}`} value={fmtQty(usedToday)} />
+        <Stat big label={t('prod.tank')} value={`${milkQ(snap.milk.stockL)}`} tone="teal" />
+        <Stat label={`${t('prod.produced')} · ${t('today')}`} value={milkN(producedToday)} />
+        <Stat label={`${t('prod.sold')} · ${t('today')}`} value={milkN(soldToday)} />
+        <Stat label={`${t('prod.used')} · ${t('today')}`} value={milkN(usedToday)} />
       </section>
       <div className="quick">
         <Button variant="primary" icon="milk" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>
         <Button icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>
         <Button onClick={() => ui.open('milkUse')}>{t('prod.use')}</Button>
       </div>
-      {snap.milk.lots.length > 0 && (
-        <section className="panel">
-          <h2>{t('prod.lots')} <Help k="tank" more="production" /></h2>
+      {tankLots.length > 0 && (
+        <Fold id="milkLots" title={<>{t('prod.lots')} <Help k="tank" more="production" /></>}
+          summary={<><b className="num">{tankLots.length}</b> {t('fold.lots')}{oldest && <> · {t('fold.oldest')} <Pill status={oldest.fresh}>{t(`fr.${oldest.fresh}`)}</Pill></>}</>}>
           <div className="lots">
-            {[...snap.milk.lots].reverse().slice(0, 24).map((l) => (
+            {tankLots.slice(0, 24).map((l) => (
               <div className="lot" key={l.key}>
-                <div><b className="num">{fmtQty(l.left)} {t('u.L')}</b> <span className="muted">/ {fmtQty(l.liters)}</span></div>
+                <div><b className="num">{milkQ(l.left)}</b> <span className="muted">/ {milkN(l.liters)}</span></div>
                 <div className="muted small">{dayLabel(l.day, lang)} · {t(`prod.${l.session}`)} · {t('fr.hours', { h: Math.round(l.hours) })}{l.by ? ` · ${l.by}` : ''}</div>
                 <Pill status={l.fresh}>{t(`fr.${l.fresh}`)}</Pill>
               </div>
             ))}
           </div>
-          {snap.milk.lots.length > 24 && <p className="muted small">{t('prod.olderLots', { n: snap.milk.lots.length - 24 })}</p>}
-        </section>
+          {tankLots.length > 24 && <p className="muted small">{t('prod.olderLots', { n: tankLots.length - 24 })}</p>}
+        </Fold>
       )}
-      <section className="panel">
-        <h2>{t('prod.milk')}</h2>
-        {days.length ? (
+      <MilkDays recs={recs} lots={lots} />
+    </>
+  );
+}
+
+const PAGE = 14;
+/** Daily milk table with period, species, session and sort controls; folds away to a one-line summary. */
+function MilkDays({ recs, lots }) {
+  const { t, ui, today, lang } = useApp();
+  const [per, setPer] = useState('30');
+  const [sp, setSp] = useState('');
+  const [sess, setSess] = useState('');
+  const [sort, setSort] = useState('new');
+  const [show, setShow] = useState(PAGE);
+  useEffect(() => setShow(PAGE), [per, sp, sess, sort]);
+  const species = useMemo(() => [...new Set(lots.map((l) => l.species))], [lots]);
+  const from = per === 'all' ? '' : addDaysIso(today, -(Number(per) - 1));
+  const rows = useMemo(() => {
+    const m = {};
+    for (const l of lots) {
+      if ((from && l.day < from) || (sp && l.species !== sp)) continue;
+      const d = (m[l.day] ||= { day: l.day, am: 0, pm: 0, whole: 0, total: 0 });
+      if (l.session === 'day') d.whole += l.liters; else d[l.session] += l.liters;
+      d.total += l.liters;
+    }
+    let list = Object.values(m);
+    if (sess) list = list.filter((d) => (sess === 'am' ? d.am : d.pm + d.whole) > 0);
+    const val = (d) => (sess === 'am' ? d.am : sess === 'pm' ? d.pm + d.whole : d.total);
+    const by = { new: (a, b) => b.day.localeCompare(a.day), old: (a, b) => a.day.localeCompare(b.day), high: (a, b) => val(b) - val(a) || b.day.localeCompare(a.day), low: (a, b) => val(a) - val(b) || b.day.localeCompare(a.day) }[sort];
+    return list.sort(by);
+  }, [lots, from, sp, sess, sort]);
+  const total = rows.reduce((x, d) => x + d.total, 0);
+  const avg = rows.length ? total / rows.length : 0;
+  const best = rows.reduce((m, d) => (!m || d.total > m.total ? d : m), null);
+  const spark = useMemo(() => [...rows].sort((a, b) => a.day.localeCompare(b.day)).slice(-30), [rows]);
+  const peak = Math.max(0, ...spark.map((d) => d.total));
+  const low = Math.min(peak, ...spark.map((d) => d.total));
+  const h = (v) => (peak > low ? 25 + 75 * ((v - low) / (peak - low)) : 70);
+  const bulk = (day, s) => recs.filter((r) => r.type === 'milk' && r.day === day && !r.animalId && r.session === s && (!sp || (r.species || 'cow') === sp)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const cell = (day, s, v) => { const r = bulk(day, s); return r ? <button type="button" className="cell-btn" onClick={() => ui.open('drawer', { id: r.id })} title={t('edit')}>{milkN(v)}</button> : v ? milkN(v) : '—'; };
+  const reset = () => { setPer('30'); setSp(''); setSess(''); setSort('new'); };
+  const perLabel = per === 'all' ? t('p.all') : t('fold.lastN', { n: per });
+  const summary = rows.length ? (
+    <>
+      <span className="mini-spark" aria-hidden="true">{spark.map((d) => <i key={d.day} style={{ blockSize: `${h(d.total)}%` }} />)}</span>
+      <span><b className="num">{rows.length}</b> {t('fold.days')} · {t('total')} <b className="num">{milkQ(total)}</b> · {t('fold.avg')} <b className="num">{milkQ(avg)}</b></span>
+    </>
+  ) : null;
+  if (!lots.length) {
+    return <section className="panel"><h2>{t('prod.milk')}</h2><Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" action={<Button variant="primary" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>} /></section>;
+  }
+  return (
+    <Fold id="milkDays" title={t('prod.milkDays')} summary={summary}>
+      <FilterPanel id="milkDays" onReset={reset}
+        chips={[{ label: perLabel, active: per !== '30' }, sp && { label: t(`sp.${sp}`), active: true }, sess && { label: t(`prod.${sess}`), active: true }, { label: t(`flt.sort.m.${sort}`), active: sort !== 'new' }]}>
+        <div className="filter-row">
+          <Seg small wrap label={t('flt.period')} value={per} onChange={setPer} options={['7', '30', '90', '365', 'all'].map((v) => ({ value: v, label: v === 'all' ? t('p.all') : t('fold.nDays', { n: v }) }))} />
+          {species.length > 1 && <Seg small label={t('prod.species')} value={sp} onChange={setSp} options={[{ value: '', label: t('all') }, ...species.map((x) => ({ value: x, label: t(`sp.${x}`) }))]} />}
+          <Seg small label={t('flt.session')} value={sess} onChange={setSess} options={[{ value: '', label: t('all') }, { value: 'am', label: t('prod.am') }, { value: 'pm', label: t('prod.pm') }]} />
+          <Seg small wrap label={t('flt.sortBy')} value={sort} onChange={setSort} options={['new', 'old', 'high', 'low'].map((k) => ({ value: k, label: t(`flt.sort.m.${k}`) }))} />
+        </div>
+      </FilterPanel>
+      {rows.length ? (
+        <>
+          <div className="milk-sum">
+            <div><span className="muted small">{t('total')}</span><b className="num">{milkQ(total)}</b></div>
+            <div><span className="muted small">{t('fold.avg')}</span><b className="num">{milkQ(avg)}</b></div>
+            {best && <div><span className="muted small">{t('fold.best')}</span><b className="num">{milkQ(best.total)}</b><small className="muted">{dayLabel(best.day, lang, { day: 'numeric', month: 'short' })}</small></div>}
+          </div>
           <div className="table-wrap">
             <table className="tbl">
-              <thead><tr><th>{t('date')}</th><th className="num">{t('prod.am')}</th><th className="num">{t('prod.pm')}</th><th className="num">{t('prod.dayTotal')}</th></tr></thead>
+              <thead><tr><th>{t('date')}</th><th className="num">{t('prod.am')}</th><th className="num">{t('prod.pm')}</th><th className="num">{t('prod.dayTotal')}</th><th className="milk-bar-h" aria-hidden="true" /></tr></thead>
               <tbody>
-                {days.map((d) => {
-                  const x = dayTotals[d] || { am: 0, pm: 0, day: 0, total: 0 };
-                  const bulk = (sess) => lotsAll[d].filter((r) => !r.animalId && r.session === sess).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-                  const cell = (sess, v) => { const r = bulk(sess); return r ? <button type="button" className="cell-btn" onClick={() => ui.open('drawer', { id: r.id })} title={t('edit')}>{fmtQty(v)}</button> : v ? fmtQty(v) : '—'; };
-                  return (
-                    <tr key={d}>
-                      <td>{dayLabel(d, lang, { weekday: 'short', day: 'numeric', month: 'short' })}</td>
-                      <td className="num">{cell('am', x.am)}</td><td className="num">{x.day ? cell('day', x.day) : cell('pm', x.pm)}</td>
-                      <td className="num"><b>{fmtQty(x.total)}</b></td>
-                    </tr>
-                  );
-                })}
+                {rows.slice(0, show).map((d) => (
+                  <tr key={d.day} className="row-in">
+                    <td>{dayLabel(d.day, lang, { weekday: 'short', day: 'numeric', month: 'short' })}</td>
+                    <td className="num">{cell(d.day, 'am', d.am)}</td><td className="num">{d.whole ? cell(d.day, 'day', d.whole) : cell(d.day, 'pm', d.pm)}</td>
+                    <td className="num"><b>{milkN(d.total)}</b></td>
+                    <td className="milk-bar" aria-hidden="true"><i style={{ inlineSize: `${(d.total / (best?.total || 1)) * 100}%` }} className={d.total < avg * 0.85 ? 'low' : ''} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        ) : <Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" action={<Button variant="primary" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>} />}
-      </section>
-    </>
+          {rows.length > show && (
+            <div className="more-row">
+              <span className="muted small">{t('fold.showing', { a: Math.min(show, rows.length), b: rows.length })}</span>
+              <Button size="sm" onClick={() => setShow(show + PAGE)}>{t('fold.more', { n: Math.min(PAGE, rows.length - show) })}</Button>
+              <Button size="sm" onClick={() => setShow(rows.length)}>{t('fold.all')}</Button>
+            </div>
+          )}
+          {show > PAGE && rows.length <= show && <div className="more-row"><Button size="sm" onClick={() => setShow(PAGE)}>{t('fold.less')}</Button></div>}
+        </>
+      ) : <Empty title={t('flt.none')} icon="milk" action={<Button onClick={reset}>{t('flt.reset')}</Button>} />}
+    </Fold>
   );
+}
+function addDaysIso(iso, n) {
+  const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 function EggsTab() {
@@ -127,11 +190,11 @@ function EggsTab() {
         <Stat label={t('prod.sold')} value={fmtQty(snap.eggs.sold, 0)} />
       </section>
       <div className="quick"><Button variant="primary" icon="egg" onClick={() => ui.open('eggs')} disabled={!flocks.length}>{t('new.eggs')}</Button></div>
-      <section className="panel">
+      <Fold id="eggDays" title={t('prod.eggLog')} summary={rows.length ? <><b className="num">{rows.length}</b> {t('fold.entries')}</> : null}>
         {!flocks.length ? <Empty title={t('prod.noFlock')} icon="egg" action={<Button onClick={() => ui.open('animal', { species: 'chicken' })}>{t('ani.new')}</Button>} />
           : rows.length ? <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{g.rows.reduce((s, r) => s + r.count - (r.broken || 0), 0)}</span></>} renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} />
             : <Empty title={t('prod.eggs')} icon="egg" />}
-      </section>
+      </Fold>
     </>
   );
 }
@@ -287,7 +350,7 @@ function AnimalDetail({ id }) {
             {flock ? <><dt>{t('ani.birds')}</dt><dd className="num">{a.birds || 0}</dd>{a.coop && <><dt>{t('ani.coop')}</dt><dd>{a.coop}</dd></>}</> : <>
               {a.weight > 0 && <><dt>{t('ani.weight')}</dt><dd className="num">{fmtQty(a.weight)}</dd></>}
               <dt>{t('ani.parity')}</dt><dd className="num">{a.parity || 0}</dd>
-              {a.yieldL > 0 && <><dt>{t('ani.yield')}</dt><dd className="num">{fmtQty(a.yieldL)} {t('u.L')}</dd></>}
+              {a.yieldL > 0 && <><dt>{t('ani.yield')}</dt><dd className="num">{milkQ(a.yieldL)}</dd></>}
             </>}
             <dt>{t('ani.source')}</dt><dd>{a.source === 'bought' ? `${t('ani.bought')}${a.priceC ? ` · ${fmt(a.priceC)}` : ''}` : t('ani.born')}</dd>
             {a.medicine && <><dt>{t('ani.medicine')}</dt><dd>{a.medicine}</dd></>}
@@ -363,7 +426,7 @@ export function ReportsScreen() {
         <Stat label={t('rep.sales')} value={fmt(rep.salesC)} sub={rep.walkinC ? `${t('rep.walkin')} ${fmt(rep.walkinC)}` : null} />
         <Stat label={t('rep.expenses')} value={fmt(rep.expenseC)} />
         <Stat label={t('rep.profit')} value={fmt(rep.profitC)} sub={t('rep.profitHint')} tone={rep.profitC >= 0 ? 'in' : 'out'} />
-        <Stat label={t('rep.production')} value={`${fmtQty(rep.milkL)} ${t('u.L')}`} sub={rep.eggs ? `${fmtQty(rep.eggs, 0)} ${t('rep.eggsN')}` : `${t('prod.sold')} ${fmtQty(rep.milkSoldL)}`} />
+        <Stat label={t('rep.production')} value={`${milkQ(rep.milkL)}`} sub={rep.eggs ? `${fmtQty(rep.eggs, 0)} ${t('rep.eggsN')}` : `${t('prod.sold')} ${fmtQty(rep.milkSoldL)}`} />
       </section>
       <div className="two-col">
         <section className="panel">
@@ -482,7 +545,7 @@ export function SettingsScreen() {
         <div className="grid3">
           <QtyInput label={t('set.terms')} value={s.termsDays} onValue={(v) => set({ termsDays: Math.round(v) })} />
           <Seg label={t('set.milkMode')} value={s.milkMode} onChange={(v) => set({ milkMode: v })} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />
-          <Seg label={t('set.milkUnit')} value={s.milkUnit} onChange={(v) => set({ milkUnit: v })} options={[{ value: 'L', label: t('u.L') }, { value: 'kg', label: t('u.kg') }]} />
+          <Seg label={t('set.milkUnit')} value={s.milkUnit} onChange={(v) => set({ milkUnit: v })} options={[{ value: 'kg', label: t('u.kg') }, { value: 'L', label: t('u.L') }]} />
         </div>
       </fieldset>
       <fieldset className="panel" disabled={!canSet}>
@@ -553,6 +616,16 @@ export function SettingsScreen() {
         <div className="grid2">
           <Seg label={t('set.theme')} value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} options={[{ value: 'light', label: t('set.light') }, { value: 'dark', label: t('set.dark') }, { value: 'system', label: t('set.system') }]} />
           <Seg label={t('set.language')} value={prefs.lang} onChange={(v) => setPrefs({ lang: v })} options={[{ value: 'ar', label: 'العربية' }, { value: 'en', label: 'English' }]} />
+        </div>
+        <div className="sound-row">
+          <Check label={t('set.sound')} hint={t('set.soundHint')} checked={prefs.sound !== false} onChange={(v) => { setPrefs({ sound: v }); if (v) { setSoundOn(true); playSound('success'); } }} />
+          {prefs.sound !== false && (
+            <div className="sound-try">
+              {[['success', 'check', 'set.sndOk'], ['cash', 'cash', 'set.sndCash'], ['fail', 'alert', 'set.sndFail']].map(([k, ic, l]) => (
+                <button type="button" key={k} className="chip" onClick={() => playSound(k)}><Icon name={ic} size={14} />{t(l)}</button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="field">
           <span className="seg-label">{t('set.palette')}</span>

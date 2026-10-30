@@ -187,3 +187,9 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 30. A new user sees the Cash tour once; turning tutorials off stops tours; help mode shows ? marks that open explanation bubbles; the guide searches and links to tours.
 31. Publishing a new build makes an open installed app show the update card; Update now reloads into the new version and shows What's new with that release's bullets.
 32. With 5 years of a busy farm (54,000 entries) on a 4× slower processor: keys respond under 150 ms, a saved entry confirms within 0.25 s, totals refresh within 2 s, and quick successive saves are never lost.
+
+## 20. 3.11 — Navigation, sounds, currency display, milk log
+- Navigation: side rail with one gliding highlight, folding groups (remembered), live badges (overdue customers on Sales, open purchase orders on Suppliers, expiring documents on Settings, trash count); arrow-key movement. Phones: a floating dock (Cash, Sales, +, Production, Animals, More) that tucks away while scrolling down; More opens a grouped sheet with a page filter.
+- Sounds (synthesised, offline): soft success on every labelled save, low knock on errors and wrong PINs, a cash-register ring on every new sale. Settings → Appearance → Sounds, with test buttons.
+- Currency: the value itself turns over to LBP after a 2-second hover (no card). Numbers are always Latin digits; currencies without a Latin symbol show their English code (LBP, SAR…), never Arabic abbreviations.
+- Milk unit defaults to kilograms (storage stays in litres; display converts). Production: tank lots, daily milk log and egg log fold away to a one-line summary with a sparkline; the milk log has period, species, milking and sort controls, totals/average/best day, and paged rows.
