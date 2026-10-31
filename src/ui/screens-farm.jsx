@@ -76,8 +76,126 @@ function MilkTab() {
           {tankLots.length > 24 && <p className="muted small">{t('prod.olderLots', { n: tankLots.length - 24 })}</p>}
         </Fold>
       )}
+      <MilkByAnimal recs={recs} lots={lots} />
       <MilkDays recs={recs} lots={lots} />
     </>
+  );
+}
+
+/**
+ * Milk split by animal type and by animal, for a period. Per-animal entries are counted as recorded;
+ * when a species was recorded only as herd totals, each animal's share is estimated from its expected
+ * daily yield and marked with "≈". Folds away to a one-line split by type.
+ */
+function MilkByAnimal({ recs, lots }) {
+  const { farm, t, today, nav, lang } = useApp();
+  const [per, setPer] = useState('30');
+  const [open, setOpen] = useState({});
+  const from = addDaysIso(today, -(Number(per) - 1));
+  const prevFrom = addDaysIso(from, -Number(per));
+  const data = useMemo(() => {
+    // Species totals come from the tank lots, so they match the daily log and the tank.
+    const bySp = {};
+    for (const l of lots) {
+      if (l.day < from || l.day > today) continue;
+      (bySp[l.species] ||= { total: 0, perAnimal: 0, animals: new Map() }).total += l.liters;
+    }
+    // Per-animal entries: newest per day + animal + session.
+    const seen = new Map();
+    for (const r of recs) {
+      if (r.type !== 'milk' || !r.animalId || r.day < prevFrom || r.day > today) continue;
+      const k = `${r.day}|${r.animalId}|${r.session}`;
+      const o = seen.get(k);
+      if (!o || String(r.createdAt) > String(o.createdAt)) seen.set(k, r);
+    }
+    const animals = new Map((farm.animals || []).map((a) => [a.id, a]));
+    for (const r of seen.values()) {
+      const a = animals.get(r.animalId);
+      const sp = a?.species || r.species || 'cow';
+      const g = (bySp[sp] ||= { total: 0, perAnimal: 0, animals: new Map() });
+      const row = g.animals.get(r.animalId) || { id: r.animalId, a, total: 0, prev: 0, days: new Set(), last: '', spark: {} };
+      const L = Number(r.liters) || 0;
+      if (r.day >= from) { row.total += L; row.days.add(r.day); row.spark[r.day] = (row.spark[r.day] || 0) + L; if (r.day > row.last) row.last = r.day; g.perAnimal += L; } else row.prev += L;
+      g.animals.set(r.animalId, row);
+    }
+    // Herd-only species: estimate shares from expected daily yield.
+    for (const [sp, g] of Object.entries(bySp)) {
+      g.estimated = g.animals.size === 0 && g.total > 0;
+      if (!g.estimated) continue;
+      const milkers = (farm.animals || []).filter((a) => !a.deletedAt && a.species === sp && ['lactating', 'healthy', 'pregnant', 'served'].includes(a.status) && a.yieldL > 0);
+      const sum = milkers.reduce((x, a) => x + a.yieldL, 0);
+      for (const a of milkers) g.animals.set(a.id, { id: a.id, a, total: g.total * (a.yieldL / sum), prev: 0, days: new Set(), last: '', spark: {}, est: true });
+    }
+    // Milking animals with nothing recorded in the period.
+    // (only where the type is recorded per animal; herd totals already cover everyone else)
+    const perAnimalType = (sp) => bySp[sp] && !bySp[sp].estimated && bySp[sp].perAnimal >= bySp[sp].total * 0.95;
+    const quiet = (farm.animals || []).filter((a) => !a.deletedAt && a.status === 'lactating' && SPECIES[a.species]?.product === 'milk' && perAnimalType(a.species) && !bySp[a.species].animals.has(a.id));
+    const grand = Object.values(bySp).reduce((x, g) => x + g.total, 0);
+    return { bySp, quiet, grand };
+  }, [recs, lots, farm.animals, from, prevFrom, today]);
+  const species = Object.entries(data.bySp).filter(([, g]) => g.total > 0 || g.animals.size).sort((a, b) => b[1].total - a[1].total);
+  if (!species.length) return null;
+  const days = Array.from({ length: Math.min(14, Number(per)) }, (_, i) => addDaysIso(today, i - Math.min(13, Number(per) - 1)));
+  const name = (row) => (row.a ? (row.a.name ? `${row.a.tag} · ${row.a.name}` : row.a.tag) : '—');
+  const summary = (
+    <span className="mba-split">
+      {species.map(([sp, g]) => <span key={sp}><b className="num">{milkQ(g.total)}</b> {t(`sp.${sp}`)}</span>)}
+      {data.quiet.length > 0 && <span className="mba-warn">{t('mba.quiet', { n: data.quiet.length })}</span>}
+    </span>
+  );
+  return (
+    <Fold id="milkByAnimal" title={t('mba.title')} summary={summary}
+      extra={<Seg small value={per} onChange={setPer} options={['7', '30', '90'].map((v) => ({ value: v, label: t('fold.nDays', { n: v }) }))} />}>
+      <div className="mba-bar" aria-hidden="true">
+        {species.map(([sp, g], i) => <i key={sp} className={`mba-seg c${i % 4}`} style={{ flexGrow: g.total || 0.0001 }} title={`${t(`sp.${sp}`)} ${milkQ(g.total)}`} />)}
+      </div>
+      {species.map(([sp, g], gi) => {
+        const rows = [...g.animals.values()].sort((a, b) => b.total - a.total);
+        const top = Math.max(0.001, ...rows.map((r) => r.total));
+        const isOpen = open[sp] ?? species.length === 1;
+        const herdOnly = g.total - g.perAnimal;
+        return (
+          <section key={sp} className={`mba-group ${isOpen ? 'open' : ''}`}>
+            <button type="button" className="mba-head" onClick={() => setOpen({ ...open, [sp]: !isOpen })} aria-expanded={isOpen}>
+              <span className={`mba-dot c${gi % 4}`} />
+              <b>{t(`sp.${sp}`)}</b>
+              <span className="muted small">{g.estimated && !rows.length ? t('mba.herdOnly') : t('mba.animals', { n: rows.length })}</span>
+              <span className="grow" />
+              <b className="num">{milkQ(g.total)}</b>
+              <span className="muted small num">{data.grand ? Math.round((g.total / data.grand) * 100) : 0}%</span>
+              <Icon name="down" size={15} className="mba-chev" />
+            </button>
+            <div className="mba-body"><div>
+              {g.estimated && rows.length > 0 && <p className="note info small">{t('mba.estimated')}</p>}
+              {!g.estimated && herdOnly > 0.05 && <p className="muted small">{t('mba.herdPart', { a: milkQ(herdOnly) })}</p>}
+              {rows.length ? (
+                <ul className="mba-list">
+                  {rows.map((r, i) => {
+                    const avg = r.days.size ? r.total / r.days.size : 0;
+                    const prevAvg = r.prev / Number(per);
+                    const nowAvg = r.total / Number(per);
+                    const drop = !r.est && r.prev > 0 && nowAvg < prevAvg * 0.85;
+                    const sparkMax = Math.max(0.001, ...days.map((d) => r.spark[d] || 0));
+                    return (
+                      <li key={r.id} style={{ '--i': i }}>
+                        <button type="button" className="mba-row" onClick={() => r.a && nav('animals', r.a.id)}>
+                          <span className="mba-name">{name(r)}{drop && <span className="mba-drop" title={t('mba.dropHint')}>↓ {Math.round((1 - nowAvg / prevAvg) * 100)}%</span>}</span>
+                          <span className="mba-track"><i style={{ inlineSize: `${(r.total / top) * 100}%` }} className={r.est ? 'est' : ''} /></span>
+                          <span className="mba-num num">{r.est ? '≈ ' : ''}{milkQ(r.total)}</span>
+                          <span className="mba-sub muted small num">{r.est ? t('mba.byYield') : `${t('mba.avg')} ${milkN(avg)} · ${r.last ? dayLabel(r.last, lang, { day: 'numeric', month: 'short' }) : ''}`}</span>
+                          {!r.est && <span className="mba-spark" aria-hidden="true">{days.map((d) => <i key={d} style={{ blockSize: `${r.spark[d] ? Math.max(12, (r.spark[d] / sparkMax) * 100) : 4}%` }} className={r.spark[d] ? '' : 'none'} />)}</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : <p className="muted small">{g.estimated ? t('mba.noYield', { n: (farm.animals || []).filter((x) => !x.deletedAt && x.species === sp && !['sold', 'dead'].includes(x.status)).length }) : t('mba.noAnimals')}</p>}
+            </div></div>
+          </section>
+        );
+      })}
+      {data.quiet.length > 0 && <p className="mba-quiet small"><Icon name="alert" size={14} /> {t('mba.quietList', { n: data.quiet.length, list: data.quiet.slice(0, 6).map((a) => a.tag).join('، ') })}</p>}
+    </Fold>
   );
 }
 

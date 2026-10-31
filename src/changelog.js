@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.15.0', date: '2026-10-31', items: [
+    ['milk', 'الحليب حسب الحيوان: كل نوع بنسبته، وكل حيوان بكميته ومتوسطه ورسم لأيامه، في قسم قابل للطي', 'Milk by animal: each type with its share, and each animal with its amount, average and a small chart, in a section that folds away'],
+    ['alert', 'تنبيه عند انخفاض إنتاج حيوان، وقائمة بالحيوانات الحلوب دون تسجيل', 'A flag when an animal’s yield drops, and a list of milking animals with no entries'],
+  ] },
   { v: '3.14.4', date: '2026-10-31', items: [
     ['help', 'دليل الاستخدام محدَّث بكل الميزات الجديدة، مع قسم للإشعارات وآخر للتنقل', 'The user guide now covers every new feature, with sections on notifications and navigation'],
   ] },
