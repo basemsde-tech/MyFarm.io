@@ -55,7 +55,8 @@ export function closeBefore(farm, cutoff, actor, { groups = ['money', 'productio
   const end = dayBefore(cutoff);
   const snap = compute(farm, { to: end, now });
   // Unpaid bills with no supplier are not part of any balance: keep them (trimmed to what is still open).
-  const openBill = (r) => r.type === 'expense' && !r.supplierId && r.source !== 'person' && r.source !== 'customer' && (r.paidC || 0) < (r.amountC || 0);
+  // (A bill partly paid by a manager or funder still has its unpaid rest open, so it is kept too.)
+  const openBill = (r) => r.type === 'expense' && !r.supplierId && r.source !== 'customer' && (r.paidC || 0) < (r.amountC || 0);
   const all = entriesInRange(farm, { to: end, groups });
   const kept = groups.includes('money') ? all.filter(openBill) : [];
   const gone = all.filter((r) => !kept.includes(r));
@@ -83,7 +84,7 @@ export function closeBefore(farm, cutoff, actor, { groups = ['money', 'productio
   const tomb = [...(farm.tombstones || []), ...gone.map((r) => ({ id: r.id, purgedAt: at }))];
   next.records = [...(farm.records || [])
     .filter((r) => !goneIds.has(r.id) && !(r.deletedAt && r.day <= end && groups.includes(groupOfType(r.type))))
-    .map((r) => (keptIds.has(r.id) ? { ...r, amountC: r.amountC - (r.paidC || 0), paidC: 0, carried: true, updatedAt: at } : r)), ...added];
+    .map((r) => (keptIds.has(r.id) ? { ...r, amountC: r.amountC - Math.max(0, r.paidC || 0), paidC: 0, takenBy: null, carried: true, updatedAt: at } : r)), ...added];
   next.tombstones = tomb.slice(-5000);
   next.settings = { ...farm.settings, closedThrough: end, lockedThrough: farm.settings.lockedThrough && farm.settings.lockedThrough > end ? farm.settings.lockedThrough : end };
   next.rev = (farm.rev || 0) + 1;

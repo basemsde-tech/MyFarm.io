@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { isoDay } from '../core/species.mjs';
 import { LOGO } from './logo-data.js';
 import { useApp, KEYS, readJSON, MAX_BYTES, inFrame } from './store.jsx';
 import { Button, Icon, Empty, Seg, Select, TextInput, Check, Sheet, FilterPanel, DateInput, dayLabel, Avatar } from './kit.jsx';
@@ -26,7 +27,7 @@ async function backupText(farm, files) {
 /** keep = 0: one file only, replaced each time (the default, to keep storage low). */
 async function writeToFolder(dir, farm, text, keep = 0) {
   const base = `mazraati-${slug(farm.settings.farmName)}`;
-  const day = new Date().toISOString().slice(0, 10);
+  const day = isoDay();
   for (const name of keep > 0 ? [`${base}-latest.json`, `${base}-${day}.json`] : [`${base}-latest.json`]) {
     const fh = await dir.getFileHandle(name, { create: true });
     const w = await fh.createWritable();
@@ -118,7 +119,7 @@ export function useAutoBackup() {
     setBusy(true);
     try {
       const text = await backupText(farm, files);
-      const name = `mazraati-${slug(farm.settings.farmName)}-${new Date().toISOString().slice(0, 10)}.json`;
+      const name = `mazraati-${slug(farm.settings.farmName)}-${isoDay()}.json`;
       const file = typeof File !== 'undefined' ? new File([text], name, { type: 'application/json' }) : null;
       let method = 'download';
       if (file && navigator.canShare?.({ files: [file] })) {
@@ -199,12 +200,6 @@ export function BackupPanel({ canSet }) {
   useEffect(() => { snapshots().then(setSnaps); vault.estimate().then(setEst); }, [farm.rev]); // eslint-disable-line react-hooks/exhaustive-deps
   // Measuring by converting to text is only needed for the small browser store; the device store reports its own use.
   const size = useMemo(() => (storageMode === 'idb' ? 0 : JSON.stringify(farm).length), [farm, storageMode]);
-  const exportBackup = async () => {
-    const name = `mazraati-${slug(farm.settings.farmName)}-${new Date().toISOString().slice(0, 10)}.json`;
-    downloadText(name, await backupText(farm, files), 'application/json');
-    writeBk(app.farmId, { lastAt: new Date().toISOString(), method: 'download', name });
-    logEvent('export', { label: name });
-  };
   const s = farm.settings.backup || {};
   const setB = (patch) => commit((f) => updateSettings(f, { backup: { ...f.settings.backup, ...patch } }), { silent: true, undoable: false });
   const when = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;

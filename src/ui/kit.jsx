@@ -46,6 +46,10 @@ const P = {
   maximize: 'M5 5h14v14H5z',
   restore: 'M8 8h11v11H8zM5 16V5h11',
   egg: 'M12 3c3.5 0 6.5 5.2 6.5 10a6.5 6.5 0 0 1-13 0C5.5 8.2 8.5 3 12 3z',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  rows: 'M4 5h16M4 9.5h16M4 14h16M4 18.5h16',
+  list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
+  up: 'M6 15l6-6 6 6',
   menu: 'M4 7h16M4 12h16M4 17h16',
   bank: 'M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3l9 5H3z',
   logout: 'M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10',
@@ -411,9 +415,17 @@ export function Grouped({ rows, groupKey, renderGroup, renderRow, pageSize = 40,
   const groups = [];
   let cur = null;
   for (const r of rows.slice(0, limit)) {
-    const k = groupKey(r);
+    const k = groupKey ? groupKey(r) : '';
     if (!cur || cur.key !== k) { cur = { key: k, rows: [] }; groups.push(cur); }
     cur.rows.push(r);
+  }
+  if (!groupKey) {
+    return (
+      <div className="grouped flat">
+        <div className="group-rows">{rows.slice(0, limit).map(renderRow)}</div>
+        {rows.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + pageSize)}>{t('more')} ({rows.length - limit})</Button>}
+      </div>
+    );
   }
   return (
     <div className="grouped">
@@ -555,5 +567,70 @@ export function Fold({ id, title, summary, extra, children, defaultOpen = true, 
         </div>
       </div>
     </section>
+  );
+}
+
+
+/* ── View and sort menu (like a file explorer's "View" and "Sort by") ──
+   useListView(id, defaults) remembers the choice per list on this device; ViewMenu shows it. */
+export function useListView(id, { view = 'list', sort, dir = 'desc' } = {}) {
+  const { prefs, setPrefs } = useApp();
+  const saved = prefs.views?.[id] || {};
+  const cur = { view: saved.view || view, sort: saved.sort || sort, dir: saved.dir || dir };
+  const set = (p) => setPrefs({ views: { ...(prefs.views || {}), [id]: { ...cur, ...p } } });
+  return { ...cur, set, isDefault: cur.view === view && cur.sort === sort && cur.dir === dir, reset: () => set({ view, sort, dir }) };
+}
+/** Sort rows by one of the getters, ascending or descending, keeping ties in their original order. */
+export function sortRows(rows, getters, sort, dir) {
+  const g = getters[sort];
+  if (!g) return rows;
+  const k = dir === 'asc' ? 1 : -1;
+  return rows.map((r, i) => [r, g(r), i]).sort((a, b) => {
+    const x = a[1], y = b[1];
+    const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x ?? '').localeCompare(String(y ?? ''), undefined, { numeric: true });
+    return c * k || a[2] - b[2];
+  }).map((x) => x[0]);
+}
+const VIEW_ICON = { tiles: 'grid', list: 'list', compact: 'rows' };
+export function ViewMenu({ v, sorts = [], views = ['list', 'compact'] }) {
+  const { t } = useApp();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const off = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', off); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', off); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  const sortLabel = sorts.find((x) => x.value === v.sort)?.label;
+  return (
+    <div className="vm" ref={ref}>
+      <button type="button" className={`vm-btn ${open ? 'on' : ''} ${v.isDefault ? '' : 'has'}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" title={t('vm.title')}>
+        <Icon name={VIEW_ICON[v.view] || 'list'} size={15} />
+        <span>{sortLabel ? `${sortLabel} ${v.dir === 'asc' ? '↑' : '↓'}` : t('vm.title')}</span>
+        <Icon name="down" size={13} />
+      </button>
+      {open && (
+        <div className="vm-pop" role="menu">
+          {views.length > 1 && <>
+            <div className="vm-h">{t('vm.view')}</div>
+            <div className="vm-views">
+              {views.map((x) => <button type="button" role="menuitemradio" aria-checked={v.view === x} key={x} className={v.view === x ? 'on' : ''} onClick={() => v.set({ view: x })}><Icon name={VIEW_ICON[x]} size={16} />{t(`vm.v.${x}`)}</button>)}
+            </div>
+          </>}
+          {sorts.length > 0 && <>
+            <div className="vm-h">{t('vm.sort')}</div>
+            {sorts.map((x) => <button type="button" role="menuitemradio" aria-checked={v.sort === x.value} key={x.value} className={`vm-item ${v.sort === x.value ? 'on' : ''}`} onClick={() => v.set({ sort: x.value, dir: x.dir || v.dir })}><span className="vm-dot" />{x.label}</button>)}
+            <div className="vm-h">{t('vm.order')}</div>
+            <div className="vm-views two">
+              <button type="button" className={v.dir === 'asc' ? 'on' : ''} onClick={() => v.set({ dir: 'asc' })}>↑ {t('vm.asc')}</button>
+              <button type="button" className={v.dir === 'desc' ? 'on' : ''} onClick={() => v.set({ dir: 'desc' })}>↓ {t('vm.desc')}</button>
+            </div>
+          </>}
+          {!v.isDefault && <button type="button" className="vm-reset" onClick={() => { v.reset(); setOpen(false); }}>{t('vm.reset')}</button>}
+        </div>
+      )}
+    </div>
   );
 }

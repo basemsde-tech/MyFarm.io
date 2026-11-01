@@ -277,7 +277,8 @@ export function WorkerSheet({ record, onClose }) {
 export function ObligationSheet({ record, onClose }) {
   const { farm, t, today , ui } = useApp();
   const [f, setF] = useState(record || { party: '', kind: 'rent', category: 'rent', amountC: 0, nextDue: today, freq: 'monthly', note: '' });
-  const set = (p) => setF((x) => ({ ...x, ...p }));
+  // Picking a new due day also sets the day of the month it repeats on.
+  const set = (p) => setF((x) => ({ ...x, ...p, ...(p.nextDue ? { anchorDom: Number(p.nextDue.slice(8, 10)) } : {}) }));
   const save = useSaveMaster('obligations', onClose);
   const cats = Object.values(EXPENSE_GROUPS).flat();
   return (

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { milkQ, milkN } from './units.js';
 import { useApp } from './store.jsx';
 import { SkyClock } from './skyclock.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel, ViewMenu, useListView, sortRows } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
 import { Help } from './help.jsx';
 const GUIDE_FOR = { cash: 'cash', sales: 'sales', expenses: 'expenses', suppliers: 'suppliers', production: 'production', animals: 'animals', accounts: 'accounts', options: 'security', trash: 'edit', activity: 'security', people: 'payments' };
@@ -102,6 +102,11 @@ export function useAttention() {
   }, [farm, snap, today, t, fmt]);
 }
 
+// Sort keys shared by the customer and supplier lists (the View menu on each list).
+const PARTY_SORT_C = { due: (r) => r.due, name: (r) => r.c.name || '', recent: (r) => r.last || '' };
+const PARTY_SORT_S = { due: (r) => r.due, name: (r) => r.s.name || '', recent: (r) => r.last || '' };
+const partySorts = (t) => [{ value: 'due', label: t('vm.s.owed'), dir: 'desc' }, { value: 'name', label: t('vm.s.name'), dir: 'asc' }, { value: 'recent', label: t('vm.s.recent'), dir: 'desc' }];
+
 /* ───────────── Cash box ───────────── */
 const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal', opening: 'dz.openingRec' };
 
@@ -120,6 +125,7 @@ export function CashScreen() {
   const account = 'cash';
   const [kind, setKind] = useState('');
   const [sel, setSel] = useState([]);
+  const cv = useListView('cash', { view: 'list', sort: 'day', dir: 'desc' });
   const att = useAttention();
   const todayFlows = snap.flows.filter((f) => f.day === today && f.account === 'cash');
   const todayIn = todayFlows.filter((f) => f.dir > 0).reduce((s, f) => s + f.amountC, 0);
@@ -129,6 +135,9 @@ export function CashScreen() {
     const all = snap.flows.filter((f) => f.account === account).map((f) => { bal += f.dir * f.amountC; return { ...f, balC: bal }; });
     return all.filter((f) => f.day >= per.range.from && f.day <= per.range.to && (dir === 'all' || (dir === 'in' ? f.dir > 0 : f.dir < 0)) && (!kind || f.kind === kind)).reverse();
   }, [snap.flows, account, per.range, dir, kind]);
+  // The list's order (View menu); totals and the CSV always use the books' own order.
+  const listRows = useMemo(() => (cv.sort === 'day' && cv.dir === 'desc' ? rows : cv.sort === 'day' ? [...rows].reverse()
+    : sortRows(rows, { amount: (f) => f.amountC, kind: (f) => t(FLOW_LABEL[f.kind] || f.kind) }, cv.sort, cv.dir)), [rows, cv.sort, cv.dir, t]);
   const recById = useMemo(() => new Map(farm.records.map((r) => [r.id, r])), [farm.records]);
   const opening = useMemo(() => { let b = 0; for (const f of snap.flows) if (f.account === account && f.day < per.range.from) b += f.dir * f.amountC; return b; }, [snap.flows, per.range.from]);
   const inP = rows.filter((r) => r.dir > 0).reduce((s, r) => s + r.amountC, 0);
@@ -147,7 +156,7 @@ export function CashScreen() {
   // The movement list is the heaviest part of the page: rebuild it only when its inputs change,
   // not on every toast or animation frame.
   const journalList = useMemo(() => (
-    <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)}
+    <Grouped key={cv.sort + cv.dir} rows={listRows} groupKey={cv.sort === 'day' ? (r) => r.day.slice(0, 7) : null}
       renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.dir * r.amountC, 0))}</span></>}
       renderRow={(f) => {
         const rec = recById.get(f.id);
@@ -156,7 +165,7 @@ export function CashScreen() {
           onSelect={(on) => setSel((cur) => (on ? [...cur, f.id] : cur.filter((x) => x !== f.id)))}
           right={<span className="amt-stack"><span className={f.dir > 0 ? 'in' : 'out'}>{f.dir > 0 ? '+' : '−'}{fmt(f.amountC).replace('−', '')}</span><small className="muted">{fmt(f.balC)}</small></span>} />;
       }} />
-  ), [rows, recById, sel, lang, fmt, farm.settings]); // eslint-disable-line react-hooks/exhaustive-deps
+  ), [listRows, recById, sel, lang, fmt, farm.settings, cv.sort, cv.dir]); // eslint-disable-line react-hooks/exhaustive-deps
   const selTotal = rows.filter((r) => sel.includes(r.id)).reduce((s, r) => s + r.dir * r.amountC, 0);
   const exportCSV = () => downloadText(`cash-${per.range.from}-${per.range.to}.csv`, toCSV([
     [t('date'), t('details'), t('in'), t('out'), t('balance'), t('by')],
@@ -210,7 +219,7 @@ export function CashScreen() {
             <Button size="sm" icon="download" onClick={exportCSV}>{t('export')}</Button>
           </div>
         </div>
-        <FilterPanel id="cash" onReset={() => { per.reset(); setDir('all'); setKind(''); }}
+        <FilterPanel id="cash" onReset={() => { per.reset(); setDir('all'); setKind(''); }} extra={<ViewMenu v={cv} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'amount', label: t('vm.s.amount'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />}
           chips={[{ label: per.label, active: !per.isDefault }, dir !== 'all' && { label: t(dir), active: true }, kind && { label: t(FLOW_LABEL[kind]), active: true }]}>
           <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
           <div className="filter-row">
@@ -224,7 +233,7 @@ export function CashScreen() {
           <span className="out">{outP ? `−${fmt(outP)}` : fmt(0)}</span>
           <span>{t('cash.closing')} <b>{fmt(opening + inP - outP)}</b></span>
         </div>
-        {rows.length ? journalList : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
+        {rows.length ? <div className={`dv-${cv.view}`}>{journalList}</div> : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>
       </div>
       <SelectionBar selected={sel} clear={() => setSel([])} totalC={selTotal} />
@@ -244,7 +253,7 @@ function SalesHome({ tab, setTab }) {
   const { farm, snap, t, fmt, ui, nav, today, lang } = app;
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
-  const [sort, setSort] = useState('due');
+  const v = useListView('customers', { view: 'tiles', sort: 'due', dir: 'desc' });
   const overdue = useOverdue();
   const custs = farm.customers.filter((c) => !!c.archived === arch && (!q || `${c.name} ${c.phone} ${c.accountNo}`.toLowerCase().includes(q.toLowerCase())))
     .map((c) => {
@@ -252,24 +261,24 @@ function SalesHome({ tab, setTab }) {
       const inv = snap.cust[c.id]?.dueC ? customerInvoices(farm, c.id, snap, { today, termsDays: farm.settings.termsDays }) : [];
       const status = snap.cust[c.id]?.creditBalC ? 'credit' : !snap.cust[c.id]?.dueC ? 'clear' : inv.some((i) => i.status === 'overdue') ? 'overdue' : 'owing';
       return { c, last, status, due: snap.cust[c.id]?.dueC || 0 };
-    }).sort((a, b) => (sort === 'name' ? a.c.name.localeCompare(b.c.name) : sort === 'recent' ? (b.last || '').localeCompare(a.last || '') : b.due - a.due || a.c.name.localeCompare(b.c.name)));
+    });
+  const custSorted = sortRows(sortRows(custs, PARTY_SORT_C, 'name', 'asc'), PARTY_SORT_C, v.sort, v.dir);
   return (
     <div className="screen">
       <PageHead title={t('nav.sales')} actions={<><Button icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button><Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button></>} />
       <Tabs value={tab} onChange={setTab} tabs={[{ value: 'customers', label: t('sales.customers'), count: farm.customers.filter((c) => !c.archived).length }, { value: 'invoices', label: t('sales.invoices') }, { value: 'reminders', label: t('rem.tab'), count: overdue.filter((r) => r.remindNow).length || undefined }]} />
       {tab === 'customers' ? (
         <section className="panel">
-          <FilterPanel id="customers" onReset={() => { setQ(''); setArch(false); setSort('due'); }}
-            chips={[{ label: t(`flt.sort.${sort}`), active: sort !== 'due' }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
+          <FilterPanel id="customers" onReset={() => { setQ(''); setArch(false); }} extra={<ViewMenu v={v} views={['tiles', 'list', 'compact']} sorts={partySorts(t)} />}
+            chips={[q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
             <div className="filter-row">
               <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
-              <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['due', 'name', 'recent'].map((k) => ({ value: k, label: t(`flt.sort.${k}`) }))} />
               <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
             </div>
           </FilterPanel>
-          {custs.length ? (
-            <div className="cards">
-              {custs.map(({ c, last, status, due }) => (
+          {custSorted.length ? (
+            <div className={`cards dv-${v.view}`}>
+              {custSorted.map(({ c, last, status, due }) => (
                 <button type="button" key={c.id} className="party-card" onClick={() => nav('sales', c.id)}>
                   <div className="pc-top"><b>{c.name}</b><Pill status={status}>{t(`st.${status}`)}</Pill></div>
                   <div className="pc-amt num">{fmt(due || snap.cust[c.id]?.creditBalC || 0)}</div>
@@ -337,8 +346,9 @@ export function ExpensesScreen() {
   const rows = snap.expenses.filter((e) => e.day >= per.range.from && e.day <= per.range.to)
     .filter((e) => !group || groupOf(e.category, farm.settings.categories) === group)
     .filter((e) => tab !== 'open' || (e.origin === 'farm' || e.origin === 'supplier') && e.paidC < e.amountC)
-    .filter((e) => !q || `${t(`c.${e.category}`)} ${e.vendor || ''} ${e.note || ''} ${e.supplierId ? app.names.supplier(e.supplierId) : ''}`.toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => b.day.localeCompare(a.day));
+    .filter((e) => !q || `${t(`c.${e.category}`)} ${e.vendor || ''} ${e.note || ''} ${e.supplierId ? app.names.supplier(e.supplierId) : ''}`.toLowerCase().includes(q.toLowerCase()));
+  const ev = useListView('expenses', { view: 'list', sort: 'day', dir: 'desc' });
+  const shownRows = sortRows(sortRows(rows, { day: (e) => e.day }, 'day', 'desc'), { day: (e) => e.day, amount: (e) => e.amountC, cat: (e) => t(`c.${e.category}`), due: (e) => e.amountC - e.paidC }, ev.sort, ev.dir);
   const total = rows.reduce((s, e) => s + e.amountC, 0);
   const byCat = {};
   for (const e of rows) byCat[e.category] = (byCat[e.category] || 0) + e.amountC;
@@ -392,7 +402,7 @@ export function ExpensesScreen() {
             </section>
           )}
           <section className="panel">
-            <FilterPanel id="expenses" onReset={() => { per.reset(); setQ(''); setGroup(''); }}
+            <FilterPanel id="expenses" onReset={() => { per.reset(); setQ(''); setGroup(''); }} extra={<ViewMenu v={ev} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'amount', label: t('vm.s.amount'), dir: 'desc' }, { value: 'cat', label: t('vm.s.category'), dir: 'asc' }, { value: 'due', label: t('vm.s.unpaid'), dir: 'desc' }]} />}
               chips={[{ label: per.label, active: !per.isDefault }, group && { label: t(`g.${group}`), active: true }, q && { label: `“${q}”`, active: true }]}>
               <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
               <div className="filter-row">
@@ -401,7 +411,7 @@ export function ExpensesScreen() {
               </div>
             </FilterPanel>
             {rows.length ? (
-              <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.amountC, 0))}</span></>}
+              <div className={`dv-${ev.view}`}><Grouped key={ev.sort + ev.dir} rows={shownRows} groupKey={ev.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.amountC, 0))}</span></>}
                 renderRow={(e) => {
                   const r = recById.get(e.id);
                   const st = e.paidC >= e.amountC ? 'paid' : e.paidC > 0 ? 'partial' : (e.dueDay && e.dueDay < today ? 'overdue' : 'unpaid');
@@ -420,7 +430,7 @@ export function ExpensesScreen() {
                       {tab === 'open' && e.origin === 'supplier' && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: e.supplierId, billId: e.id })}>{t('exp.payBill')}</Button>}
                     </div>
                   );
-                }} />
+                }} /></div>
             ) : <Empty title={t('exp.none')} body={t('exp.noneHint')} icon="receipt" action={<Button variant="primary" icon="plus" onClick={() => ui.open('expense')}>{t('new.expense')}</Button>} />}
           </section>
           <SelectionBar selected={sel} clear={() => setSel([])} totalC={rows.filter((e) => sel.includes(e.id)).reduce((s, e) => s + e.amountC, 0)} />
@@ -430,13 +440,15 @@ export function ExpensesScreen() {
   );
 }
 
-function nextDue(day, freq) {
+/** The next due day of a repeating cost. Months keep their day (31 → 28/29/30 → 31), never drifting to the 3rd. */
+export function nextDue(day, freq, anchor) {
   if (freq === 'weekly') return addDays(day, 7);
-  const d = new Date(day + 'T12:00:00');
-  if (freq === 'monthly') d.setMonth(d.getMonth() + 1);
-  else if (freq === 'yearly') d.setFullYear(d.getFullYear() + 1);
-  else return null;
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = day.split('-').map(Number);
+  const dom = anchor || d;
+  const [ny, nm] = freq === 'monthly' ? (m === 12 ? [y + 1, 1] : [y, m + 1]) : freq === 'yearly' ? [y + 1, m] : [null, null];
+  if (!ny) return null;
+  const last = new Date(ny, nm, 0).getDate();
+  return `${ny}-${String(nm).padStart(2, '0')}-${String(Math.min(dom, last)).padStart(2, '0')}`;
 }
 
 function Obligations() {
@@ -445,10 +457,11 @@ function Obligations() {
   const pay = (o) => {
     const cycle = o.nextDue;
     if (farm.records.some((r) => live(r) && r.obligationId === o.id && r.cycle === cycle)) return;
-    const nd = nextDue(cycle, o.freq);
+    const anchor = o.anchorDom || Number(cycle.slice(8, 10));
+    const nd = nextDue(cycle, o.freq, anchor);
     commit((f) => {
       let x = addRecord(f, { type: 'expense', day: today, category: o.category || 'rent', amountC: o.amountC, paidC: o.amountC, source: 'cash', vendor: o.party, obligationId: o.id, cycle }, actor);
-      x = upsert(x, 'obligations', { id: o.id, nextDue: nd, archived: !nd, lastPaid: cycle }, actor);
+      x = upsert(x, 'obligations', { id: o.id, nextDue: nd, archived: !nd, lastPaid: cycle, anchorDom: anchor }, actor);
       return x;
     }, { label: t('obl.markPaid') });
   };
@@ -484,7 +497,7 @@ function SupplierList({ tab }) {
   const activeOrders = orderList(farm).filter((o) => ['open', 'partial'].includes(o.status)).length;
   const [arch, setArch] = useState(false);
   const [q, setQ] = useState('');
-  const [sort, setSort] = useState('due');
+  const v = useListView('suppliers', { view: 'tiles', sort: 'due', dir: 'desc' });
   const month = today.slice(0, 7);
   const paidMonth = farm.records.filter((r) => live(r) && r.type === 'supplierPay' && r.day.startsWith(month)).reduce((s, r) => s + r.amountC, 0)
     + farm.records.filter((r) => live(r) && r.type === 'expense' && r.supplierId && r.day.startsWith(month)).reduce((s, r) => s + Math.min(r.paidC || 0, r.amountC), 0);
@@ -494,7 +507,8 @@ function SupplierList({ tab }) {
     const due = snap.sup[s.id]?.dueC || 0;
     const last = farm.records.filter((r) => live(r) && r.supplierId === s.id).reduce((m, r) => (r.day > m ? r.day : m), '');
     return { s, due, over, last, status: over ? 'overdue' : due ? 'owing' : 'clear' };
-  }).filter((r) => !q || `${r.s.name} ${r.s.phone || ''}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => (sort === 'name' ? a.s.name.localeCompare(b.s.name) : sort === 'recent' ? (b.last || '').localeCompare(a.last || '') : b.due - a.due));
+  }).filter((r) => !q || `${r.s.name} ${r.s.phone || ''}`.toLowerCase().includes(q.toLowerCase()));
+  const supSorted = sortRows(sortRows(rows, PARTY_SORT_S, 'name', 'asc'), PARTY_SORT_S, v.sort, v.dir);
   const totalOver = rows.reduce((a, r) => a + r.over, 0);
   return (
     <div className="screen">
@@ -507,17 +521,16 @@ function SupplierList({ tab }) {
         <Stat label={t('sup.paidMonth')} value={fmt(paidMonth)} />
       </section>
       <section className="panel">
-        <FilterPanel id="suppliers" onReset={() => { setArch(false); setQ(''); setSort('due'); }}
-          chips={[{ label: t(`flt.sort.${sort}`), active: sort !== 'due' }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
+        <FilterPanel id="suppliers" onReset={() => { setArch(false); setQ(''); }} extra={<ViewMenu v={v} views={['tiles', 'list', 'compact']} sorts={partySorts(t)} />}
+          chips={[q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
           <div className="filter-row">
             <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
-            <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['due', 'name', 'recent'].map((k) => ({ value: k, label: t(`flt.sort.${k}`) }))} />
             <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')}</label>
           </div>
         </FilterPanel>
-        {rows.length ? (
-          <div className="cards">
-            {rows.map(({ s, due, status, last }) => (
+        {supSorted.length ? (
+          <div className={`cards dv-${v.view}`}>
+            {supSorted.map(({ s, due, status, last }) => (
               <button type="button" key={s.id} className="party-card" onClick={() => nav('suppliers', s.id)}>
                 <div className="pc-top"><b>{s.name}</b><Pill status={status}>{t(`st.${status}`)}</Pill></div>
                 <div className="pc-amt num">{fmt(due)}</div>
@@ -587,14 +600,17 @@ export function PeopleScreen() {
 
 function PeopleList() {
   const { farm, snap, t, fmt, ui, nav } = useApp();
+  const v = useListView('people', { view: 'tiles', sort: 'name', dir: 'asc' });
+  const people = sortRows(farm.people.filter((p) => !p.archived), { name: (p) => p.name || '', due: (p) => Math.abs(snap.people[p.id]?.owedC || 0) }, v.sort, v.dir);
   return (
     <div className="screen">
       <PageHead title={t('ppl.title')} actions={<><Button icon="plus" onClick={() => ui.open('person')}>{t('ppl.new')}</Button><Button variant="primary" icon="people" onClick={() => ui.open('capital')}>{t('new.person')}</Button></>} />
       <section className="stats-row"><Stat label={t('cash.capital')} value={fmt(snap.capitalC)} /></section>
       <section className="panel">
-        {farm.people.length ? (
-          <div className="cards">
-            {farm.people.filter((p) => !p.archived).map((p) => {
+        {people.length > 1 && <div className="list-bar"><span className="muted small num">{people.length}</span><ViewMenu v={v} views={['tiles', 'list', 'compact']} sorts={[{ value: 'name', label: t('vm.s.name'), dir: 'asc' }, { value: 'due', label: t('vm.s.balance'), dir: 'desc' }]} /></div>}
+        {people.length ? (
+          <div className={`cards dv-${v.view}`}>
+            {people.map((p) => {
               const owed = snap.people[p.id]?.owedC || 0;
               const st = owed > 0 ? 'owedToThem' : owed < 0 ? 'owesFarm' : 'settled';
               return (

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DangerZone } from './danger.jsx';
 import { trashDaysOf } from '../core/danger.mjs';
-import { milkQ, milkN } from './units.js';
+import { milkQ } from './units.js';
 import { play as playSound, setSoundOn } from './sound.js';
 import { useApp, VERSION } from './store.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, FilterPanel, Fold } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, FilterPanel, Fold, ViewMenu, useListView, sortRows } from './kit.jsx';
 import { RecordRow, SelectionBar } from './tx.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
@@ -13,7 +13,7 @@ import { addRecord, editRecord, updateSettings, restoreRecords, newId, deleteRec
 import { periodReport, toCSV } from '../core/reports.mjs';
 
 import { CURRENCIES, fmtQty, parseQty } from '../core/money.mjs';
-import { kgToL, lToKg } from '../core/milk.mjs';
+import { kgToL, lToKg, milkLots } from '../core/milk.mjs';
 import { can, CATEGORY_ICON, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { hashCode, newRecoveryCode, newSalt } from '../core/security.mjs';
 import { sampleFarm } from '../core/sample.mjs';
@@ -71,9 +71,15 @@ function MilkDay({ day, setDay, recs }) {
   const animals = farm.animals.filter((a) => !a.deletedAt && a.species === sp && ['lactating', 'healthy', 'pregnant', 'served'].includes(a.status));
   // What is already recorded for this day.
   const dayRecs = recs.filter((r) => r.type === 'milk' && r.day === day && (r.species || 'cow') === sp);
-  const newest = (list) => list.slice().sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))[0];
-  const herdRec = (s) => newest(dayRecs.filter((r) => !r.animalId && r.session === s));
-  const aniRec = (id, s) => newest(dayRecs.filter((r) => r.animalId === id && r.session === s));
+  // A session can hold several entries (from the + sheet or older versions). The tank counts the newest one,
+  // so that is the amount shown; saving replaces all of them so no stray duplicate is left behind.
+  const bundle = (list) => {
+    if (!list.length) return null;
+    const top = list.reduce((a, r) => (String(r.createdAt || '') >= String(a.createdAt || '') ? r : a));
+    return { liters: Number(top.liters) || 0, ids: list.map((r) => r.id) };
+  };
+  const herdRec = (s) => bundle(dayRecs.filter((r) => !r.animalId && r.session === s));
+  const aniRec = (id, s) => bundle(dayRecs.filter((r) => r.animalId === id && r.session === s));
   const initial = () => {
     const v = { am: herdRec('am') ? fromL(herdRec('am').liters) : 0, pm: herdRec('pm') ? fromL(herdRec('pm').liters) : 0, ani: {} };
     for (const a of animals) v.ani[a.id] = { am: aniRec(a.id, 'am') ? fromL(aniRec(a.id, 'am').liters) : 0, pm: aniRec(a.id, 'pm') ? fromL(aniRec(a.id, 'pm').liters) : 0 };
@@ -94,7 +100,7 @@ function MilkDay({ day, setDay, recs }) {
       const put = (session, qty, old, animalId) => {
         const L = toL(qty);
         if (old && Math.abs(fromL(old.liters) - (Number(qty) || 0)) < 0.05) return; // unchanged as shown
-        if (old) replace.push(old.id);
+        if (old) replace.push(...old.ids);
         if (L > 0) add.push({ type: 'milk', day, species: sp, session, liters: L, animalId: animalId || null });
       };
       if (mode === 'herd') { put('am', v.am, herdRec('am')); put('pm', v.pm, herdRec('pm')); } else for (const a of animals) { put('am', v.ani[a.id]?.am || 0, aniRec(a.id, 'am'), a.id); put('pm', v.ani[a.id]?.pm || 0, aniRec(a.id, 'pm'), a.id); }
@@ -121,7 +127,7 @@ function MilkDay({ day, setDay, recs }) {
           <Seg small value={mode} onChange={setMode} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />
         </div>
       </div>
-      {wholeDay && mode === 'herd' && <p className="note info small">{t('md.wholeDay', { a: milkQ(wholeDay.liters) })} <button type="button" className="link" onClick={() => ui.open('drawer', { id: wholeDay.id })}>{t('edit')}</button></p>}
+      {wholeDay && mode === 'herd' && <p className="note info small">{t('md.wholeDay', { a: milkQ(wholeDay.liters) })} <button type="button" className="link" onClick={() => ui.open('drawer', { id: wholeDay.ids[0] })}>{t('edit')}</button></p>}
       {mode === 'herd' ? (
         <div className="md-sessions">
           {['am', 'pm'].map((s) => (
@@ -163,36 +169,80 @@ function MilkDay({ day, setDay, recs }) {
 
 /** Every milk entry (milking and milk used), newest first, grouped by day. Tap one to see, edit or delete it. */
 function MilkEntries({ recs, day, setDay }) {
-  const { t, ui, lang, snap } = useApp();
+  const { t, ui, lang, snap, today } = useApp();
   const [kind, setKind] = useState('');
-  const [show, setShow] = useState(5);
-  const rows = recs.filter((r) => (r.type === 'milk' || r.type === 'milkUse') && (!kind || r.type === kind))
-    .sort((a, b) => b.day.localeCompare(a.day) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  const [show, setShow] = useState(7);
+  const [openDays, setOpenDays] = useState({});
+  const v = useListView('milkEntries', { view: 'list', sort: 'day', dir: 'desc' });
+  const all = recs.filter((r) => r.type === 'milk' || r.type === 'milkUse');
+  const rows = all.filter((r) => !kind || r.type === kind);
+  const byDayFlat = v.sort === 'day';
+  const sorted = byDayFlat
+    ? [...rows].sort((a, b) => (v.dir === 'asc' ? a.day.localeCompare(b.day) : b.day.localeCompare(a.day)) || String(b.createdAt).localeCompare(String(a.createdAt)))
+    : sortRows(rows, { qty: (r) => Number(r.liters) || 0, kind: (r) => `${r.type}${r.session || ''}` }, v.sort, v.dir);
   const byDay = [];
-  for (const r of rows) { const g = byDay.at(-1); if (g && g.day === r.day) g.rows.push(r); else byDay.push({ day: r.day, rows: [r] }); }
+  if (byDayFlat) for (const r of sorted) { const g = byDay.at(-1); if (g && g.day === r.day) g.rows.push(r); else byDay.push({ day: r.day, rows: [r] }); }
+  const sum = (list, f) => list.filter(f).reduce((x, r) => x + (Number(r.liters) || 0), 0);
+  // Only what the tank counts goes into the day totals; superseded entries are marked in the list.
+  const counted = useMemo(() => new Set(milkLots(all).flatMap((l) => l.ids)), [all]);
+  const milkSum = (list, f) => sum(list, (r) => r.type === 'milk' && counted.has(r.id) && f(r));
+  // Smart default: today and the day being edited stay open; every other day folds to one line.
+  const isOpen = (d) => openDays[d] ?? (d === today || d === day);
+  const setAll = (o) => setOpenDays(Object.fromEntries(byDay.map((g) => [g.day, o])));
+  const anyOpen = byDay.slice(0, show).some((g) => isOpen(g.day));
   const shown = byDay.slice(0, show);
+  const totalMilk = milkSum(all, () => true);
+  const days = new Set(all.map((r) => r.day)).size;
+  const open = (r) => ui.open('drawer', { id: r.id });
+  const summary = all.length ? <><span><b className="num">{days}</b> {t('fold.days')}</span><span>{t('me.milked')} <b className="num">{milkQ(totalMilk)}</b></span><span>{t('prod.tank')} <b className="num">{milkQ(snap.milk.stockL)}</b></span></> : null;
+  const extra = (
+    <>
+      <span className="me-tank small">{t('prod.tank')}: <b className="num">{milkQ(snap.milk.stockL)}</b></span>
+      <ViewMenu v={v} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'qty', label: t('vm.s.amount'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />
+    </>
+  );
   return (
-    <section className="panel milk-entries">
-      <div className="me-head">
-        <h2>{t('me.title')}</h2>
-        <span className="me-tank small">{t('prod.tank')}: <b className="num">{milkQ(snap.milk.stockL)}</b></span>
-        <Seg small value={kind} onChange={(v) => { setKind(v); setShow(5); }} options={[{ value: '', label: t('all') }, { value: 'milk', label: t('t.milk') }, { value: 'milkUse', label: t('t.milkUse') }]} />
+    <Fold id="milkEntries" title={t('me.title')} summary={summary} extra={extra} className={`milk-entries dv-${v.view}`}>
+      <div className="me-tools">
+        <Seg small value={kind} onChange={(x) => { setKind(x); setShow(7); }} options={[{ value: '', label: t('all') }, { value: 'milk', label: t('t.milk') }, { value: 'milkUse', label: t('t.milkUse') }]} />
+        {byDayFlat && byDay.length > 1 && <button type="button" className="me-all" onClick={() => setAll(!anyOpen)}><Icon name={anyOpen ? 'up' : 'down'} size={14} />{anyOpen ? t('me.foldAll') : t('me.openAll')}</button>}
       </div>
-      {shown.length ? shown.map((g) => {
-        const milked = g.rows.filter((r) => r.type === 'milk').reduce((x, r) => x + (Number(r.liters) || 0), 0);
-        return (
-          <div key={g.day} className={`me-day ${g.day === day ? 'on' : ''}`}>
-            <button type="button" className="me-day-head" onClick={() => { setDay(g.day); window.scrollTo({ top: 0, behavior: 'smooth' }); }} title={t('me.editDay')}>
-              <b>{dayLabel(g.day, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</b>
-              {milked > 0 && <span className="num muted small">{milkQ(milked)}</span>}
-              <Icon name="edit" size={13} className="me-edit" />
-            </button>
-            {g.rows.map((r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />)}
+      {!rows.length ? <Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" />
+        : !byDayFlat ? (
+          <div className="me-flat">{sorted.slice(0, show * 6).map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} />)}
+            {sorted.length > show * 6 && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 7)}>{t('fold.more', { n: Math.min(42, sorted.length - show * 6) })}</Button></div>}
           </div>
-        );
-      }) : <Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" />}
-      {byDay.length > show && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 10)}>{t('fold.more', { n: Math.min(10, byDay.length - show) })}</Button></div>}
-    </section>
+        ) : shown.map((g, i) => {
+          const am = milkSum(g.rows, (r) => r.session === 'am');
+          const pm = milkSum(g.rows, (r) => r.session === 'pm');
+          const other = milkSum(g.rows, (r) => r.session !== 'am' && r.session !== 'pm');
+          const used = sum(g.rows, (r) => r.type === 'milkUse');
+          const o = isOpen(g.day);
+          return (
+            <div key={g.day} className={`me-day ${g.day === day ? 'on' : ''} ${o ? 'open' : 'shut'}`} style={{ '--i': i }}>
+              <div className="me-day-head">
+                <button type="button" className="me-day-toggle" onClick={() => setOpenDays({ ...openDays, [g.day]: !o })} aria-expanded={o}>
+                  <Icon name="down" size={15} className="me-chev" />
+                  <b>{dayLabel(g.day, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</b>
+                  {g.day === today && <Pill tone="teal">{t('p.today')}</Pill>}
+                </button>
+                <span className="me-chips small">
+                  {am > 0 && <span className="me-chip" title={t('prod.am')}>☀ <b className="num">{milkQ(am)}</b></span>}
+                  {pm > 0 && <span className="me-chip" title={t('prod.pm')}>☾ <b className="num">{milkQ(pm)}</b></span>}
+                  {other > 0 && <span className="me-chip"><Icon name="milk" size={12} /> <b className="num">{milkQ(other)}</b></span>}
+                  {used > 0 && <span className="me-chip use" title={t('t.milkUse')}>− <b className="num">{milkQ(used)}</b></span>}
+                  {!o && <span className="me-chip muted">{g.rows.length} {g.rows.length === 1 ? t('me.entry') : t('fold.entries')}</span>}
+                </span>
+                <button type="button" className="me-edit-btn" onClick={() => { setDay(g.day); window.scrollTo({ top: 0, behavior: 'smooth' }); }} title={t('me.editDay')} aria-label={t('me.editDay')}><Icon name="edit" size={14} /></button>
+              </div>
+              <div className="me-day-body"><div className="me-day-inner" ref={(el) => { if (el) { if (o) el.removeAttribute('inert'); else el.setAttribute('inert', ''); } }}>
+                {g.rows.map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} className={r.type === 'milk' && !counted.has(r.id) ? 'not-counted' : ''} tag={r.type === 'milk' && !counted.has(r.id) ? t('me.notCounted') : null} title={r.type === 'milk' && !counted.has(r.id) ? t('me.notCountedWhy') : undefined} />)}
+              </div></div>
+            </div>
+          );
+        })}
+      {byDayFlat && byDay.length > show && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 14)}>{t('fold.more', { n: Math.min(14, byDay.length - show) })}</Button></div>}
+    </Fold>
   );
 }
 
@@ -258,13 +308,15 @@ function ProdLog() {
   const [type, setType] = useState('');
   const [sel, setSel] = useState([]);
   const types = ['milk', 'milkUse', 'eggs', 'medicine', 'animalEvent'];
-  const rows = farm.records.filter((r) => live(r) && types.includes(r.type) && (!type || r.type === type)).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
+  const pv = useListView('prodlog', { view: 'list', sort: 'day', dir: 'desc' });
+  const base = farm.records.filter((r) => live(r) && types.includes(r.type) && (!type || r.type === type)).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
+  const rows = pv.sort === 'day' && pv.dir === 'desc' ? base : sortRows(base, { day: (r) => r.day, kind: (r) => t(`t.${r.type}`) }, pv.sort, pv.dir);
   return (
-    <section className="panel">
-      <FilterPanel id="prodlog" onReset={() => setType('')} chips={[type && { label: t(`t.${type}`), active: true }]}>
+    <section className={`panel dv-${pv.view}`}>
+      <FilterPanel id="prodlog" onReset={() => setType('')} chips={[type && { label: t(`t.${type}`), active: true }]} extra={<ViewMenu v={pv} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />}>
         <Seg small wrap label={t('flt.kind')} value={type} onChange={setType} options={[{ value: '', label: t('all') }, ...types.map((x) => ({ value: x, label: t(`t.${x}`) }))]} />
       </FilterPanel>
-      {rows.length ? <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="muted num">{g.rows.length}</span></>}
+      {rows.length ? <Grouped key={pv.sort + pv.dir} rows={rows} groupKey={pv.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="muted num">{g.rows.length}</span></>}
         renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />} />
         : <Empty title={t('prod.noMilk')} icon="milk" />}
       <SelectionBar selected={sel} clear={() => setSel([])} />
@@ -286,15 +338,17 @@ function AnimalList() {
   const [st, setSt] = useState('');
   const [q, setQ] = useState('');
   const [arch, setArch] = useState(false);
-  const [sort, setSort] = useState('tag');
+  const v = useListView('animals', { view: 'tiles', sort: 'tag', dir: 'asc' });
   const { commit, actor } = useApp();
   const gone = farm.animals.filter((a) => !a.archived && a.status === 'dead');
   const list = farm.animals.filter((a) => a.status !== 'sold' && !!a.archived === arch && (!sp || a.species === sp) && (!st || a.status === st) && (!q || `${a.tag} ${a.name} ${a.breed}`.toLowerCase().includes(q.toLowerCase())))
-    .sort((a, b) => (['sold', 'dead'].includes(a.status) ? 1 : 0) - (['sold', 'dead'].includes(b.status) ? 1 : 0)
-      || (sort === 'name' ? (a.name || a.tag).localeCompare(b.name || b.tag)
-        : sort === 'due' ? ((a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check)?.due : '9999') || '9999').localeCompare((b.repro?.serviceDay ? reproTimeline(b.species, b.repro.serviceDay, today, b.repro.check)?.due : '9999') || '9999')
-        : 0)
-      || a.tag.localeCompare(b.tag, undefined, { numeric: true }));
+;
+  const nextDue = (a) => (a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check)?.due : '') || '9999';
+  const gone_ = (a) => (['sold', 'dead'].includes(a.status) ? 1 : 0);
+  // Gone animals always sink to the end, whatever the order.
+  const sortedList = sortRows(sortRows(list, { tag: (a) => a.tag || '' }, 'tag', 'asc'), {
+    tag: (a) => a.tag || '', name: (a) => a.name || a.tag || '', due: nextDue, species: (a) => t(`sp.${a.species}`), status: (a) => t(`as.${a.status}`),
+  }, v.sort, v.dir).sort((a, b) => gone_(a) - gone_(b));
   const counts = Object.keys(SPECIES).map((s) => [s, farm.animals.filter((a) => a.species === s && !['sold', 'dead'].includes(a.status)).reduce((n, a) => n + (SPECIES[s].mode === 'flock' ? (a.birds || 0) : 1), 0)]).filter(([, n]) => n);
   return (
     <div className="screen">
@@ -305,19 +359,19 @@ function AnimalList() {
       <Tabs value={tab} onChange={(x) => nav('animals', null, x === 'herd' ? null : x)} tabs={[{ value: 'herd', label: t('ani.herd') }, { value: 'sold', label: t('sold.tab'), count: soldCount }]} />
       {tab === 'sold' ? <SoldRegister /> : (
       <section className="panel">
-        <FilterPanel id="animals" onReset={() => { setQ(''); setSp(''); setSt(''); setArch(false); setSort('tag'); }}
-          chips={[sp && { label: t(`sp.${sp}`), active: true }, st && { label: t(`as.${st}`), active: true }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }, { label: t(`flt.sort.${sort}`), active: sort !== 'tag' }]}>
+        <FilterPanel id="animals" onReset={() => { setQ(''); setSp(''); setSt(''); setArch(false); }}
+          extra={<ViewMenu v={v} views={['tiles', 'list', 'compact']} sorts={[{ value: 'tag', label: t('vm.s.tag'), dir: 'asc' }, { value: 'name', label: t('vm.s.name'), dir: 'asc' }, { value: 'due', label: t('vm.s.nextStep'), dir: 'asc' }, { value: 'species', label: t('vm.s.species'), dir: 'asc' }, { value: 'status', label: t('vm.s.status'), dir: 'asc' }]} />}
+          chips={[sp && { label: t(`sp.${sp}`), active: true }, st && { label: t(`as.${st}`), active: true }, q && { label: `“${q}”`, active: true }, arch && { label: t('archived'), active: true }]}>
           <div className="filter-row">
             <input className="input search" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
             <Seg small label={t('prod.species')} value={sp} onChange={(v) => { setSp(v); setSt(''); }} options={[{ value: '', label: t('all') }, ...Object.keys(SPECIES).map((s) => ({ value: s, label: t(`sp.${s}`) }))]} />
             <Select className="compact" label={t('ani.status')} value={st} onChange={setSt} options={[...new Set(farm.animals.map((a) => a.status))].filter((s) => s !== 'sold').map((s) => ({ value: s, label: t(`as.${s}`) }))} placeholder={t('all')} />
-            <Seg small label={t('flt.sortBy')} value={sort} onChange={setSort} options={['tag', 'name', 'due'].map((k) => ({ value: k, label: t(`flt.sort.${k === 'due' ? 'birth' : k}`) }))} />
             <label className="mini-check"><input type="checkbox" checked={arch} onChange={(e) => setArch(e.target.checked)} /> {t('showArchived')} ({farm.animals.filter((x) => x.archived).length})</label>
           </div>
         </FilterPanel>
-        {list.length ? (
-          <div className="animal-grid">
-            {list.map((a) => {
+        {sortedList.length ? (
+          <div className={`animal-grid dv-${v.view}`}>
+            {sortedList.map((a) => {
               const tl = a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check) : null;
               const next = tl && !tl.failed ? tl.steps.find((s) => s.key === tl.next) : null;
               return (
@@ -428,7 +482,7 @@ export function ReportsScreen() {
   };
   const exportSales = () => {
     const rows = farm.records.filter((r) => live(r) && r.type === 'sale' && !r.voided && r.day >= per.range.from && r.day <= per.range.to);
-    downloadText(`sales-${per.range.from}.csv`, toCSV([[t('date'), t('sale.customer'), t('items'), t('total'), t('sale.payNow'), t('by')], ...rows.map((r) => [r.day, app.names.customer(r.customerId), r.lines.map((l) => `${t(`pr.${l.product}`)} ${l.qty}`).join(' + '), r.totalC / 100, (r.paidNowC || 0) / 100, r.createdByName])]));
+    downloadText(`sales-${per.range.from}.csv`, toCSV([[t('date'), t('sale.customer'), t('items'), t('total'), t('sale.payNow'), t('by')], ...rows.map((r) => [r.day, app.names.customer(r.customerId), r.lines.map((l) => `${t(`pr.${l.product}`)} ${l.qty}${l.unit ? ` ${l.unit}` : ''}`).join(' + '), r.totalC / 100, (r.paidNowC || 0) / 100, r.createdByName])]));
   };
   const exportExp = () => downloadText(`expenses-${per.range.from}.csv`, toCSV([[t('date'), t('exp.item'), t('amount'), t('exp.paid'), t('exp.supplier')], ...app.snap.expenses.filter((e) => e.day >= per.range.from && e.day <= per.range.to).map((e) => [e.day, t(`c.${e.category}`), e.amountC / 100, e.paidC / 100, e.supplierId ? app.names.supplier(e.supplierId) : ''])]));
   return (
@@ -441,13 +495,13 @@ export function ReportsScreen() {
         <Stat label={t('rep.sales')} value={fmt(rep.netSalesC)} sub={[rep.taxC ? t('rep.taxApart', { a: fmt(rep.taxC) }) : null, rep.walkinC ? `${t('rep.walkin')} ${fmt(rep.walkinC)}` : null].filter(Boolean).join(' · ') || null} />
         <Stat label={t('rep.expenses')} value={fmt(rep.expenseC)} />
         <Stat label={t('rep.profit')} value={fmt(rep.profitC)} sub={rep.otherIncomeC ? t('rep.profitHintOther', { a: fmt(rep.otherIncomeC) }) : t('rep.profitHint')} tone={rep.profitC >= 0 ? 'in' : 'out'} />
-        <Stat label={t('rep.production')} value={`${milkQ(rep.milkL)}`} sub={rep.eggs ? `${fmtQty(rep.eggs, 0)} ${t('rep.eggsN')}` : `${t('prod.sold')} ${fmtQty(rep.milkSoldL)}`} />
+        <Stat label={t('rep.production')} value={`${milkQ(rep.milkL)}`} sub={rep.eggs ? `${fmtQty(rep.eggs, 0)} ${t('rep.eggsN')}` : `${t('prod.sold')} ${milkQ(rep.milkSoldL)}`} />
       </section>
       <div className="two-col">
         <section className="panel">
           <div className="panel-head"><h2>{t('rep.byProduct')}</h2><Button size="sm" icon="download" onClick={exportSales}>{t('rep.csv')}</Button></div>
           {Object.keys(rep.byProduct).length ? (
-            <table className="tbl"><tbody>{Object.entries(rep.byProduct).map(([p, v]) => <tr key={p}><td>{t(`pr.${p}`)}</td><td className="num">{fmtQty(v.qty)} {t(`u.${p === 'milk' ? 'L' : p === 'eggs' ? 'egg' : p === 'animal' ? 'head' : 'kg'}`)}</td><td className="num"><b>{fmt(v.amountC)}</b></td></tr>)}</tbody></table>
+            <table className="tbl"><tbody>{Object.entries(rep.byProduct).map(([p, v]) => <tr key={p}><td>{t(`pr.${p}`)}</td><td className="num">{p === 'milk' ? milkQ(v.qty) : `${fmtQty(v.qty)} ${t(`u.${p === 'eggs' ? 'egg' : p === 'animal' ? 'head' : 'kg'}`)}`}</td><td className="num"><b>{fmt(v.amountC)}</b></td></tr>)}</tbody></table>
           ) : <p className="muted">{t('sales.noSales')}</p>}
         </section>
         <section className="panel">

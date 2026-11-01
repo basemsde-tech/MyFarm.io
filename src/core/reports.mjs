@@ -1,7 +1,7 @@
 // Period reports using the same day keys and cent maths as the screens.
 import { live, compute } from './ledger.mjs';
 import { profitAndLoss } from './accounts.mjs';
-import { milkLots, saleMilkL } from './milk.mjs';
+import { milkLots, saleMilkL, litresOf } from './milk.mjs';
 
 export function periodReport(farm, from, to) {
   const recs = (farm.records || []).filter((r) => live(r) && r.day >= from && r.day <= to);
@@ -18,14 +18,21 @@ export function periodReport(farm, from, to) {
     collectedAtSaleC += r.paidNowC || 0;
     if (!r.customerId) walkinC += r.totalC;
     milkSoldL += saleMilkL(r);
-    for (const l of r.lines) {
+    const lines = r.lines || [];
+    for (const l of lines) {
       const p = (byProduct[l.product] ||= { qty: 0, amountC: 0 });
-      p.qty += Number(l.qty) || 0;
+      // Milk sold by kg and by litre is added up in litres (the tank's unit).
+      p.qty += l.product === 'milk' ? litresOf(l.qty, l.unit) : Number(l.qty) || 0;
     }
-    // Attribute the invoice total across lines proportionally for the product split.
-    const gross = r.lines.reduce((s, l) => s + (l.amountC || 0), 0) || 1;
+    // Attribute the invoice total (before tax) across lines in whole cents; the last line takes the rounding.
     const net = (r.totalC || 0) - Math.max(0, Math.min(r.totalC || 0, r.taxC || 0));
-    for (const l of r.lines) byProduct[l.product].amountC += Math.round((net * (l.amountC || 0)) / gross);
+    const gross = lines.reduce((s, l) => s + Math.max(0, l.amountC || 0), 0);
+    let used = 0;
+    lines.forEach((l, i) => {
+      const share = i === lines.length - 1 ? net - used : gross ? Math.round((net * Math.max(0, l.amountC || 0)) / gross) : 0;
+      used += share;
+      byProduct[l.product].amountC += share;
+    });
   }
   // Income, costs and profit come from the same journal as the Accounts screen, so the
   // report, the profit and loss and the Expenses list can never disagree.

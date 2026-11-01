@@ -154,7 +154,8 @@ export function eggStock(records) {
   for (const e of evs) {
     bal += e.d;
     if (e.r.type === 'eggs') { collected += Number(e.r.count) || 0; broken += Number(e.r.broken) || 0; } else if (e.r.type === 'eggUse') used -= e.d; else sold -= e.d;
-    if (bal < 0) { issues.push({ code: 'eggs.oversell', severity: 'error', recordId: e.r.id, day: e.day }); }
+    // A shortfall is reported once and does not swallow eggs collected afterwards (same rule as the milk tank).
+    if (bal < 0) { issues.push({ code: 'eggs.oversell', severity: 'error', recordId: e.r.id, day: e.day }); bal = 0; }
   }
   return { collected, broken, sold, used, stock: Math.max(0, bal), issues };
 }

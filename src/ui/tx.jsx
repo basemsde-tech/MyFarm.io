@@ -29,7 +29,7 @@ export function describe(r, { t, names, fmt }) {
     case 'capital':
       return { title: names.person(r.personId), sub: t(r.kind === 'inject' ? 'pp.inject' : r.purpose === 'personal' ? 'pp.personal' : 'pp.cashOut'), amountC: r.amountC, icon: 'people', kind: t('t.capital') };
     case 'milk':
-      return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: r.animalId ? names.animal(r.animalId) : t('prod.herdMode'), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milk') };
+      return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: (r.animalId ? names.animal(r.animalId) : t('prod.herdMode')) + (!r.animalId && r.species && r.species !== 'cow' ? ` · ${t(`sp.${r.species}`)}` : ''), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milk') };
     case 'milkUse':
       return { title: t('t.milkUse'), sub: milkUseLabel(r.reason, t), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milkUse') };
     case 'eggUse':
@@ -437,17 +437,17 @@ export function VoidDialog({ id, onClose }) {
 }
 
 /** A tappable movement row used in every list. */
-export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, dir, hideParty }) {
+export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, dir, hideParty, className = '', tag, title }) {
   const app = useApp();
   const d = describe(r, app);
   const status = r.voided ? 'voided' : r.editedAfterClose ? 'afterClose' : null;
   return (
-    <div className={`row ${selected ? 'selected' : ''} ${r.voided ? 'is-void' : ''}`}>
+    <div className={`row ${selected ? 'selected' : ''} ${r.voided ? 'is-void' : ''} ${className}`}>
       {selectable && <input type="checkbox" className="row-check" checked={!!selected} onChange={(e) => onSelect(e.target.checked)} aria-label={app.t('select')} />}
-      <button type="button" className="row-main" onClick={() => onOpen(r)}>
+      <button type="button" className="row-main" onClick={() => onOpen(r)} title={title}>
         <span className="row-ico"><Icon name={d.icon} size={18} /></span>
         <span className="row-text">
-          <span className="row-title">{hideParty ? (d.sub || d.kind) : d.title}{status && <Pill status={status}>{app.t(`st.${status}`)}</Pill>}{r.history?.length > 0 && !status && <span className="edited-dot" title={app.t('st.edited')} />}</span>
+          <span className="row-title">{hideParty ? (d.sub || d.kind) : d.title}{status && <Pill status={status}>{app.t(`st.${status}`)}</Pill>}{r.history?.length > 0 && !status && <span className="edited-dot" title={app.t('st.edited')} />}{tag && <Pill tone="neutral">{tag}</Pill>}</span>
           <span className="row-sub">{r.no && <span className="row-no num">{docNo(r, app.farm.settings)}</span>}{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
         </span>
         <span className={`row-amt num ${dir > 0 ? 'in' : dir < 0 ? 'out' : ''}`}>

@@ -6,6 +6,7 @@
 
 import { addRecord, newId, CommandError } from './commands.mjs';
 import { can } from './catalog.mjs';
+import { isoDay } from './species.mjs';
 
 const nowIso = (now) => (now ? new Date(now) : new Date()).toISOString();
 const live = (r) => !r.deletedAt;
@@ -48,7 +49,7 @@ export function orderStatus(farm, o) {
   const status = o.cancelledAt ? 'cancelled' : allIn ? 'received' : o.closedAt ? 'closed' : anyIn ? 'partial' : 'open';
   return { order: o, lines, deliveries, orderedC, billedC, priceDiffC: lines.reduce((s, l) => s + l.priceDiffC, 0), status, late: status === 'open' || status === 'partial' ? !!(o.expectedDay && o.expectedDay < todayIso()) : false };
 }
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => isoDay();
 
 /** All orders, newest first, with their status. */
 export function orderList(farm) {

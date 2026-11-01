@@ -2,6 +2,14 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.18.0', date: '2026-11-02', items: [
+    ['milk', 'سجل الحليب أنظف: كل يوم يُطوى في سطر واحد يلخّص الصباح والمساء والمستخدَم، مع طيّ أو فتح الكل وإخفاء السجل', 'Tidier milk entries: each day folds to one summary line (morning, evening, used), with fold or open all and hide the list'],
+    ['sliders', 'قائمة «العرض» في القوائم: بطاقات أو قائمة أو مضغوط، والترتيب حسب ما تريد تصاعديًا أو تنازليًا', 'A View menu on lists: tiles, list or compact, sorted by what you choose, ascending or descending'],
+    ['check', 'إقفال الفترات القديمة يحتفظ الآن بالفواتير المفتوحة التي دفع جزءًا منها مدير أو ممول', 'Closing old periods now keeps open bills partly paid by a manager or funder'],
+    ['calendar', 'الالتزامات الشهرية تحافظ على يومها (31 ← 28 ← 31) بدل الانزلاق إلى يوم 3', 'Monthly costs keep their day (31 → 28 → 31) instead of drifting to the 3rd'],
+    ['chart', 'التقارير: حليب البيع بالكيلو وباللتر يُجمع باللتر، ومجموع المنتجات يطابق المبيعات تمامًا', 'Reports: milk sold by kg and by litre is added in litres, and the product split matches sales exactly'],
+    ['egg', 'نقص البيض القديم لم يعد يبتلع البيض المجموع بعده', 'An old egg shortfall no longer swallows eggs collected afterwards'],
+  ] },
   { v: '3.17.0', date: '2026-11-02', items: [
     ['milk', 'صفحة الإنتاج من جديد: سجّل حليب اليوم في مكانه، وتنقّل بين الأيام لتصحيحها، وسجل إدخالات واضح', 'Production rebuilt: record the day’s milk in place, step back through days to correct them, and a clear list of entries'],
     ['cow', 'تسجيل الحليب لكل حيوان في جدول واحد', 'Record milk per animal in one table'],
