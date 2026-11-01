@@ -26,7 +26,7 @@ import { BrandMark } from './brand.jsx';
 import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
-import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
+import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, BackupNowDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const SHEETS = {
   sale: SaleSheet, payment: PaymentSheet, expense: ExpenseSheet, supplierPay: SupplierPaySheet, capital: PersonSheet, milk: MilkSheet, milkUse: MilkUseSheet,
@@ -34,7 +34,7 @@ const SHEETS = {
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
   whatsNew: ({ onClose }) => <WhatsNew all onClose={onClose} />,
-  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog, dangerConfirm: DangerConfirm, dangerRange: DangerRange,
+  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog, backupNow: BackupNowDialog, dangerConfirm: DangerConfirm, dangerRange: DangerRange,
 };
 
 function ModalHost() {

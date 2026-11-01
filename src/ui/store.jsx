@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.16.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.17.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {

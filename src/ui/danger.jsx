@@ -10,7 +10,7 @@ import { preview, updateSettings, emptyFarm } from '../core/commands.mjs';
 import { compute } from '../core/ledger.mjs';
 import { entriesInRange, rangeSummary, moveRangeToTrash, closeBefore, emptyTrash, startFresh, yearsAgo, TRASH_CHOICES, trashDaysOf } from '../core/danger.mjs';
 
-export function DangerZone() {
+export function DangerZone({ locked }) {
   const { farm, t, ui, commit, rawFarm } = useApp();
   const [open, setOpen] = useState(false);
   const keep = trashDaysOf(farm);
@@ -25,6 +25,7 @@ export function DangerZone() {
         <Icon name="down" size={16} className="dz-chev" />
       </button>
       <div className="dz-body"><div>
+        {locked ? <p className="dz-locked"><Icon name="lock" size={16} /> {t(locked === 'demo' ? 'dz.demoLocked' : 'dz.ownerOnly')}</p> : <>
         <div className="dz-row">
           <div><b>{t('dz.keep')}</b><small className="muted">{t('dz.keepHint')}</small></div>
           <Seg small wrap value={String(keep)} onChange={setKeep} options={TRASH_CHOICES.map((n) => ({ value: String(n), label: n === 365 ? t('dz.year1') : t('fold.nDays', { n }) }))} />
@@ -49,6 +50,7 @@ export function DangerZone() {
           <div><b>{t('set.reset')}</b><small className="muted">{t('dz.allHint')}</small></div>
           <Button variant="danger" onClick={() => ui.open('dangerConfirm', { kind: 'all', count: farm.records.length })}>{t('dz.allBtn')}</Button>
         </div>
+        </>}
       </div></div>
     </section>
   );

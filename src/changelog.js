@@ -2,6 +2,13 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.17.0', date: '2026-11-02', items: [
+    ['milk', 'صفحة الإنتاج من جديد: سجّل حليب اليوم في مكانه، وتنقّل بين الأيام لتصحيحها، وسجل إدخالات واضح', 'Production rebuilt: record the day’s milk in place, step back through days to correct them, and a clear list of entries'],
+    ['cow', 'تسجيل الحليب لكل حيوان في جدول واحد', 'Record milk per animal in one table'],
+    ['sun', 'ساعة رقمية وطقس دقيق لموقع المزرعة في الصفحة الرئيسية', 'A digital clock and precise weather for the farm’s location on the home page'],
+    ['download', 'النسخ الاحتياطي يسأل دائمًا عن استبدال الملف الحالي لتوفير المساحة', 'Backups always offer to replace the existing file, to keep storage low'],
+    ['alert', 'منطقة الخطر ظاهرة دائمًا في الإعدادات (مقفلة في المزرعة التجريبية)', 'The Danger zone always shows in Settings (locked in the sample farm)'],
+  ] },
   { v: '3.16.0', date: '2026-11-01', items: [
     ['alert', 'منطقة الخطر في الإعدادات: كل إجراءات الحذف الكبيرة في مكان واحد آمن', 'A Danger zone in Settings: every bulk removal in one safe place'],
     ['history', 'اختر مدة الاحتفاظ بالمحذوفات: من 7 أيام حتى سنة', 'Choose how long deleted items can be restored: 7 days to a year'],

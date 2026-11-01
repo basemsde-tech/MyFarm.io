@@ -23,10 +23,11 @@ async function backupText(farm, files) {
 }
 
 /** Writes latest + one dated copy per day into the chosen folder, keeping the newest `keep` dated copies. */
-async function writeToFolder(dir, farm, text, keep = 14) {
+/** keep = 0: one file only, replaced each time (the default, to keep storage low). */
+async function writeToFolder(dir, farm, text, keep = 0) {
   const base = `mazraati-${slug(farm.settings.farmName)}`;
   const day = new Date().toISOString().slice(0, 10);
-  for (const name of [`${base}-latest.json`, `${base}-${day}.json`]) {
+  for (const name of keep > 0 ? [`${base}-latest.json`, `${base}-${day}.json`] : [`${base}-latest.json`]) {
     const fh = await dir.getFileHandle(name, { create: true });
     const w = await fh.createWritable();
     await w.write(text);
@@ -63,7 +64,7 @@ export function useAutoBackup() {
     })().catch(() => { setDir(null); setPerm('none'); });
     return () => { live = false; };
   }, [farmId, storageMode]);
-  const keep = farm.settings.backup?.keep || 14;
+  const keep = farm.settings.backup?.keep ?? 0;
   const everyMs = (farm.settings.backup?.everyDays || 1) * 86400000;
   const due = !demo && (farm.records.length > 0 || farm.customers.length > 0) && (!state.lastAt || Date.now() - new Date(state.lastAt).getTime() > everyMs);
   const mark = (patch) => { const n = { ...readBk(farmId), ...patch }; writeBk(farmId, patch); setState(n); };
@@ -157,6 +158,8 @@ export function useAutoBackup() {
       return false;
     } finally { setBusy(false); }
   };
+  /** Save to a new file the user picks; it becomes the file replaced from then on. */
+  const toNewFile = async () => { fileHandles.delete(farmId); await vault.del(K.backupFile(farmId)).catch(() => {}); mark({ file: null }); return toFile(); };
   /** The best way to back up right now: the connected folder, the remembered file, or a download/share. */
   const backupNow = async () => {
     if (dir && perm !== 'none') {
@@ -166,7 +169,7 @@ export function useAutoBackup() {
     if (fileSupported) return toFile();
     return (await shareNow()) ? readBk(farmId).name : false;
   };
-  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, toFile, backupNow, fileSupported, supported: folderSupported() && storageMode === 'idb' };
+  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, toFile, toNewFile, backupNow, fileSupported, supported: folderSupported() && storageMode === 'idb' };
 }
 
 const BackupCtx = createContext(null);
@@ -178,13 +181,13 @@ export function BackupProvider({ children }) {
 export const useBackup = () => useContext(BackupCtx);
 
 export function BackupBanner({ bk }) {
-  const { t, actor } = useApp();
+  const { t, actor, ui } = useApp();
   if (!bk.due || !can(actor?.role, 'settings')) return null;
   if (bk.dir && bk.perm !== 'granted') {
     return <div className="banner warn"><Icon name="alert" size={16} /><span>{t('bk.reconnectHint')}</span><button type="button" onClick={bk.reconnect}>{t('bk.reconnect')}</button></div>;
   }
   if (bk.dir) return null;
-  return <div className="banner warn"><Icon name="download" size={16} /><span>{bk.state.lastAt ? t('bk.dueSince', { d: new Date(bk.state.lastAt).toLocaleDateString() }) : t('bk.never')}</span><button type="button" onClick={bk.shareNow} disabled={bk.busy}>{t('bk.now')}</button></div>;
+  return <div className="banner warn"><Icon name="download" size={16} /><span>{bk.state.lastAt ? t('bk.dueSince', { d: new Date(bk.state.lastAt).toLocaleDateString() }) : t('bk.never')}</span><button type="button" onClick={() => ui.open('backupNow')} disabled={bk.busy}>{t('bk.now')}</button></div>;
 }
 
 export function BackupPanel({ canSet }) {
@@ -225,7 +228,7 @@ export function BackupPanel({ canSet }) {
             <>
               <p className="small"><Icon name="file" size={14} /> {t('bk.folderOn', { f: bk.dir.name })}{bk.perm !== 'granted' && <> · <span className="out">{t('bk.needsOk')}</span></>}</p>
               <div className="row-btns">
-                {bk.perm !== 'granted' ? <Button size="sm" variant="primary" onClick={bk.reconnect}>{t('bk.reconnect')}</Button> : <Button size="sm" variant="primary" icon="download" onClick={() => bk.toFolder(false)} disabled={bk.busy}>{t('bk.now')}</Button>}
+                {bk.perm !== 'granted' ? <Button size="sm" variant="primary" onClick={bk.reconnect}>{t('bk.reconnect')}</Button> : <Button size="sm" variant="primary" icon="download" onClick={() => ui.open('backupNow')} disabled={bk.busy}>{t('bk.now')}</Button>}
                 <Button size="sm" onClick={bk.pickFolder}>{t('bk.change')}</Button>
                 <Button size="sm" variant="quiet" onClick={bk.forget}>{t('bk.stop')}</Button>
               </div>
@@ -244,17 +247,17 @@ export function BackupPanel({ canSet }) {
         )}
         <div className="grid2 tight">
           <Select label={t('bk.every')} value={String(s.everyDays || 1)} onChange={(v) => setB({ everyDays: Number(v) })} options={[1, 3, 7].map((n) => ({ value: String(n), label: t('bk.everyN', { n }) }))} />
-          <Select label={t('bk.keep')} value={String(s.keep || 14)} onChange={(v) => setB({ keep: Number(v) })} options={[7, 14, 30, 90].map((n) => ({ value: String(n), label: t('bk.keepN', { n }) }))} />
+          <Select label={t('bk.keep')} value={String(s.keep ?? 0)} onChange={(v) => setB({ keep: Number(v) })} options={[0, 7, 14, 30].map((n) => ({ value: String(n), label: n ? t('bk.keepN', { n }) : t('bk.keep0') }))} />
         </div>
       </div>
       <div className="row-btns">
-        <Button icon="download" onClick={exportBackup}>{t('set.export')}</Button>
+        <Button icon="download" onClick={() => ui.open('backupNow')}>{t('set.export')}</Button>
         <Button icon="upload" onClick={() => ui.open('restore')} disabled={!canSet}>{t('set.import')}</Button>
       </div>
       {snaps.length > 0 && (
         <div className="sub-sec">
           <h3>{t('set.autoSnap')}</h3>
-          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB{x.label ? <b> · {x.label}</b> : null}</span>{canSet && <Button size="sm" onClick={async () => { await exportBackup(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
+          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB{x.label ? <b> · {x.label}</b> : null}</span>{canSet && <Button size="sm" onClick={async () => { await bk.backupNow(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
         </div>
       )}
       <div className="sub-sec">
@@ -476,6 +479,45 @@ export function LogOffDialog({ onClose }) {
         <div className="lo-actions">
           {!demo && <Button variant="primary" icon="download" onClick={backupAndOut} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('lo.both')}</Button>}
           <Button icon="logout" onClick={() => out()} disabled={bk.busy}>{demo ? t('pf.logOff') : t('lo.skip')}</Button>
+          <Button onClick={onClose} disabled={bk.busy}>{t('cancel')}</Button>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+
+/* ───────────── Back up now ───────────── */
+/** Every manual backup asks first: replace the existing file (recommended, keeps storage low) or save a new one. */
+export function BackupNowDialog({ onClose }) {
+  const { t, toast, lang } = useApp();
+  const bk = useBackup();
+  const [err, setErr] = useState('');
+  const folder = bk.dir && bk.perm !== 'none';
+  const existing = folder ? `${bk.dir.name} / ${(bk.state.name || '').split('/').pop() || 'latest'}` : bk.fileSupported ? bk.state.file : null;
+  const last = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const done = (name) => { if (name) { toast(t('bn.done', { f: `⁨${name}⁩` }), { sound: 'success' }); onClose(); } else setErr(t('lo.failed')); };
+  const replace = async () => { setErr(''); done(await bk.backupNow()); };
+  const fresh = async () => { setErr(''); done(folder ? await bk.backupNow() : await bk.toNewFile()); };
+  const download = async () => { setErr(''); done((await bk.shareNow()) ? bk.state.name || 'backup.json' : false); };
+  return (
+    <Sheet title={t('bn.title')} onClose={onClose}>
+      <div className="logoff">
+        <div className="lo-backup">
+          <div className="lo-ico"><Icon name="download" size={22} /></div>
+          <div>
+            {existing ? <><b>{t('bn.replaceQ')}</b><p className="muted small">{t('bn.existing', { f: existing })}{last ? ` · ${t('lo.last', { d: last })}` : ''}</p></>
+              : bk.fileSupported ? <><b>{t('bn.firstQ')}</b><p className="muted small">{t('lo.pickFile')}</p></>
+                : <><b>{t('bn.downloadQ')}</b><p className="muted small">{t('bn.downloadHint')}</p></>}
+            <p className="muted small">{t('bn.why')}</p>
+          </div>
+        </div>
+        {err && <div className="note bad">{err}</div>}
+        <div className="lo-actions">
+          {existing && <Button variant="primary" icon="check" onClick={replace} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.replace')}</Button>}
+          {!existing && bk.fileSupported && <Button variant="primary" icon="download" onClick={replace} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.choose')}</Button>}
+          {!bk.fileSupported && !folder && <Button variant="primary" icon="download" onClick={download} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.download')}</Button>}
+          {existing && !folder && <Button icon="file" onClick={fresh} disabled={bk.busy}>{t('bn.newFile')}</Button>}
           <Button onClick={onClose} disabled={bk.busy}>{t('cancel')}</Button>
         </div>
       </div>

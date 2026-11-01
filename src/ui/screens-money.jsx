@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { milkQ, milkN } from './units.js';
 import { useApp } from './store.jsx';
+import { SkyClock } from './skyclock.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
 import { Help } from './help.jsx';
@@ -164,6 +165,7 @@ export function CashScreen() {
   return (
     <div className="screen cash-layout">
       <div className="screen cash-col">
+      <SkyClock />
       <section className="cash-hero">
         <div className="cash-main">
           <div className="cash-label">{t('cash.inBox')} <Help k="page.cash" more="cash" /></div>

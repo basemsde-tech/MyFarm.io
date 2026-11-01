@@ -9,11 +9,11 @@ import { RecordRow, SelectionBar } from './tx.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
 import { SPECIES, reproTimeline, daysBetween } from '../core/species.mjs';
-import { addRecord, editRecord, updateSettings, restoreRecords, newId } from '../core/commands.mjs';
+import { addRecord, editRecord, updateSettings, restoreRecords, newId, deleteRecords } from '../core/commands.mjs';
 import { periodReport, toCSV } from '../core/reports.mjs';
 
-import { CURRENCIES, fmtQty } from '../core/money.mjs';
-import { saleMilkL, milkLots } from '../core/milk.mjs';
+import { CURRENCIES, fmtQty, parseQty } from '../core/money.mjs';
+import { kgToL, lToKg } from '../core/milk.mjs';
 import { can, CATEGORY_ICON, EXPENSE_GROUPS } from '../core/catalog.mjs';
 import { hashCode, newRecoveryCode, newSalt } from '../core/security.mjs';
 import { sampleFarm } from '../core/sample.mjs';
@@ -41,282 +41,176 @@ export function ProductionScreen() {
   );
 }
 
+/* Milk: record a day's milk, and see the entries. Nothing else. */
 function MilkTab() {
-  const { farm, snap, t, ui, today, lang } = useApp();
-  const recs = farm.records.filter(live);
-  const soldToday = recs.filter((r) => r.type === 'sale' && r.day === today && !r.voided).reduce((s, r) => s + saleMilkL(r), 0);
-  const usedToday = recs.filter((r) => r.type === 'milkUse' && r.day === today).reduce((s, r) => s + Number(r.liters), 0);
-  const lots = milkLots(recs);
-  const producedToday = lots.filter((l) => l.day === today).reduce((x, l) => x + l.liters, 0);
-  const tankLots = [...snap.milk.lots].reverse();
-  const oldest = tankLots[tankLots.length - 1];
+  const { farm, today } = useApp();
+  const recs = useMemo(() => farm.records.filter(live), [farm.records]);
+  const [day, setDay] = useState(today);
   return (
     <>
-      <section className="stats-row">
-        <Stat big label={t('prod.tank')} value={`${milkQ(snap.milk.stockL)}`} tone="teal" />
-        <Stat label={`${t('prod.produced')} · ${t('today')}`} value={milkN(producedToday)} />
-        <Stat label={`${t('prod.sold')} · ${t('today')}`} value={milkN(soldToday)} />
-        <Stat label={`${t('prod.used')} · ${t('today')}`} value={milkN(usedToday)} />
-      </section>
-      <div className="quick">
-        <Button variant="primary" icon="milk" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>
-        <Button icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>
-        <Button onClick={() => ui.open('milkUse')}>{t('prod.use')}</Button>
-      </div>
-      {tankLots.length > 0 && (
-        <Fold id="milkLots" title={<>{t('prod.lots')} <Help k="tank" more="production" /></>}
-          summary={<><b className="num">{tankLots.length}</b> {t('fold.lots')}{oldest && <> · {t('fold.oldest')} <Pill status={oldest.fresh}>{t(`fr.${oldest.fresh}`)}</Pill></>}</>}>
-          <div className="lots">
-            {tankLots.slice(0, 24).map((l) => (
-              <div className="lot" key={l.key}>
-                <div><b className="num">{milkQ(l.left)}</b> <span className="muted">/ {milkN(l.liters)}</span></div>
-                <div className="muted small">{dayLabel(l.day, lang)} · {t(`prod.${l.session}`)} · {t('fr.hours', { h: Math.round(l.hours) })}{l.by ? ` · ${l.by}` : ''}</div>
-                <Pill status={l.fresh}>{t(`fr.${l.fresh}`)}</Pill>
-              </div>
-            ))}
-          </div>
-          {tankLots.length > 24 && <p className="muted small">{t('prod.olderLots', { n: tankLots.length - 24 })}</p>}
-        </Fold>
-      )}
-      <MilkByAnimal recs={recs} lots={lots} />
-      <MilkDays recs={recs} lots={lots} />
+      <MilkDay day={day} setDay={setDay} recs={recs} />
+      <MilkEntries recs={recs} day={day} setDay={setDay} />
     </>
   );
 }
 
-/**
- * Milk split by animal type and by animal, for a period. Per-animal entries are counted as recorded;
- * when a species was recorded only as herd totals, each animal's share is estimated from its expected
- * daily yield and marked with "≈". Folds away to a one-line split by type.
- */
-function MilkByAnimal({ recs, lots }) {
-  const { farm, t, today, nav, lang } = useApp();
-  const [per, setPer] = useState('30');
-  const [open, setOpen] = useState({});
-  const from = addDaysIso(today, -(Number(per) - 1));
-  const prevFrom = addDaysIso(from, -Number(per));
-  const data = useMemo(() => {
-    // Species totals come from the tank lots, so they match the daily log and the tank.
-    const bySp = {};
-    for (const l of lots) {
-      if (l.day < from || l.day > today) continue;
-      (bySp[l.species] ||= { total: 0, perAnimal: 0, animals: new Map() }).total += l.liters;
-    }
-    // Per-animal entries: newest per day + animal + session.
-    const seen = new Map();
-    for (const r of recs) {
-      if (r.type !== 'milk' || !r.animalId || r.day < prevFrom || r.day > today) continue;
-      const k = `${r.day}|${r.animalId}|${r.session}`;
-      const o = seen.get(k);
-      if (!o || String(r.createdAt) > String(o.createdAt)) seen.set(k, r);
-    }
-    const animals = new Map((farm.animals || []).map((a) => [a.id, a]));
-    for (const r of seen.values()) {
-      const a = animals.get(r.animalId);
-      const sp = a?.species || r.species || 'cow';
-      const g = (bySp[sp] ||= { total: 0, perAnimal: 0, animals: new Map() });
-      const row = g.animals.get(r.animalId) || { id: r.animalId, a, total: 0, prev: 0, days: new Set(), last: '', spark: {} };
-      const L = Number(r.liters) || 0;
-      if (r.day >= from) { row.total += L; row.days.add(r.day); row.spark[r.day] = (row.spark[r.day] || 0) + L; if (r.day > row.last) row.last = r.day; g.perAnimal += L; } else row.prev += L;
-      g.animals.set(r.animalId, row);
-    }
-    // Herd-only species: estimate shares from expected daily yield.
-    for (const [sp, g] of Object.entries(bySp)) {
-      g.estimated = g.animals.size === 0 && g.total > 0;
-      if (!g.estimated) continue;
-      const milkers = (farm.animals || []).filter((a) => !a.deletedAt && a.species === sp && ['lactating', 'healthy', 'pregnant', 'served'].includes(a.status) && a.yieldL > 0);
-      const sum = milkers.reduce((x, a) => x + a.yieldL, 0);
-      for (const a of milkers) g.animals.set(a.id, { id: a.id, a, total: g.total * (a.yieldL / sum), prev: 0, days: new Set(), last: '', spark: {}, est: true });
-    }
-    // Milking animals with nothing recorded in the period.
-    // (only where the type is recorded per animal; herd totals already cover everyone else)
-    const perAnimalType = (sp) => bySp[sp] && !bySp[sp].estimated && bySp[sp].perAnimal >= bySp[sp].total * 0.95;
-    const quiet = (farm.animals || []).filter((a) => !a.deletedAt && a.status === 'lactating' && SPECIES[a.species]?.product === 'milk' && perAnimalType(a.species) && !bySp[a.species].animals.has(a.id));
-    const grand = Object.values(bySp).reduce((x, g) => x + g.total, 0);
-    return { bySp, quiet, grand };
-  }, [recs, lots, farm.animals, from, prevFrom, today]);
-  const species = Object.entries(data.bySp).filter(([, g]) => g.total > 0 || g.animals.size).sort((a, b) => b[1].total - a[1].total);
-  if (!species.length) return null;
-  const days = Array.from({ length: Math.min(14, Number(per)) }, (_, i) => addDaysIso(today, i - Math.min(13, Number(per) - 1)));
-  const name = (row) => (row.a ? (row.a.name ? `${row.a.tag} · ${row.a.name}` : row.a.tag) : '—');
-  const summary = (
-    <span className="mba-split">
-      {species.map(([sp, g]) => <span key={sp}><b className="num">{milkQ(g.total)}</b> {t(`sp.${sp}`)}</span>)}
-      {data.quiet.length > 0 && <span className="mba-warn">{t('mba.quiet', { n: data.quiet.length })}</span>}
-    </span>
-  );
-  return (
-    <Fold id="milkByAnimal" title={t('mba.title')} summary={summary}
-      extra={<Seg small value={per} onChange={setPer} options={['7', '30', '90'].map((v) => ({ value: v, label: t('fold.nDays', { n: v }) }))} />}>
-      <div className="mba-bar" aria-hidden="true">
-        {species.map(([sp, g], i) => <i key={sp} className={`mba-seg c${i % 4}`} style={{ flexGrow: g.total || 0.0001 }} title={`${t(`sp.${sp}`)} ${milkQ(g.total)}`} />)}
-      </div>
-      {species.map(([sp, g], gi) => {
-        const rows = [...g.animals.values()].sort((a, b) => b.total - a.total);
-        const top = Math.max(0.001, ...rows.map((r) => r.total));
-        const isOpen = open[sp] ?? species.length === 1;
-        const herdOnly = g.total - g.perAnimal;
-        return (
-          <section key={sp} className={`mba-group ${isOpen ? 'open' : ''}`}>
-            <button type="button" className="mba-head" onClick={() => setOpen({ ...open, [sp]: !isOpen })} aria-expanded={isOpen}>
-              <span className={`mba-dot c${gi % 4}`} />
-              <b>{t(`sp.${sp}`)}</b>
-              <span className="muted small">{g.estimated && !rows.length ? t('mba.herdOnly') : t('mba.animals', { n: rows.length })}</span>
-              <span className="grow" />
-              <b className="num">{milkQ(g.total)}</b>
-              <span className="muted small num">{data.grand ? Math.round((g.total / data.grand) * 100) : 0}%</span>
-              <Icon name="down" size={15} className="mba-chev" />
-            </button>
-            <div className="mba-body"><div>
-              {g.estimated && rows.length > 0 && <p className="note info small">{t('mba.estimated')}</p>}
-              {!g.estimated && herdOnly > 0.05 && <p className="muted small">{t('mba.herdPart', { a: milkQ(herdOnly) })}</p>}
-              {rows.length ? (
-                <ul className="mba-list">
-                  {rows.map((r, i) => {
-                    const avg = r.days.size ? r.total / r.days.size : 0;
-                    const prevAvg = r.prev / Number(per);
-                    const nowAvg = r.total / Number(per);
-                    const drop = !r.est && r.prev > 0 && nowAvg < prevAvg * 0.85;
-                    const sparkMax = Math.max(0.001, ...days.map((d) => r.spark[d] || 0));
-                    return (
-                      <li key={r.id} style={{ '--i': i }}>
-                        <button type="button" className="mba-row" onClick={() => r.a && nav('animals', r.a.id)}>
-                          <span className="mba-name">{name(r)}{drop && <span className="mba-drop" title={t('mba.dropHint')}>↓ {Math.round((1 - nowAvg / prevAvg) * 100)}%</span>}</span>
-                          <span className="mba-track"><i style={{ inlineSize: `${(r.total / top) * 100}%` }} className={r.est ? 'est' : ''} /></span>
-                          <span className="mba-num num">{r.est ? '≈ ' : ''}{milkQ(r.total)}</span>
-                          <span className="mba-sub muted small num">{r.est ? t('mba.byYield') : `${t('mba.avg')} ${milkN(avg)} · ${r.last ? dayLabel(r.last, lang, { day: 'numeric', month: 'short' }) : ''}`}</span>
-                          {!r.est && <span className="mba-spark" aria-hidden="true">{days.map((d) => <i key={d} style={{ blockSize: `${r.spark[d] ? Math.max(12, (r.spark[d] / sparkMax) * 100) : 4}%` }} className={r.spark[d] ? '' : 'none'} />)}</span>}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : <p className="muted small">{g.estimated ? t('mba.noYield', { n: (farm.animals || []).filter((x) => !x.deletedAt && x.species === sp && !['sold', 'dead'].includes(x.status)).length }) : t('mba.noAnimals')}</p>}
-            </div></div>
-          </section>
-        );
-      })}
-      {data.quiet.length > 0 && <p className="mba-quiet small"><Icon name="alert" size={14} /> {t('mba.quietList', { n: data.quiet.length, list: data.quiet.slice(0, 6).map((a) => a.tag).join('، ') })}</p>}
-    </Fold>
-  );
-}
+const shiftDay = (d, n) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const r3 = (x) => Math.round(x * 1000) / 1000;
 
-const PAGE = 14;
-/** Daily milk table with period, species, session and sort controls; folds away to a one-line summary. */
-function MilkDays({ recs, lots }) {
-  const { t, ui, today, lang } = useApp();
-  const [per, setPer] = useState('30');
-  const [sp, setSp] = useState('');
-  const [sess, setSess] = useState('');
-  const [sort, setSort] = useState('new');
-  const [show, setShow] = useState(PAGE);
-  useEffect(() => setShow(PAGE), [per, sp, sess, sort]);
-  const species = useMemo(() => [...new Set(lots.map((l) => l.species))], [lots]);
-  const from = per === 'all' ? '' : addDaysIso(today, -(Number(per) - 1));
-  const rows = useMemo(() => {
-    const m = {};
-    for (const l of lots) {
-      if ((from && l.day < from) || (sp && l.species !== sp)) continue;
-      const d = (m[l.day] ||= { day: l.day, am: 0, pm: 0, whole: 0, total: 0 });
-      if (l.session === 'day') d.whole += l.liters; else d[l.session] += l.liters;
-      d.total += l.liters;
-    }
-    let list = Object.values(m);
-    if (sess) list = list.filter((d) => (sess === 'am' ? d.am : d.pm + d.whole) > 0);
-    const val = (d) => (sess === 'am' ? d.am : sess === 'pm' ? d.pm + d.whole : d.total);
-    const by = { new: (a, b) => b.day.localeCompare(a.day), old: (a, b) => a.day.localeCompare(b.day), high: (a, b) => val(b) - val(a) || b.day.localeCompare(a.day), low: (a, b) => val(a) - val(b) || b.day.localeCompare(a.day) }[sort];
-    return list.sort(by);
-  }, [lots, from, sp, sess, sort]);
-  const total = rows.reduce((x, d) => x + d.total, 0);
-  const avg = rows.length ? total / rows.length : 0;
-  const best = rows.reduce((m, d) => (!m || d.total > m.total ? d : m), null);
-  const spark = useMemo(() => [...rows].sort((a, b) => a.day.localeCompare(b.day)).slice(-30), [rows]);
-  const peak = Math.max(0, ...spark.map((d) => d.total));
-  const low = Math.min(peak, ...spark.map((d) => d.total));
-  const h = (v) => (peak > low ? 25 + 75 * ((v - low) / (peak - low)) : 70);
-  const bulk = (day, s) => recs.filter((r) => r.type === 'milk' && r.day === day && !r.animalId && r.session === s && (!sp || (r.species || 'cow') === sp)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-  const cell = (day, s, v) => { const r = bulk(day, s); return r ? <button type="button" className="cell-btn" onClick={() => ui.open('drawer', { id: r.id })} title={t('edit')}>{milkN(v)}</button> : v ? milkN(v) : '—'; };
-  const reset = () => { setPer('30'); setSp(''); setSess(''); setSort('new'); };
-  const perLabel = per === 'all' ? t('p.all') : t('fold.lastN', { n: per });
-  const summary = rows.length ? (
-    <>
-      <span className="mini-spark" aria-hidden="true">{spark.map((d) => <i key={d.day} style={{ blockSize: `${h(d.total)}%` }} />)}</span>
-      <span><b className="num">{rows.length}</b> {t('fold.days')} · {t('total')} <b className="num">{milkQ(total)}</b> · {t('fold.avg')} <b className="num">{milkQ(avg)}</b></span>
-    </>
-  ) : null;
-  if (!lots.length) {
-    return <section className="panel"><h2>{t('prod.milk')}</h2><Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" action={<Button variant="primary" onClick={() => ui.open('milk')}>{t('new.milk')}</Button>} /></section>;
-  }
+/** Record or correct a day's milk in place: morning and evening for the herd, or per animal. */
+function MilkDay({ day, setDay, recs }) {
+  const { farm, t, today, lang, commit, actor, ui } = useApp();
+  const kg = farm.settings.milkUnit !== 'L';
+  const toL = (v) => r3(kg ? kgToL(v) : v);
+  const fromL = (l) => Math.round((kg ? lToKg(l) : l) * 10) / 10;
+  const milking = Object.keys(SPECIES).filter((x) => SPECIES[x].product === 'milk');
+  const herdSp = milking.filter((x) => farm.animals.some((a) => !a.deletedAt && a.species === x && !['sold', 'dead'].includes(a.status)));
+  const spList = herdSp.length ? herdSp : ['cow'];
+  const [sp, setSp] = useState(spList[0]);
+  const [mode, setMode] = useState(farm.settings.milkMode === 'animal' ? 'animal' : 'herd');
+  const animals = farm.animals.filter((a) => !a.deletedAt && a.species === sp && ['lactating', 'healthy', 'pregnant', 'served'].includes(a.status));
+  // What is already recorded for this day.
+  const dayRecs = recs.filter((r) => r.type === 'milk' && r.day === day && (r.species || 'cow') === sp);
+  const newest = (list) => list.slice().sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))[0];
+  const herdRec = (s) => newest(dayRecs.filter((r) => !r.animalId && r.session === s));
+  const aniRec = (id, s) => newest(dayRecs.filter((r) => r.animalId === id && r.session === s));
+  const initial = () => {
+    const v = { am: herdRec('am') ? fromL(herdRec('am').liters) : 0, pm: herdRec('pm') ? fromL(herdRec('pm').liters) : 0, ani: {} };
+    for (const a of animals) v.ani[a.id] = { am: aniRec(a.id, 'am') ? fromL(aniRec(a.id, 'am').liters) : 0, pm: aniRec(a.id, 'pm') ? fromL(aniRec(a.id, 'pm').liters) : 0 };
+    return v;
+  };
+  const sig = `${day}|${sp}|${mode}|${dayRecs.map((r) => r.id).join(',')}`;
+  const [v, setV] = useState(initial);
+  const [lastSig, setLastSig] = useState(sig);
+  if (sig !== lastSig) { setLastSig(sig); setV(initial()); }
+  const wholeDay = herdRec('day');
+  const totalL = mode === 'herd' ? toL(v.am) + toL(v.pm) : Object.values(v.ani).reduce((x, a) => x + toL(a.am) + toL(a.pm), 0);
+  const changed = JSON.stringify(v) !== JSON.stringify(initial());
+  const has = mode === 'herd' ? !!(herdRec('am') || herdRec('pm')) : animals.some((a) => aniRec(a.id, 'am') || aniRec(a.id, 'pm'));
+  const save = () => {
+    const op = (f) => {
+      let n = f;
+      const replace = []; const add = [];
+      const put = (session, qty, old, animalId) => {
+        const L = toL(qty);
+        if (old && Math.abs(fromL(old.liters) - (Number(qty) || 0)) < 0.05) return; // unchanged as shown
+        if (old) replace.push(old.id);
+        if (L > 0) add.push({ type: 'milk', day, species: sp, session, liters: L, animalId: animalId || null });
+      };
+      if (mode === 'herd') { put('am', v.am, herdRec('am')); put('pm', v.pm, herdRec('pm')); } else for (const a of animals) { put('am', v.ani[a.id]?.am || 0, aniRec(a.id, 'am'), a.id); put('pm', v.ani[a.id]?.pm || 0, aniRec(a.id, 'pm'), a.id); }
+      if (replace.length) n = deleteRecords(n, replace, actor, 'replaced');
+      for (const r of add) n = addRecord(n, r, actor);
+      return n;
+    };
+    commit(op, { label: t('md.saved', { a: milkQ(totalL) }) });
+  };
+  const unit = t(kg ? 'u.kg' : 'u.L');
+  const dLabel = day === today ? t('today') : day === shiftDay(today, -1) ? t('md.yesterday') : dayLabel(day, lang, { weekday: 'long', day: 'numeric', month: 'short' });
+  const sessionChip = (s, val) => <span className={`md-chip ${val > 0 ? 'done' : ''}`}>{val > 0 ? <Icon name="check" size={12} /> : null}{t(`prod.${s}`)}</span>;
   return (
-    <Fold id="milkDays" title={t('prod.milkDays')} summary={summary}>
-      <FilterPanel id="milkDays" onReset={reset}
-        chips={[{ label: perLabel, active: per !== '30' }, sp && { label: t(`sp.${sp}`), active: true }, sess && { label: t(`prod.${sess}`), active: true }, { label: t(`flt.sort.m.${sort}`), active: sort !== 'new' }]}>
-        <div className="filter-row">
-          <Seg small wrap label={t('flt.period')} value={per} onChange={setPer} options={['7', '30', '90', '365', 'all'].map((v) => ({ value: v, label: v === 'all' ? t('p.all') : t('fold.nDays', { n: v }) }))} />
-          {species.length > 1 && <Seg small label={t('prod.species')} value={sp} onChange={setSp} options={[{ value: '', label: t('all') }, ...species.map((x) => ({ value: x, label: t(`sp.${x}`) }))]} />}
-          <Seg small label={t('flt.session')} value={sess} onChange={setSess} options={[{ value: '', label: t('all') }, { value: 'am', label: t('prod.am') }, { value: 'pm', label: t('prod.pm') }]} />
-          <Seg small wrap label={t('flt.sortBy')} value={sort} onChange={setSort} options={['new', 'old', 'high', 'low'].map((k) => ({ value: k, label: t(`flt.sort.m.${k}`) }))} />
+    <section className="panel milk-day">
+      <div className="md-head">
+        <div className="md-date">
+          <button type="button" className="md-nav" onClick={() => setDay(shiftDay(day, -1))} aria-label={t('md.prevDay')}><Icon name="chev" size={18} className="flip-rtl md-back" /></button>
+          <div><h2>{t('md.title')}</h2><span className="md-day">{dLabel}</span></div>
+          <button type="button" className="md-nav" onClick={() => setDay(shiftDay(day, 1))} disabled={day >= today} aria-label={t('md.nextDay')}><Icon name="chev" size={18} className="flip-rtl" /></button>
+          {day !== today && <button type="button" className="link small" onClick={() => setDay(today)}>{t('md.backToday')}</button>}
         </div>
-      </FilterPanel>
-      {rows.length ? (
-        <>
-          <div className="milk-sum">
-            <div><span className="muted small">{t('total')}</span><b className="num">{milkQ(total)}</b></div>
-            <div><span className="muted small">{t('fold.avg')}</span><b className="num">{milkQ(avg)}</b></div>
-            {best && <div><span className="muted small">{t('fold.best')}</span><b className="num">{milkQ(best.total)}</b><small className="muted">{dayLabel(best.day, lang, { day: 'numeric', month: 'short' })}</small></div>}
-          </div>
-          <div className="table-wrap">
-            <table className="tbl">
-              <thead><tr><th>{t('date')}</th><th className="num">{t('prod.am')}</th><th className="num">{t('prod.pm')}</th><th className="num">{t('prod.dayTotal')}</th><th className="milk-bar-h" aria-hidden="true" /></tr></thead>
-              <tbody>
-                {rows.slice(0, show).map((d) => (
-                  <tr key={d.day} className="row-in">
-                    <td>{dayLabel(d.day, lang, { weekday: 'short', day: 'numeric', month: 'short' })}</td>
-                    <td className="num">{cell(d.day, 'am', d.am)}</td><td className="num">{d.whole ? cell(d.day, 'day', d.whole) : cell(d.day, 'pm', d.pm)}</td>
-                    <td className="num"><b>{milkN(d.total)}</b></td>
-                    <td className="milk-bar" aria-hidden="true"><i style={{ inlineSize: `${(d.total / (best?.total || 1)) * 100}%` }} className={d.total < avg * 0.85 ? 'low' : ''} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {rows.length > show && (
-            <div className="more-row">
-              <span className="muted small">{t('fold.showing', { a: Math.min(show, rows.length), b: rows.length })}</span>
-              <Button size="sm" onClick={() => setShow(show + PAGE)}>{t('fold.more', { n: Math.min(PAGE, rows.length - show) })}</Button>
-              <Button size="sm" onClick={() => setShow(rows.length)}>{t('fold.all')}</Button>
-            </div>
-          )}
-          {show > PAGE && rows.length <= show && <div className="more-row"><Button size="sm" onClick={() => setShow(PAGE)}>{t('fold.less')}</Button></div>}
-        </>
-      ) : <Empty title={t('flt.none')} icon="milk" action={<Button onClick={reset}>{t('flt.reset')}</Button>} />}
-    </Fold>
+        <div className="md-tools">
+          {spList.length > 1 && <Seg small value={sp} onChange={setSp} options={spList.map((x) => ({ value: x, label: t(`sp.${x}`) }))} />}
+          <Seg small value={mode} onChange={setMode} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />
+        </div>
+      </div>
+      {wholeDay && mode === 'herd' && <p className="note info small">{t('md.wholeDay', { a: milkQ(wholeDay.liters) })} <button type="button" className="link" onClick={() => ui.open('drawer', { id: wholeDay.id })}>{t('edit')}</button></p>}
+      {mode === 'herd' ? (
+        <div className="md-sessions">
+          {['am', 'pm'].map((s) => (
+            <label key={s} className={`md-session ${v[s] > 0 ? 'filled' : ''}`}>
+              <span className="md-s-head"><span className="md-s-ico" aria-hidden="true">{s === 'am' ? '☀' : '☾'}</span>{t(`prod.${s}`)}{(s === 'am' ? herdRec('am') : herdRec('pm')) && <Icon name="check" size={14} className="md-ok" />}</span>
+              <span className="md-input"><input className="num" inputMode="decimal" value={v[s] || ''} placeholder="0" onChange={(e) => { const q = parseQty(e.target.value); if (q.ok) setV({ ...v, [s]: q.value }); }} aria-label={`${t(`prod.${s}`)} (${unit})`} /><span>{unit}</span></span>
+            </label>
+          ))}
+        </div>
+      ) : animals.length ? (
+        <div className="md-animals">
+          <div className="md-a-row head"><span>{t('ani.title')}</span><span>☀ {t('prod.am')}</span><span>☾ {t('prod.pm')}</span><span>{t('total')}</span></div>
+          {animals.map((a) => {
+            const x = v.ani[a.id] || { am: 0, pm: 0 };
+            const set = (s, q) => setV({ ...v, ani: { ...v.ani, [a.id]: { ...x, [s]: q } } });
+            return (
+              <div className="md-a-row" key={a.id}>
+                <span className="md-a-name">{a.name ? `${a.tag} · ${a.name}` : a.tag}</span>
+                {['am', 'pm'].map((s) => <input key={s} className="input num" inputMode="decimal" value={x[s] || ''} placeholder="0" onChange={(e) => { const q = parseQty(e.target.value); if (q.ok) set(s, q.value); }} aria-label={`${a.tag} ${t(`prod.${s}`)}`} />)}
+                <span className="num md-a-total">{fmtQty((x.am || 0) + (x.pm || 0))}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : <p className="muted">{t('md.noAnimals')}</p>}
+      <div className="md-foot">
+        <div className="md-total">
+          <span className="muted small">{t('prod.dayTotal')}</span>
+          <b className="num">{milkQ(totalL)}</b>
+          <span className="md-compare small">
+            {mode === 'herd' && <>{sessionChip('am', v.am)}{sessionChip('pm', v.pm)}</>}
+          </span>
+        </div>
+        <Button variant="primary" icon="check" disabled={!changed} onClick={save}>{has ? t('md.update') : t('md.save')}</Button>
+      </div>
+    </section>
   );
 }
-function addDaysIso(iso, n) {
-  const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
+
+/** Every milk entry (milking and milk used), newest first, grouped by day. Tap one to see, edit or delete it. */
+function MilkEntries({ recs, day, setDay }) {
+  const { t, ui, lang, snap } = useApp();
+  const [kind, setKind] = useState('');
+  const [show, setShow] = useState(5);
+  const rows = recs.filter((r) => (r.type === 'milk' || r.type === 'milkUse') && (!kind || r.type === kind))
+    .sort((a, b) => b.day.localeCompare(a.day) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  const byDay = [];
+  for (const r of rows) { const g = byDay.at(-1); if (g && g.day === r.day) g.rows.push(r); else byDay.push({ day: r.day, rows: [r] }); }
+  const shown = byDay.slice(0, show);
+  return (
+    <section className="panel milk-entries">
+      <div className="me-head">
+        <h2>{t('me.title')}</h2>
+        <span className="me-tank small">{t('prod.tank')}: <b className="num">{milkQ(snap.milk.stockL)}</b></span>
+        <Seg small value={kind} onChange={(v) => { setKind(v); setShow(5); }} options={[{ value: '', label: t('all') }, { value: 'milk', label: t('t.milk') }, { value: 'milkUse', label: t('t.milkUse') }]} />
+      </div>
+      {shown.length ? shown.map((g) => {
+        const milked = g.rows.filter((r) => r.type === 'milk').reduce((x, r) => x + (Number(r.liters) || 0), 0);
+        return (
+          <div key={g.day} className={`me-day ${g.day === day ? 'on' : ''}`}>
+            <button type="button" className="me-day-head" onClick={() => { setDay(g.day); window.scrollTo({ top: 0, behavior: 'smooth' }); }} title={t('me.editDay')}>
+              <b>{dayLabel(g.day, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</b>
+              {milked > 0 && <span className="num muted small">{milkQ(milked)}</span>}
+              <Icon name="edit" size={13} className="me-edit" />
+            </button>
+            {g.rows.map((r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />)}
+          </div>
+        );
+      }) : <Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" />}
+      {byDay.length > show && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 10)}>{t('fold.more', { n: Math.min(10, byDay.length - show) })}</Button></div>}
+    </section>
+  );
 }
 
 function EggsTab() {
   const { farm, snap, t, ui, lang } = useApp();
   const flocks = farm.animals.filter((a) => a.species === 'chicken' && a.status !== 'sold');
-  const rows = farm.records.filter((r) => live(r) && r.type === 'eggs').sort((a, b) => b.day.localeCompare(a.day));
+  const rows = farm.records.filter((r) => live(r) && (r.type === 'eggs' || r.type === 'eggUse')).sort((a, b) => b.day.localeCompare(a.day) || String(b.createdAt).localeCompare(String(a.createdAt)));
   return (
-    <>
-      <section className="stats-row">
-        <Stat big label={t('prod.eggStock')} value={fmtQty(snap.eggs.stock, 0)} tone="teal" />
-        <Stat label={t('prod.collected')} value={fmtQty(snap.eggs.collected, 0)} />
-        <Stat label={t('prod.broken')} value={fmtQty(snap.eggs.broken, 0)} />
-        <Stat label={t('prod.sold')} value={fmtQty(snap.eggs.sold, 0)} />
-      </section>
-      <div className="quick"><Button variant="primary" icon="egg" onClick={() => ui.open('eggs')} disabled={!flocks.length}>{t('new.eggs')}</Button></div>
-      <Fold id="eggDays" title={t('prod.eggLog')} summary={rows.length ? <><b className="num">{rows.length}</b> {t('fold.entries')}</> : null}>
-        {!flocks.length ? <Empty title={t('prod.noFlock')} icon="egg" action={<Button onClick={() => ui.open('animal', { species: 'chicken' })}>{t('ani.new')}</Button>} />
-          : rows.length ? <Grouped rows={rows} groupKey={(r) => r.day.slice(0, 7)} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{g.rows.reduce((s, r) => s + r.count - (r.broken || 0), 0)}</span></>} renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} />
-            : <Empty title={t('prod.eggs')} icon="egg" />}
-      </Fold>
-    </>
+    <section className="panel milk-entries">
+      <div className="me-head">
+        <h2>{t('prod.eggLog')}</h2>
+        <span className="me-tank small">{t('prod.eggStock')}: <b className="num">{fmtQty(snap.eggs.stock, 0)}</b></span>
+        <Button variant="primary" size="sm" icon="egg" onClick={() => ui.open('eggs')} disabled={!flocks.length}>{t('new.eggs')}</Button>
+      </div>
+      {!flocks.length ? <Empty title={t('prod.noFlock')} icon="egg" action={<Button onClick={() => ui.open('animal', { species: 'chicken' })}>{t('ani.new')}</Button>} />
+        : rows.length ? <Grouped rows={rows} groupKey={(r) => r.day} renderGroup={(g) => <><span>{dayLabel(g.key, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</span><span className="num muted">{g.rows.reduce((s, r) => s + (r.type === 'eggs' ? (r.count || 0) - (r.broken || 0) : 0), 0)}</span></>} renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} />
+          : <Empty title={t('prod.eggs')} icon="egg" />}
+    </section>
   );
 }
 
@@ -757,7 +651,7 @@ export function SettingsScreen() {
         </div>
       </section>
       <NotifySettings />
-      {can(actor?.role, 'purge') && !demo && <DangerZone />}
+      <DangerZone locked={demo ? 'demo' : !can(actor?.role, 'purge') ? 'role' : null} />
       <section className="panel">
         <h2>{t('set.about')}</h2>
         <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]} <button type="button" className="link" onClick={() => ui.open('whatsNew')}>{t('upd.whatsNew')}</button></p>

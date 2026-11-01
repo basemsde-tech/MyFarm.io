@@ -217,3 +217,9 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - Delete by date range (src/core/danger.mjs): presets older than 1 (recommended) / 2 / 3 years or a custom range; groups money / production / herd. Modes: move to Recently deleted (restorable), or close old years — entries before the cutoff are purged and balances carried forward (customer/supplier/person openings, an `opening` record for cash and capital, milk and egg stock), the period is locked, sold animals keep an archived sale record. Closing runs only when cash, receivables, supplier dues and open bills come out identical.
 - Also: empty Recently deleted, start fresh (entries go, lists and settings stay), clear device copies, erase the farm from this device.
 - Every action: backup first (default on), a labelled restore point (listed in Settings → Backup), typed DELETE / حذف. test/danger.test.mjs proves balances, P&L and the journal survive closing.
+
+## 25. 3.17 — Production rebuilt, clock & weather, backup replace prompt
+- Production → Milk is entries only: a "Milk of the day" card (date arrows, species, herd total or per-animal table; Save/Update replaces that day's entries) and "Milk entries" grouped by day (milking + milk use, tap to edit; tank balance in the header). No charts or statistics on this page. Eggs tab = egg entries with stock.
+- Home: SkyClock — digital clock (sliding digits) and weather from the device's precise location (Open-Meteo forecast, BigDataCloud place name), animated CSS sky art, 3-day forecast, refreshed every 30 min, last reading cached for offline.
+- "Back up now" (banner, Settings) always asks: replace the existing file (recommended) or save to a new file; the backup folder keeps one replaced file by default (settings.backup.keep = 0), dated copies optional.
+- The Danger zone always renders; locked with a note in the sample farm and for non-owners.
