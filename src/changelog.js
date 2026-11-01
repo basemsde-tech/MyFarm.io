@@ -2,6 +2,12 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.16.0', date: '2026-11-01', items: [
+    ['alert', 'منطقة الخطر في الإعدادات: كل إجراءات الحذف الكبيرة في مكان واحد آمن', 'A Danger zone in Settings: every bulk removal in one safe place'],
+    ['history', 'اختر مدة الاحتفاظ بالمحذوفات: من 7 أيام حتى سنة', 'Choose how long deleted items can be restored: 7 days to a year'],
+    ['calendar', 'الحذف حسب الفترة مع اقتراح «أقدم من سنة»، وإقفال السنوات القديمة مع ترحيل الأرصدة', 'Delete by date range with “older than 1 year” suggested, and close old years with balances carried forward'],
+    ['download', 'قبل كل حذف: نسخة احتياطية ونقطة استعادة وتأكيد مكتوب', 'Before any removal: a backup, a restore point and a typed confirmation'],
+  ] },
   { v: '3.15.1', date: '2026-11-01', items: [
     ['menu', 'شريط جانبي أهدأ: صفحات العمل اليومي ظاهرة، والبقية داخل «المزيد» القابل للطي', 'A calmer sidebar: daily pages up front, the rest in a folding “More”'],
   ] },

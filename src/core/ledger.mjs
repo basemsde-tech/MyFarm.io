@@ -138,6 +138,12 @@ export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = 
         }
         break;
       }
+      case 'opening': {
+        // Balances carried forward when old years were closed.
+        flow(r, +1, r.cashC || 0, 'cash', 'opening');
+        s.capitalC += r.capitalC || 0;
+        break;
+      }
       case 'transfer': {
         // Move money between the cash box and the bank.
         flow(r, -1, r.amountC, r.fromAccount, 'transferOut');

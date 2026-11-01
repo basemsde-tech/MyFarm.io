@@ -254,7 +254,7 @@ export function BackupPanel({ canSet }) {
       {snaps.length > 0 && (
         <div className="sub-sec">
           <h3>{t('set.autoSnap')}</h3>
-          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB</span>{canSet && <Button size="sm" onClick={async () => { await exportBackup(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
+          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB{x.label ? <b> · {x.label}</b> : null}</span>{canSet && <Button size="sm" onClick={async () => { await exportBackup(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
         </div>
       )}
       <div className="sub-sec">

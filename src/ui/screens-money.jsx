@@ -102,7 +102,7 @@ export function useAttention() {
 }
 
 /* ───────────── Cash box ───────────── */
-const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal' };
+const FLOW_LABEL = { sale: 'kind.sale', payment: 'kind.payment', expense: 'kind.expense', supplierPay: 'kind.supplierPay', capitalIn: 'kind.capitalIn', capitalOut: 'kind.capitalOut', personal: 'kind.personal', opening: 'dz.openingRec' };
 
 /** The big cash figure counts up on its own, so the rest of the page is not redrawn every frame. */
 function CountUpMoney({ value }) {

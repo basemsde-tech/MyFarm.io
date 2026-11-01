@@ -24,6 +24,8 @@ export function describe(r, { t, names, fmt }) {
       return { title: t(`c.${r.category}`) !== `c.${r.category}` ? t(`c.${r.category}`) : r.category, sub: [r.supplierId && names.supplier(r.supplierId), r.vendor, r.source === 'person' && t('exp.fromPerson', { n: names.person(r.personId) }), r.note].filter(Boolean).join(' · '), amountC: r.amountC, icon: 'receipt', kind: t('t.expense') };
     case 'supplierPay':
       return { title: names.supplier(r.supplierId), sub: r.source === 'person' ? t('exp.fromPerson', { n: names.person(r.personId) }) : t(`acc.${r.source === 'bank' ? 'bank' : 'cash'}`), amountC: r.amountC, icon: 'truck', kind: t('t.supplierPay') };
+    case 'opening':
+      return { title: t('dz.openingRec'), sub: r.note || '', amountC: r.cashC || 0, icon: 'history', kind: t('dz.openingRec') };
     case 'capital':
       return { title: names.person(r.personId), sub: t(r.kind === 'inject' ? 'pp.inject' : r.purpose === 'personal' ? 'pp.personal' : 'pp.cashOut'), amountC: r.amountC, icon: 'people', kind: t('t.capital') };
     case 'milk':

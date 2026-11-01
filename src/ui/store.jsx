@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.15.1', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.16.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -340,6 +340,13 @@ function FarmProvider({ boot, children }) {
     setFarm(next); setReg({ ...reg, active: to, farms: rest });
   }, [reg, setReg]);
   const snapshots = useCallback(async () => (await vault.get(K.snaps(idRef.current))) || (idRef.current === 'main' ? readJSON(KEYS.snaps, []) : []), []);
+  /** A labelled copy of the farm kept with the daily ones, taken before anything drastic. */
+  const saveRestorePoint = useCallback(async (label) => {
+    const id = idRef.current; const f = farmRef.current;
+    const snaps = (await vault.get(K.snaps(id))) || [];
+    const next = [{ day: isoDay(), at: new Date().toISOString(), size: JSON.stringify(f).length, label, farm: f }, ...snaps].slice(0, 10);
+    try { await vault.set(K.snaps(id), next); return true; } catch { return false; }
+  }, []);
   const clearDeviceCopies = useCallback(async () => { await vault.del(K.snaps(idRef.current)); storage.del(KEYS.snaps); storage.del(KEYS.drafts); }, []);
 
   /* ── Auto-lock after inactivity ── */
@@ -414,7 +421,7 @@ function FarmProvider({ boot, children }) {
     farm: view, rawFarm: farm, snap, prefs, setPrefs, t, lang: prefs.lang, dir: prefs.lang === 'ar' ? 'rtl' : 'ltr', actor, today,
     commit, undo, replaceFarm, toast, toasts, setToasts, errText, fmt, names, route, nav, ui, stack, layer, ws, wsApi,
     saveError, retrySave, demo, canUndo: undoRef.current.length > 0,
-    logEvent, files, enterDemo, exitDemo, farms: reg.farms, farmId, switchFarm, addFarm, removeFarm, cancelNewFarm, snapshots, clearDeviceCopies, storageMode: boot.mode,
+    logEvent, files, enterDemo, exitDemo, farms: reg.farms, farmId, switchFarm, addFarm, removeFarm, cancelNewFarm, snapshots, saveRestorePoint, clearDeviceCopies, storageMode: boot.mode,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

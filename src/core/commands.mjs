@@ -206,7 +206,8 @@ export function purgeRecords(farm, ids, actor, now) {
 }
 
 export function autoPurge(farm, now = Date.now()) {
-  const cutoff = now - TRASH_DAYS * 86400000;
+  const days = [7, 30, 90, 180, 365].includes(farm.settings?.trashDays) ? farm.settings.trashDays : TRASH_DAYS;
+  const cutoff = now - days * 86400000;
   const old = farm.records.filter((r) => r.deletedAt && new Date(r.deletedAt).getTime() < cutoff).map((r) => r.id);
   if (!old.length) return farm;
   const tomb = [...(farm.tombstones || []), ...old.map((id) => ({ id, purgedAt: new Date(now).toISOString() }))];

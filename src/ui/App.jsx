@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { DangerConfirm, DangerRange } from './danger.jsx';
 import { LOGO } from './logo-data.js';
 import { initMoneyFlip } from './moneyflip.js';
 import { initPrint } from './print.js';
@@ -33,7 +34,7 @@ const SHEETS = {
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
   obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
   whatsNew: ({ onClose }) => <WhatsNew all onClose={onClose} />,
-  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog,
+  order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog, dangerConfirm: DangerConfirm, dangerRange: DangerRange,
 };
 
 function ModalHost() {

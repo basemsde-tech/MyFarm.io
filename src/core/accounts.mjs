@@ -89,6 +89,12 @@ export function entryFor(r) {
       dr('exp:medicine', r.costC); cr('cash', r.costC);
       break;
     }
+    case 'opening': {
+      // Cash carried forward when old years were closed; the other side is opening equity.
+      if (!r.cashC) return null;
+      if (r.cashC > 0) { dr('cash', r.cashC); cr('opening', r.cashC); } else { dr('opening', -r.cashC); cr('cash', -r.cashC); }
+      break;
+    }
     case 'transfer': {
       const from = money(r.fromAccount);
       dr(from === 'bank' ? 'cash' : 'bank', r.amountC); cr(from, r.amountC);

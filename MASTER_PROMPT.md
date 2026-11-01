@@ -211,3 +211,9 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 ## 23. Release rule — keep the user guide current
 - Every release that changes what the user sees also updates src/guide-content.js (sections, tours, "?" help, in both Arabic and English), then sets GUIDE_VERSION to the new version. test/guide.test.mjs fails until GUIDE_VERSION equals package.json's version, and checks that both languages have the same sections and help keys.
 - Release checklist: code → tests → guide → changelog (What's new) → MASTER_PROMPT → version bump (store.jsx VERSION + package.json) → build → push.
+
+## 24. 3.16 — Danger zone (Settings, owner only)
+- Trash retention: 7 / 30 / 90 / 180 / 365 days (settings.trashDays; autoPurge honours it; Recently deleted shows the period).
+- Delete by date range (src/core/danger.mjs): presets older than 1 (recommended) / 2 / 3 years or a custom range; groups money / production / herd. Modes: move to Recently deleted (restorable), or close old years — entries before the cutoff are purged and balances carried forward (customer/supplier/person openings, an `opening` record for cash and capital, milk and egg stock), the period is locked, sold animals keep an archived sale record. Closing runs only when cash, receivables, supplier dues and open bills come out identical.
+- Also: empty Recently deleted, start fresh (entries go, lists and settings stay), clear device copies, erase the farm from this device.
+- Every action: backup first (default on), a labelled restore point (listed in Settings → Backup), typed DELETE / حذف. test/danger.test.mjs proves balances, P&L and the journal survive closing.

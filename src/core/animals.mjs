@@ -57,7 +57,8 @@ export function syncAnimalSales(farm, saleIds, at = new Date().toISOString(), ex
     }
     // No live sale any more. A sale voided as a write-off means the animal still left the farm.
     const gone = (farm.records || []).some((r) => r.type === 'sale' && r.animalId === a.id && !r.deletedAt && r.voided?.mode === 'writeoff');
-    if (a.status === 'sold' && a.sold?.saleId && !gone) {
+    // A sale removed when old years were closed keeps the animal sold (archived sale record).
+    if (a.status === 'sold' && a.sold?.saleId && !gone && !a.sold.archived) {
       changed = true;
       const { sold, ...rest } = a;
       return { ...rest, status: a.prevStatus || 'healthy', updatedAt: at };

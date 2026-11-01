@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { DangerZone } from './danger.jsx';
+import { trashDaysOf } from '../core/danger.mjs';
 import { milkQ, milkN } from './units.js';
 import { play as playSound, setSoundOn } from './sound.js';
 import { useApp, VERSION } from './store.jsx';
@@ -7,7 +9,7 @@ import { RecordRow, SelectionBar } from './tx.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
 import { SPECIES, reproTimeline, daysBetween } from '../core/species.mjs';
-import { addRecord, editRecord, updateSettings, restoreRecords, TRASH_DAYS, newId } from '../core/commands.mjs';
+import { addRecord, editRecord, updateSettings, restoreRecords, newId } from '../core/commands.mjs';
 import { periodReport, toCSV } from '../core/reports.mjs';
 
 import { CURRENCIES, fmtQty } from '../core/money.mjs';
@@ -583,7 +585,8 @@ export function TrashScreen() {
   const { farm, rawFarm, t, ui, commit, actor, lang } = useApp();
   const [sel, setSel] = useState([]);
   const rows = farm.records.filter((r) => r.deletedAt && r.deleteReason !== 'replaced').sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
-  const left = (d) => Math.max(0, TRASH_DAYS - Math.floor((Date.now() - new Date(d).getTime()) / 86400000));
+  const keepDays = trashDaysOf(farm);
+  const left = (d) => Math.max(0, keepDays - Math.floor((Date.now() - new Date(d).getTime()) / 86400000));
   const masters = MASTER_LISTS.flatMap((list) => (rawFarm[list] || []).filter((x) => x.deletedAt).map((x) => ({ list, x, n: rawFarm.records.filter((r) => r.deleteBatch && r.deleteBatch === x.deleteBatch).length })))
     .sort((a, b) => b.x.deletedAt.localeCompare(a.x.deletedAt));
   const masterIcon = { customers: 'user', suppliers: 'truck', people: 'people', animals: 'cow', workers: 'user', obligations: 'calendar' };
@@ -591,7 +594,7 @@ export function TrashScreen() {
   const loose = rows.filter((r) => !r.deleteBatch || !batchIds.has(r.deleteBatch));
   return (
     <div className="screen">
-      <PageHead title={t('trash.title')} sub={t('trash.hint')} actions={sel.length > 0 && <>
+      <PageHead title={t('trash.title')} sub={t('trash.hintN', { n: keepDays })} actions={sel.length > 0 && <>
         <Button icon="undo" onClick={() => { commit((f) => restoreRecords(f, sel, actor), { label: t('restored') }); setSel([]); }}>{t('restore')} ({sel.length})</Button>
         {can(actor?.role, 'purge') && <Button variant="danger" onClick={() => ui.open('purge', { ids: sel })}>{t('ed.purge')}</Button>}
       </>} />
@@ -754,13 +757,13 @@ export function SettingsScreen() {
         </div>
       </section>
       <NotifySettings />
+      {can(actor?.role, 'purge') && !demo && <DangerZone />}
       <section className="panel">
         <h2>{t('set.about')}</h2>
         <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]} <button type="button" className="link" onClick={() => ui.open('whatsNew')}>{t('upd.whatsNew')}</button></p>
         <div className="row-btns">
           {!demo ? <Button onClick={async () => { await app.enterDemo(sampleFarm(app.lang)); setPrefs({ profileId: 'pro-demo-owner' }); }}>{t('set.demo')}</Button>
             : <Button variant="primary" onClick={async () => { const held = await app.exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</Button>}
-          {can(actor?.role, 'purge') && !demo && <Button variant="danger" onClick={() => ui.open('erase')}>{t('set.reset')}</Button>}
         </div>
       </section>
     </div>

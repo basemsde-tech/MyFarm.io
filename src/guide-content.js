@@ -1,7 +1,7 @@
 // The built-in manual, page tours and "?" help bubbles, in formal Arabic and English.
 // Release rule: every version that changes what the user sees updates this guide, then sets
 // GUIDE_VERSION to the new version. A test fails until the two match.
-export const GUIDE_VERSION = '3.15.1';
+export const GUIDE_VERSION = '3.16.0';
 // Guide sections: { id, icon, route, tab?, title, intro, steps[], tips[] }.
 // Tours: TOURS[page] lists { id, sel } (selectors tried in order); text lives in TEXT[lang].tour[page][id].
 
@@ -68,6 +68,9 @@ const ar = {
     { id: 'backup', icon: 'download', route: 'options', title: 'النسخ الاحتياطي والاستعادة', intro: 'احمِ بياناتك من فقدان الجهاز.',
       steps: ['على الحاسوب: اختر مجلدًا داخل Google Drive أو OneDrive أو Dropbox، فتُحفظ النسخ تلقائيًا وتصل إلى السحابة.', 'على الهاتف: يذكّرك التطبيق بالموعد، وتشارك الملف بنقرة إلى Drive أو البريد أو واتساب.', 'عند «تسجيل الخروج» يُعرض «نسخ احتياطي ثم خروج»: تختار مكان الملف مرة واحدة، ثم يُستبدل الملف نفسه في كل مرة.', '«الاستعادة من نسخة» تعرض كل شيء ومطابقة الأرصدة قبل الاستبدال، وتقبل نسخ الإصدار القديم.'],
       tips: [] },
+    { id: 'danger', icon: 'alert', route: 'options', title: 'منطقة الخطر', intro: 'كل ما يحذف البيانات بكميات في مكان واحد واضح، داخل الإعدادات، للمالك فقط.',
+      steps: ['«الاحتفاظ بالمحذوفات»: اختر كم تبقى المحذوفات قابلة للاستعادة: 7 أو 30 أو 90 أو 180 يومًا أو سنة.', '«الحذف حسب الفترة»: اختر «أقدم من سنة» (موصى به) أو سنتين أو ثلاث، أو فترة محددة، وما يُحذف: المبالغ، والإنتاج، وأحداث القطيع.', '«إقفال السنوات القديمة» يحذف القيود نهائيًا ويرحّل الأرصدة (النقد، والذمم، والمستحق للموردين والأشخاص، ومخزون الحليب والبيض) كأرصدة افتتاحية، ويُقفل الفترة؛ أما «نقل إلى المحذوفات» فيبقيها قابلة للاستعادة.', 'وفيها أيضًا: إفراغ المحذوفات الآن، والبدء من جديد مع إبقاء القوائم، ومسح النسخ المحفوظة على الجهاز، وحذف المزرعة كلها من الجهاز.', 'قبل كل إجراء: نسخة احتياطية (مفعّلة افتراضيًا)، ونقطة استعادة على الجهاز، وكتابة كلمة «حذف» للتأكيد.'],
+      tips: ['نقاط الاستعادة تظهر في الإعدادات ← النسخ الاحتياطي باسم الإجراء، ويمكن الرجوع إليها.', 'عند الإقفال لا يُنفَّذ الإجراء إلا إذا بقيت كل الأرصدة كما هي.'] },
     { id: 'security', icon: 'lock', route: 'options', title: 'المستخدمون والأمان', intro: 'لكل مستخدم دور وصلاحيات، ورمز دخول اختياري أو إلزامي.',
       steps: ['الإعدادات ← الفريق: أضف مستخدمًا واختر دوره (مالك، محاسب، حلّاب، عامل، صحة القطيع).', 'حماية الدخول: قفل تلقائي عند عدم الاستخدام، وإيقاف مؤقت بعد محاولات خاطئة، وإلزام الجميع برمز.', '«تسجيل الخروج» من قائمة الحساب (أو «المزيد» على الهاتف) يعيدك إلى شاشة اختيار الملف؛ الملف المحمي يطلب رمزه.', 'جرس الإشعارات (🔔) يعرض التنبيهات ومن فعل ماذا ومتى، بما في ذلك محاولات الدخول الخاطئة.'],
       tips: ['احفظ رمز الاسترداد؛ هو الطريق الوحيد إن نُسي رمز المالك.'] },
@@ -107,7 +110,7 @@ const ar = {
     'page.reports': 'ملخصات الإنتاج والمبيعات والمصروفات لأي فترة، مع تصدير CSV.',
     'page.activity': 'السجل الكامل خلف تبويب «النشاط» في الجرس: من أنشأ أو عدّل أو حذف، وعمليات الدخول والنسخ الاحتياطي، مع البحث والتصدير.',
     'page.options': 'إعدادات المزرعة والعملة والضريبة والمستندات والفريق والأمان والنسخ الاحتياطي.',
-    'page.trash': 'المحذوفات تبقى 30 يومًا ويمكن استعادتها مع كل ما حُذف معها.',
+    'page.trash': 'المحذوفات تبقى المدة المحددة في الإعدادات ← منطقة الخطر (30 يومًا افتراضيًا) ويمكن استعادتها مع كل ما حُذف معها.',
     'page.guide': 'دليل الاستخدام: شرح كل قسم مع جولات تفاعلية.',
     filters: 'أدوات الفرز والتصفية مطوية لتبقى الشاشة هادئة. افتحها لاختيار الفترة أو النوع أو الترتيب؛ تظهر الخيارات المفعّلة كرقائق صغيرة.',
     attention: 'تنبيهات اليوم: فواتير متأخرة، والتزامات خلال 3 أيام، وأوامر شراء متأخرة، ومستندات منتهية. انقر التنبيه للانتقال.',
@@ -185,6 +188,9 @@ const en = {
     { id: 'backup', icon: 'download', route: 'options', title: 'Backup & restore', intro: 'Protect your data against a lost device.',
       steps: ['On a computer: pick a folder inside Google Drive, OneDrive or Dropbox and copies are saved automatically and reach the cloud.', 'On a phone: the app reminds you, and one tap shares the file to Drive, e-mail or WhatsApp.', '“Log off” offers “Back up and log off”: choose where the file lives once, then the same file is replaced each time.', '“Restore from backup” shows everything and checks balances before replacing, and accepts old-version backups.'],
       tips: [] },
+    { id: 'danger', icon: 'alert', route: 'options', title: 'Danger zone', intro: 'Everything that removes data in bulk, in one clearly marked place in Settings, for the owner only.',
+      steps: ['“Keep deleted items for”: choose how long deleted items can be restored: 7, 30, 90 or 180 days, or a year.', '“Delete by date range”: pick “Older than 1 year” (recommended), 2 or 3 years, or a set range, and what to remove: money entries, production, herd events.', '“Close old years” removes entries for good and carries every balance forward (cash, what customers owe, what we owe suppliers and people, milk and egg stock) as opening balances, then locks the period; “Move to Recently deleted” keeps them restorable.', 'Also here: empty Recently deleted now, start fresh keeping the lists, clear copies on this device, and erase the farm from this device.', 'Before every action: a backup (on by default), a restore point on this device, and typing DELETE to confirm.'],
+      tips: ['Restore points appear in Settings → Backup with the action’s name, and can be restored.', 'Closing only runs if every balance stays the same.'] },
     { id: 'security', icon: 'lock', route: 'options', title: 'Users & security', intro: 'Each user has a role and permissions, and an optional or required sign-in code.',
       steps: ['Settings → Team: add a user and choose a role (owner, accountant, milker, worker, herd health).', 'Sign-in protection: lock when idle, pause after wrong codes, and require a code for everyone.', '“Log off” in the account menu (or More on a phone) returns to the profile screen; a protected profile asks for its code.', 'The bell (🔔) shows alerts and who did what and when, including wrong sign-in attempts.'],
       tips: ['Keep the recovery code; it is the only way back if the owner code is forgotten.'] },
@@ -224,7 +230,7 @@ const en = {
     'page.reports': 'Production, sales and expense summaries for any period, with CSV export.',
     'page.activity': 'The full log behind the bell’s Activity tab: who created, changed or deleted what, sign-ins and backups, with search and export.',
     'page.options': 'Farm, currency, tax, documents, team, security and backup settings.',
-    'page.trash': 'Deleted items stay 30 days and can be restored with everything deleted alongside them.',
+    'page.trash': 'Deleted items stay for the period set in Settings → Danger zone (30 days by default) and can be restored with everything deleted alongside them.',
     'page.guide': 'The user guide: every part explained, with guided tours.',
     filters: 'Sort and filter controls stay folded for a calm screen. Open them to choose period, kind or order; active choices show as small chips.',
     attention: 'Today’s alerts: late invoices, obligations within 3 days, late orders and expiring documents. Tap one to go there.',
