@@ -1,7 +1,7 @@
 // The built-in manual, page tours and "?" help bubbles, in formal Arabic and English.
 // Release rule: every version that changes what the user sees updates this guide, then sets
 // GUIDE_VERSION to the new version. A test fails until the two match.
-export const GUIDE_VERSION = '3.15.0';
+export const GUIDE_VERSION = '3.15.1';
 // Guide sections: { id, icon, route, tab?, title, intro, steps[], tips[] }.
 // Tours: TOURS[page] lists { id, sel } (selectors tried in order); text lives in TEXT[lang].tour[page][id].
 
@@ -74,7 +74,7 @@ const ar = {
     { id: 'farms', icon: 'swap', route: 'options', title: 'أكثر من مزرعة', intro: 'أدر عدة مزارع أو فروع على الجهاز نفسه، لكل منها بياناته المستقلة.',
       steps: ['من قائمة الحساب اختر «إضافة مزرعة» وأكمل الإعداد.', 'بدّل بين المزارع من قائمة الحساب أو من شاشة تسجيل الدخول.'], tips: [] },
     { id: 'workspace', icon: 'popout', route: 'cash', title: 'التنقل والتبويبات والنوافذ', intro: 'تنقّل بسرعة بين الصفحات على الحاسوب والهاتف.',
-      steps: ['الشريط الجانبي: إبراز متحرك على الصفحة الحالية، والنقر على عنوان المجموعة يطويها، والشارات الملوّنة تبيّن ما يحتاج إلى متابعة. زر ☰ يصغّره إلى أيقونات.', 'على الهاتف: شريط عائم في الأسفل مع زر «+» في الوسط، يختفي عند التمرير إلى الأسفل ويعود عند الصعود. «المزيد» يفتح كل الصفحات مع بحث.', 'Ctrl+نقرة يفتح الصفحة في تبويب جديد، وShift+نقرة في نافذة عائمة.', 'اسحب النافذة إلى طرف الشاشة لتثبيتها، أو صغّرها إلى الشريط السفلي.', 'Ctrl+K للبحث عن أي صفحة أو عميل أو إجراء.'],
+      steps: ['الشريط الجانبي يعرض صفحات العمل اليومي: الصندوق، والمبيعات، والإنتاج، والحيوانات، والمصروفات، والموردون. بقية الصفحات (الحسابات، والتقارير، والمديرون والممولون، والإعدادات، والدليل، والمحذوفات) داخل «المزيد» القابل للطي، ويُفتح تلقائيًا عند الوجود في إحداها. الشارات الملوّنة تبيّن ما يحتاج إلى متابعة، وزر ☰ يصغّر الشريط إلى أيقونات.', 'على الهاتف: شريط عائم في الأسفل مع زر «+» في الوسط، يختفي عند التمرير إلى الأسفل ويعود عند الصعود. «المزيد» يفتح كل الصفحات مع بحث.', 'Ctrl+نقرة يفتح الصفحة في تبويب جديد، وShift+نقرة في نافذة عائمة.', 'اسحب النافذة إلى طرف الشاشة لتثبيتها، أو صغّرها إلى الشريط السفلي.', 'Ctrl+K للبحث عن أي صفحة أو عميل أو إجراء.'],
       tips: ['N جديد · Ctrl+K بحث · Ctrl+Z تراجع · Alt+← / Alt+→ رجوع وتقدّم · Alt+1…9 التبويبات · Alt+W إغلاق التبويب'] },
   ],
   tour: {
@@ -191,7 +191,7 @@ const en = {
     { id: 'farms', icon: 'swap', route: 'options', title: 'Several farms', intro: 'Run several farms or branches on one device, each with its own data.',
       steps: ['From the account menu choose “Add a farm” and finish setup.', 'Switch farms from the account menu or the sign-in screen.'], tips: [] },
     { id: 'workspace', icon: 'popout', route: 'cash', title: 'Navigation, tabs & windows', intro: 'Move between pages quickly on a computer or a phone.',
-      steps: ['The sidebar: a highlight glides to the current page, tapping a group heading folds it, and coloured badges show what needs attention. ☰ shrinks it to icons.', 'On a phone: a floating bar at the bottom with “+” in the middle; it tucks away while you scroll down and returns when you scroll up. “More” opens every page with a search box.', 'Ctrl+click opens a page in a new tab; Shift+click in a floating window.', 'Drag a window to a screen edge to snap it, or minimise it to the bottom bar.', 'Ctrl+K searches any page, customer or action.'],
+      steps: ['The sidebar shows the daily pages: Cash box, Sales, Production, Animals, Expenses and Suppliers. The rest (Accounts, Reports, Managers & funders, Settings, Guide, Recently deleted) sit in a folding “More”, which opens by itself when you are on one of them. Coloured badges show what needs attention; ☰ shrinks the sidebar to icons.', 'On a phone: a floating bar at the bottom with “+” in the middle; it tucks away while you scroll down and returns when you scroll up. “More” opens every page with a search box.', 'Ctrl+click opens a page in a new tab; Shift+click in a floating window.', 'Drag a window to a screen edge to snap it, or minimise it to the bottom bar.', 'Ctrl+K searches any page, customer or action.'],
       tips: ['N new · Ctrl+K search · Ctrl+Z undo · Alt+← / Alt+→ back and forward · Alt+1…9 tabs · Alt+W close tab'] },
   ],
   tour: {

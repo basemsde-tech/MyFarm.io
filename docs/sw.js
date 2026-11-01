@@ -1,7 +1,7 @@
 // Cache name moves with the version so an update replaces the shell.
 // Own prefix: the old Mazraati 2 lives on the same site and keeps its own caches.
-const CACHE = 'mazraati3-v3.15.0';
-const SHELL = ['./', './index.html', './app.js?v=3.15.0', './manifest.webmanifest', './icon-192.png', './icon-512.png', './favicon.png', './logo.png', './pdf.js'];
+const CACHE = 'mazraati3-v3.15.1';
+const SHELL = ['./', './index.html', './app.js?v=3.15.1', './manifest.webmanifest', './icon-192.png', './icon-512.png', './favicon.png', './logo.png', './pdf.js'];
 // A first install takes over at once; an update waits until the user taps "Update now".
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });

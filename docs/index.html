@@ -1736,7 +1736,31 @@ button.bar-row:hover { background: var(--surface-2); }
 .mba-drop { font-size: .72rem; font-weight: 700; color: #C2410C; background: color-mix(in srgb, #C2410C 10%, transparent); border-radius: 99px; padding: 1px 7px; }
 .mba-quiet { display: flex; align-items: center; gap: 6px; color: #9A6B00; margin: 0; }
 @media (max-width: 720px) { .mba-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name num' 'track track' 'sub spark'; } }
+
+/* Sidebar "More": the less used pages fold away (also in the icon rail). */
+.side-nav .nav-group.plain .nav-group-body { grid-template-rows: 1fr; opacity: 1; }
+.nav-more { gap: 12px !important; padding: 10px 12px !important; font-size: .93rem !important; font-weight: 500; color: var(--rail-muted); letter-spacing: 0 !important; margin-block-start: 0; border-top: 1px solid rgba(255, 255, 255, .06) !important; border-radius: 0 !important; padding-block-start: 14px !important; }
+.nav-more:hover { color: var(--rail-ink); background: rgba(255, 255, 255, .04); }
+.nav-more .ngl-chev { opacity: .8; margin-inline-start: auto; }
+.nav-more > span { flex: 1; }
+.side-nav .more-group:not(.closed) .nav-more { color: var(--rail-ink); }
+.rail-mini .side-nav .more-group .nav-group-label.nav-more { display: flex; justify-content: center; padding: 12px 0 !important; }
+.rail-mini .side-nav .more-group .nav-more > span, .rail-mini .side-nav .more-group .nav-more .ngl-chev { display: none; }
+.rail-mini .side-nav .more-group.closed .nav-group-body { grid-template-rows: 0fr !important; opacity: 0 !important; }
+.rail-mini .side-nav .more-group .nb-dot { position: absolute; inset-block-start: 8px; inset-inline-end: 16px; }
+.rail-mini .side-nav .nav-more { position: relative; }
+.rail-mini .side-nav .nav-more::after { content: attr(data-tip); position: absolute; inset-inline-start: calc(100% + 12px); inset-block-start: 50%; transform: translateY(-50%); background: var(--ink); color: var(--bg); padding: 5px 10px; border-radius: 8px; font-size: .8rem; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--t-fast); box-shadow: var(--sh-2); z-index: 40; }
+.rail-mini .side-nav .nav-more:hover::after { opacity: 1; }
+@media (max-width: 1100px) and (min-width: 721px) {
+  .desk .side-nav .more-group .nav-group-label.nav-more { display: flex; justify-content: center; padding: 12px 0 !important; position: relative; }
+  .desk .side-nav .more-group .nav-more > span, .desk .side-nav .more-group .nav-more .ngl-chev { display: none; }
+  .desk .side-nav .more-group.closed .nav-group-body { grid-template-rows: 0fr !important; opacity: 0 !important; }
+  .desk .side-nav .more-group .nb-dot { position: absolute; inset-block-start: 8px; inset-inline-end: 16px; }
+}
+.rail-mini .side-nav .nav-more { border-top: 0 !important; }
+@media (max-width: 1100px) and (min-width: 721px) { .desk .side-nav .nav-more { border-top: 0 !important; } }
+.side-nav { gap: 6px; }
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.15.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.15.1"></script></body>
 </html>

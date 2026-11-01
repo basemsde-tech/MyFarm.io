@@ -13,6 +13,9 @@ export const NAV = [
   { group: 'grp.farm', items: [['animals', 'cow'], ['production', 'milk'], ['expenses', 'receipt'], ['suppliers', 'truck']] },
   { group: 'grp.office', items: [['sales', 'cart'], ['accounts', 'ledger'], ['reports', 'chart'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']] },
 ];
+// The sidebar shows the daily pages; the rest sit in a folding "More" (opens by itself on one of its pages).
+const SIDE_MAIN = [['cash', 'cash'], ['sales', 'cart'], ['production', 'milk'], ['animals', 'cow'], ['expenses', 'receipt'], ['suppliers', 'truck']];
+const SIDE_MORE = [['accounts', 'ledger'], ['reports', 'chart'], ['people', 'people'], ['options', 'gear'], ['guide', 'help'], ['trash', 'trash']];
 export const navLabel = (k) => (k === 'options' ? 'nav.settings' : `nav.${k}`);
 const DOCK = [['cash', 'cash'], ['sales', 'cart'], null, ['production', 'milk'], ['animals', 'cow']];
 
@@ -59,11 +62,13 @@ export function SideNav({ go, nav }) {
   const badges = useBadges();
   const ref = useRef(null);
   const closed = prefs.navClosed || {};
-  const groups = NAV.map((g) => ({ ...g, items: g.items.filter(([k]) => k !== 'activity' || can(actor?.role, 'settings')) }));
+  const groups = [{ group: 'main', items: SIDE_MAIN, plain: true }, { group: 'more', items: SIDE_MORE, more: true }];
+  // "More" starts folded; it stays open once opened, and always opens on one of its own pages.
+  const isFolded = (g) => (g.more ? closed.more !== false : !!closed[g.group]);
   const box = useGlide(ref, '.nav-item.on', [route.name, prefs.rail, JSON.stringify(closed)]);
   const [ready, setReady] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setReady(true)); return () => cancelAnimationFrame(id); }, []);
-  const toggle = (g) => setPrefs({ navClosed: { ...closed, [g]: !closed[g] } });
+  const toggle = (g) => setPrefs({ navClosed: { ...closed, [g.group]: !isFolded(g) } });
   const onKey = (e) => {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
     const items = [...ref.current.querySelectorAll('.nav-item')].filter((x) => x.offsetParent);
@@ -75,13 +80,15 @@ export function SideNav({ go, nav }) {
     <nav ref={ref} className={`side-nav ${ready ? 'ready' : ''}`} onKeyDown={onKey}>
       {box && <span className="nav-glide" aria-hidden="true" style={{ transform: `translateY(${box.y}px)`, blockSize: `${box.h}px` }} />}
       {groups.map((g) => {
-        const isClosed = closed[g.group] && !g.items.some(([k]) => k === route.name);
+        const isClosed = !g.plain && isFolded(g) && !g.items.some(([k]) => k === route.name);
         const hidden = isClosed ? g.items.reduce((s, [k]) => s + (badges[k] && badges[k].tone !== 'quiet' ? badges[k].n : 0), 0) : 0;
         return (
-          <div className={`nav-group ${isClosed ? 'closed' : ''}`} key={g.group}>
-            <button type="button" className="nav-group-label" onClick={() => toggle(g.group)} aria-expanded={!isClosed}>
-              <span>{t(g.group)}</span>{hidden > 0 && <i className="nb-dot" />}<Icon name="down" size={13} className="ngl-chev" />
-            </button>
+          <div className={`nav-group ${g.more ? 'more-group' : ''} ${g.plain ? 'plain' : ''} ${isClosed ? 'closed' : ''}`} key={g.group}>
+            {g.more && (
+              <button type="button" className="nav-group-label nav-more" onClick={() => toggle(g)} aria-expanded={!isClosed} title={t('nav.more')} data-tip={t('nav.more')}>
+                <Icon name="more" size={17} /><span>{t('nav.more')}</span>{hidden > 0 && <i className="nb-dot" />}<Icon name="down" size={13} className="ngl-chev" />
+              </button>
+            )}
             <div className="nav-group-body"><div>
               {g.items.map(([k, ic]) => {
                 const b = badges[k];
