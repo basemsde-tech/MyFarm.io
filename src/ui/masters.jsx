@@ -5,7 +5,6 @@ import { TxFooter } from './tx.jsx';
 import { upsert, newId, addRecord, editRecord } from '../core/commands.mjs';
 import { SPECIES, statusesFor } from '../core/species.mjs';
 import { saleOfAnimal } from '../core/animals.mjs';
-import { saleText, receiptText, statementText } from '../core/messages.mjs';
 import { ShareBar } from './share.jsx';
 import { DocBrand } from './brand.jsx';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
@@ -385,16 +384,10 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
   const docRef = useRef(null);
   const partyRow = isStatement ? (farm[party === 'customer' ? 'customers' : party === 'supplier' ? 'suppliers' : 'people'] || []).find((x) => x.id === partyId) : cust;
   const productName = (l) => `${t(`pr.${l.product}`)} ${fmtQty(l.qty)} ${t(`u.${l.unit}`)}`;
-  const msg = (() => {
-    if (isStatement) return st ? statementText({ farm, customer: { name: meta.partyName || pName }, st, t, fmt, lang, from: range.from, to: range.to.startsWith('9999') ? today : range.to }) : '';
-    if (!sale) return '';
-    if (isPayment) { const c = app.snap.cust[sale.customerId] || {}; return receiptText({ farm, pay: sale, t, fmt, lang, number: no(sale), balanceC: (c.dueC || 0) - (c.creditBalC || 0) }); }
-    return saleText({ farm, sale, inv, t, fmt, lang, number: no(sale), productName });
-  })();
   const fileName = `${isStatement ? `${t('cust.statement')}-${meta.partyName || pName}` : no(sale)}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
   return (
     <Sheet title={docTitle} sub={!isStatement && sale ? no(sale) : undefined} onClose={onClose} wide
-      footer={<div className="foot-btns doc-foot-btns"><ShareBar getEl={() => docRef.current} fileName={fileName} text={msg} phone={partyRow?.phone} />{inFrame ? <span className="muted small">{t('printNote')}</span> : <Button variant="primary" icon="print" onClick={() => window.print()}>{t('print')}</Button>}</div>}>
+      footer={<div className="foot-btns doc-foot-btns"><ShareBar getEl={() => docRef.current} fileName={fileName} phone={partyRow?.phone} />{inFrame ? <span className="muted small">{t('printNote')}</span> : <Button variant="primary" icon="print" onClick={() => window.print()}>{t('print')}</Button>}</div>}>
       {isStatement && (
         <div className="doc-controls">
           <Seg small wrap value={period} onChange={(v) => { setPeriod(v); if (v !== 'custom') setRange(periodRange(v, today)); }} options={['month', '30', 'lastMonth', 'year', 'all', 'custom'].map((p) => ({ value: p, label: t(`p.${p}`) }))} />

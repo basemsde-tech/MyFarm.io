@@ -271,7 +271,7 @@ const ar = {
   'e.po.noLines': 'أضف بندًا واحدًا على الأقل', 'e.po.lineReceived': 'لا يمكن حذف بند استُلم منه شيء', 'e.po.supplierLocked': 'لا يمكن تغيير المورد بعد الاستلام',
   'e.po.hasDeliveries': 'لا يمكن إلغاء أمر فيه استلام؛ يمكنك إقفاله', 'e.po.cancelled': 'هذا الأمر ملغى', 'e.po.nothingReceived': 'أدخل كمية مستلمة',
   // sharing & reminders
-  'share.whatsapp': 'واتساب', 'share.pdf': 'ملف PDF', 'share.making': 'جارٍ الإنشاء…', 'share.pdfSaved': 'تم حفظ ملف PDF', 'share.pdfFailed': 'تعذّر إنشاء PDF؛ استخدم الطباعة ثم «حفظ كـ PDF».', 'share.noPhone': 'لا يوجد رقم هاتف؛ ستختار جهة الاتصال في واتساب.',
+  'share.whatsapp': 'واتساب', 'share.pdf': 'تنزيل PDF', 'share.attachHint': 'حُفظ ملف PDF في التنزيلات وفُتحت محادثة واتساب: اسحب الملف إلى المحادثة أو أرفقه بزر 📎.', 'share.waTipShare': 'يرسل المستند نفسه ملفَّ PDF: اختر واتساب ثم المحادثة.', 'share.waTipSave': 'يحفظ المستند ملفَّ PDF ويفتح محادثة واتساب لإرفاقه.', 'share.tapToSend': 'الملف جاهز، اضغط للإرسال', 'share.making': 'جارٍ الإنشاء…', 'share.pdfSaved': 'تم حفظ ملف PDF', 'share.pdfFailed': 'تعذّر إنشاء PDF؛ استخدم الطباعة ثم «حفظ كـ PDF».', 'share.noPhone': 'لا يوجد رقم هاتف؛ ستختار جهة الاتصال في واتساب.',
   'msg.balanceNow': 'الرصيد الحالي', 'msg.charges': 'المستحقات', 'msg.credits': 'المدفوعات', 'msg.dueOn': 'استحقت في {d}',
   'msg.remHello': 'السادة {n} المحترمون، تحية طيبة وبعد،', 'msg.remBody': 'نودّ تذكيركم بوجود مبلغ مستحق قدره {a} لصالح {f}، تفاصيله كما يلي:', 'msg.remTotal': 'إجمالي الرصيد المستحق: {a}',
   'msg.remClose': 'نرجو التكرم بالسداد في أقرب وقت، ونشكر لكم حسن تعاملكم.',
@@ -652,7 +652,7 @@ const en = {
   'e.po.noLines': 'Add at least one line', 'e.po.lineReceived': 'A line with deliveries cannot be removed', 'e.po.supplierLocked': 'The supplier cannot change after a delivery',
   'e.po.hasDeliveries': 'An order with deliveries cannot be cancelled; close it instead', 'e.po.cancelled': 'This order is cancelled', 'e.po.nothingReceived': 'Enter a quantity received',
   // sharing & reminders
-  'share.whatsapp': 'WhatsApp', 'share.pdf': 'PDF', 'share.making': 'Making…', 'share.pdfSaved': 'PDF saved', 'share.pdfFailed': "Couldn't make the PDF; use Print, then “Save as PDF”.", 'share.noPhone': 'No phone number; you will pick the contact in WhatsApp.',
+  'share.whatsapp': 'WhatsApp', 'share.pdf': 'Download PDF', 'share.attachHint': 'The PDF is in your Downloads and the WhatsApp chat is open: drag the file into the chat, or attach it with 📎.', 'share.waTipShare': 'Sends the document itself as a PDF: pick WhatsApp, then the chat.', 'share.waTipSave': 'Saves the document as a PDF and opens the WhatsApp chat to attach it.', 'share.tapToSend': 'PDF ready, tap to send', 'share.making': 'Making…', 'share.pdfSaved': 'PDF saved', 'share.pdfFailed': "Couldn't make the PDF; use Print, then “Save as PDF”.", 'share.noPhone': 'No phone number; you will pick the contact in WhatsApp.',
   'msg.balanceNow': 'Balance now', 'msg.charges': 'Charges', 'msg.credits': 'Payments', 'msg.dueOn': 'due {d}',
   'msg.remHello': 'Dear {n},', 'msg.remBody': 'This is a kind reminder that {a} is overdue to {f}:', 'msg.remTotal': 'Total balance on your account: {a}',
   'msg.remClose': 'We would be grateful for payment at your earliest convenience. Thank you for your business.',

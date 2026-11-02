@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button } from './kit.jsx';
 import { waUrl } from '../core/messages.mjs';
@@ -50,49 +50,94 @@ function saveBlob(blob, name) {
 }
 
 export function openWhatsApp(phone, text, countryCode) {
-  const url = phone ? waUrl(phone, text, countryCode) : `https://wa.me/?text=${encodeURIComponent(text)}`;
-  const w = window.open(url, '_blank', 'noopener');
-  if (!w) location.href = url;
+  const url = phone ? waUrl(phone, text, countryCode).replace(/\?text=$/, '') : text ? `https://wa.me/?text=${encodeURIComponent(text)}` : 'https://web.whatsapp.com/';
+  // Open without the 'noopener' flag (with it, the browser always answers null and we could not tell
+  // a blocked pop-up from an opened one), then cut the link back to this page by hand.
+  const w = window.open(url, '_blank');
+  if (w) { try { w.opener = null; } catch { /* cross-origin already */ } } else location.href = url;
   return url;
 }
 
+/** Can this device hand a file to another app (phones, and Chrome/Edge/Safari on computers)? */
+export function canShareFiles() {
+  try { return typeof File !== 'undefined' && !!navigator.canShare?.({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] }); } catch { return false; }
+}
+
 /**
- * WhatsApp and PDF buttons for a printable document.
- * getEl: () => the element to turn into a PDF · text: the WhatsApp message · phone: recipient
+ * WhatsApp and PDF buttons for a printable document (invoice, receipt, statement, purchase order).
+ * WhatsApp sends the document itself as a PDF — never a text summary:
+ *  · phones and most computers: the share sheet opens with the PDF; pick WhatsApp and the chat;
+ *  · elsewhere: the PDF is saved and the WhatsApp chat opens, ready for the file to be attached.
+ * The PDF is made in the background as soon as the document shows, so the tap shares straight away
+ * (phones only allow sharing right after a tap).
  */
-export function ShareBar({ getEl, fileName, text, phone, onSent, compact }) {
+export function ShareBar({ getEl, fileName, phone, onSent, compact }) {
   const { t, farm, toast, logEvent } = useApp();
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false); // a made PDF waiting for one more tap
+  const cache = useRef({ sig: null, blob: null, job: null });
   const cc = farm.settings.messaging?.countryCode;
-  const wa = () => {
-    openWhatsApp(phone, text, cc);
-    logEvent('sent', { label: `WhatsApp · ${fileName.replace(/\.pdf$/, '')}` });
-    onSent?.('whatsapp');
+  const direct = useRef(canShareFiles()).current;
+  const label = fileName.replace(/\.pdf$/, '');
+
+  const make = () => {
+    const el = getEl?.();
+    if (!el) return Promise.resolve(null);
+    const sig = el.innerHTML;
+    const c = cache.current;
+    if (c.sig === sig && c.blob) return Promise.resolve(c.blob);
+    if (c.sig === sig && c.job) return c.job;
+    c.sig = sig; c.blob = null;
+    c.job = elementToPdf(el).then((blob) => { if (cache.current.sig === sig) cache.current.blob = blob; return blob; })
+      .catch((e) => { if (cache.current.sig === sig) cache.current.sig = null; throw e; });
+    return c.job;
+  };
+  // Make the PDF ahead of time, and again shortly after the document changes (a statement's period, say).
+  useEffect(() => {
+    let timer = setTimeout(() => make().catch(() => {}), 500);
+    const el = getEl?.();
+    const mo = el && typeof MutationObserver === 'function' ? new MutationObserver(() => { clearTimeout(timer); setReady(false); timer = setTimeout(() => make().catch(() => {}), 900); }) : null;
+    mo?.observe(el, { subtree: true, childList: true, characterData: true, attributes: true });
+    return () => { clearTimeout(timer); mo?.disconnect(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const file = (blob) => new File([blob], fileName, { type: 'application/pdf' });
+  const sent = (how) => { logEvent('sent', { label: `${how === 'whatsapp' ? 'WhatsApp' : 'PDF'} · ${label}` }); onSent?.(how); };
+  const fail = () => { toast(t('share.pdfFailed'), { tone: 'bad' }); };
+
+  const wa = async () => {
+    setBusy(true);
+    let blob;
+    try { blob = await make(); } catch { setBusy(false); fail(); return; }
+    setBusy(false);
+    if (!blob) return;
+    if (direct) {
+      try {
+        await navigator.share({ files: [file(blob)], title: label });
+        setReady(false); sent('whatsapp');
+      } catch (e) {
+        if (e?.name === 'AbortError') return;
+        // The phone wants a fresh tap (making the file took too long): the next tap shares at once.
+        if (e?.name === 'NotAllowedError') { setReady(true); return; }
+        saveBlob(blob, fileName); openWhatsApp(phone, '', cc); toast(t('share.attachHint'), { ms: 9000 }); sent('whatsapp');
+      }
+      return;
+    }
+    saveBlob(blob, fileName);
+    openWhatsApp(phone, '', cc);
+    toast(t('share.attachHint'), { ms: 9000 });
+    sent('whatsapp');
   };
   const pdf = async () => {
-    const el = getEl?.();
-    if (!el) return;
     setBusy(true);
-    try {
-      const blob = await elementToPdf(el);
-      const file = typeof File !== 'undefined' ? new File([blob], fileName, { type: 'application/pdf' }) : null;
-      if (file && navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: fileName, text }); onSent?.('pdf-share'); logEvent('sent', { label: `PDF · ${fileName}` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
-      }
-      saveBlob(blob, fileName);
-      toast(t('share.pdfSaved'));
-      logEvent('sent', { label: `PDF · ${fileName}` });
-      onSent?.('pdf');
-    } catch {
-      toast(t('share.pdfFailed'), { tone: 'bad' });
-      window.print();
-    } finally { setBusy(false); }
+    try { const blob = await make(); if (blob) { saveBlob(blob, fileName); toast(t('share.pdfSaved')); sent('pdf'); } } catch { fail(); window.print(); } finally { setBusy(false); }
   };
   return (
     <div className={`share-bar ${compact ? 'compact' : ''}`}>
-      <Button icon="whatsapp" className="btn-wa" onClick={wa} disabled={!text}>{t('share.whatsapp')}</Button>
-      {getEl && <Button icon="file" onClick={pdf} disabled={busy}>{busy ? t('share.making') : t('share.pdf')}</Button>}
-      {phone ? null : <span className="muted small">{t('share.noPhone')}</span>}
+      <Button icon="whatsapp" className={`btn-wa ${ready ? 'is-ready' : ''}`} onClick={wa} disabled={busy || !getEl} title={t(direct ? 'share.waTipShare' : 'share.waTipSave')}>
+        {busy ? t('share.making') : ready ? t('share.tapToSend') : t('share.whatsapp')}
+      </Button>
+      {getEl && <Button icon="download" onClick={pdf} disabled={busy}>{t('share.pdf')}</Button>}
       <Help k="share" />
     </div>
   );

@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useApp, inFrame } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Seg, Select, TextInput, TextArea, DateInput, MoneyInput, QtyInput, Sheet, FilterPanel, Picker, dayLabel } from './kit.jsx';
 import { orderList, orderStatus, saveOrder, receiveDelivery, cancelOrder, closeOrder, reopenOrder, poNo, lineTotalC, validateOrder } from '../core/orders.mjs';
-import { orderText } from '../core/messages.mjs';
 import { EXPENSE_GROUPS, CATEGORY_UNIT } from '../core/catalog.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { can } from '../core/catalog.mjs';
@@ -152,7 +151,7 @@ export function OrderView({ id, onClose }) {
   return (
     <Sheet title={`${t('po.title1')} ${number}`} sub={names.supplier(o.supplierId)} onClose={onClose} wide
       footer={<div className="foot-btns doc-foot-btns">
-        <ShareBar getEl={() => docRef.current} fileName={`${number}.pdf`} phone={sup?.phone} text={orderText({ farm, o, supplier: sup, t, fmt, lang, number, catName: cats.name })} />
+        <ShareBar getEl={() => docRef.current} fileName={`${number}.pdf`} phone={sup?.phone} />
         {!inFrame && <Button icon="print" onClick={() => window.print()}>{t('print')}</Button>}
       </div>}>
       <div className="po-head">

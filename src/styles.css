@@ -1162,6 +1162,8 @@ button.bar-row:hover { background: var(--surface-2); }
 .btn-wa { --wa: #1FA855; color: var(--wa); border-color: color-mix(in srgb, var(--wa) 45%, var(--line)); }
 .btn-wa:hover:not(:disabled) { background: color-mix(in srgb, var(--wa) 10%, var(--surface)); }
 .btn.btn-primary.btn-wa { background: var(--wa); color: #fff; border-color: var(--wa); }
+.btn-wa.is-ready { background: var(--wa); color: #fff; border-color: var(--wa); animation: wa-ready 1.4s var(--ease) infinite; }
+@keyframes wa-ready { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wa) 45%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--wa) 0%, transparent); } }
 .doc-foot-btns { justify-content: flex-end; }
 .foot-total { margin-inline-end: auto; color: var(--muted); }
 .foot-total b { color: var(--ink); font-size: 1.05rem; }

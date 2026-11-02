@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.18.1', date: '2026-11-03', items: [
+    ['whatsapp', 'واتساب يرسل المستند نفسه (فاتورة، إيصال، كشف حساب، أمر شراء) ملفَّ PDF بدل نص الملخص', 'WhatsApp now sends the document itself (invoice, receipt, statement, purchase order) as a PDF instead of a text summary'],
+    ['download', 'زر «تنزيل PDF» يحفظ نسخة على الجهاز', 'Download PDF keeps a copy on the device'],
+    ['check', 'فتح واتساب لم يعد يُخرجك من صفحة التطبيق', 'Opening WhatsApp no longer takes the app away from its page'],
+  ] },
   { v: '3.18.0', date: '2026-11-02', items: [
     ['milk', 'سجل الحليب أنظف: كل يوم يُطوى في سطر واحد يلخّص الصباح والمساء والمستخدَم، مع طيّ أو فتح الكل وإخفاء السجل', 'Tidier milk entries: each day folds to one summary line (morning, evening, used), with fold or open all and hide the list'],
     ['sliders', 'قائمة «العرض» في القوائم: بطاقات أو قائمة أو مضغوط، والترتيب حسب ما تريد تصاعديًا أو تنازليًا', 'A View menu on lists: tiles, list or compact, sorted by what you choose, ascending or descending'],

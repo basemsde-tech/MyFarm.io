@@ -1,7 +1,7 @@
 // The built-in manual, page tours and "?" help bubbles, in formal Arabic and English.
 // Release rule: every version that changes what the user sees updates this guide, then sets
 // GUIDE_VERSION to the new version. A test fails until the two match.
-export const GUIDE_VERSION = '3.18.0';
+export const GUIDE_VERSION = '3.18.1';
 // Guide sections: { id, icon, route, tab?, title, intro, steps[], tips[] }.
 // Tours: TOURS[page] lists { id, sel } (selectors tried in order); text lives in TEXT[lang].tour[page][id].
 
@@ -37,7 +37,7 @@ const ar = {
       tips: ['تصل إشعارات الجهاز ما دام التطبيق مفتوحًا أو مصغّرًا أو في تبويب خلفي.', 'المالك والمحاسب يريان نشاط الجميع؛ بقية المستخدمين يرون نشاطهم فقط.'] },
     { id: 'sales', icon: 'cart', route: 'sales', title: 'المبيعات والفواتير', intro: 'سجّل البيع النقدي والبيع على الحساب، واطبع الفواتير وأرسلها.',
       steps: ['اضغط «عملية بيع». اختر العميل، أو اتركه «عميل نقدي» للبيع المباشر.', 'أضف الأصناف بالكمية والسعر، أو مبلغًا مباشرًا. يمكن إضافة خصم بمبلغ أو نسبة.', 'للعميل النقدي أدخل المبلغ المستلم ليظهر الباقي. لعميل الحساب اختر: كامل، أو جزء، أو على الحساب مع تاريخ استحقاق.', 'تبويب «الفواتير» يعرض كل فاتورة برقمها وحالتها (مدفوعة، جزئية، متأخرة) مع الطباعة والتحصيل.'],
-      tips: ['من أي فاتورة: «واتساب» يرسل ملخصها، و«ملف PDF» ينشئ نسخة جاهزة للمشاركة.', 'المبيعات تستهلك الحليب من الخزان بالأقدم أولًا، ويُمنع بيع أكثر من المتوفر.'] },
+      tips: ['من أي فاتورة أو إيصال أو كشف حساب: «واتساب» يرسل المستند نفسه ملفَّ PDF، و«تنزيل PDF» يحفظ نسخة.', 'المبيعات تستهلك الحليب من الخزان بالأقدم أولًا، ويُمنع بيع أكثر من المتوفر.'] },
     { id: 'payments', icon: 'cash', route: 'sales', tab: 'customers', title: 'التحصيل وكشوف الحساب', intro: 'سجّل دفعات العملاء، بما فيها المصروفات التي يدفعها العميل نيابةً عن المزرعة.',
       steps: ['من حساب العميل اضغط «تحصيل دفعة» وأدخل المبلغ المستلم.', 'إذا دفع العميل مصروفًا عن المزرعة (وقود مثلًا) أضفه في «مصروفات دفعها العميل»: يُخصم من دينه ويُسجَّل مصروفًا دون أن يدخل الصندوق.', 'إذا حصّل أحد المديرين المبلغ واحتفظ به، اختره في «المبلغ بحوزة».', '«كشف حساب» يعرض الرصيد الافتتاحي والحركات والرصيد الختامي لأي فترة، قابلًا للطباعة والإرسال.'], tips: [] },
     { id: 'reminders', icon: 'whatsapp', route: 'sales', tab: 'reminders', title: 'تذكيرات السداد', intro: 'قائمة بالعملاء المتأخرين مع آخر تذكير أُرسل لكل منهم.',
@@ -119,7 +119,7 @@ const ar = {
     reminders: 'العملاء الذين تجاوزت فواتيرهم الاستحقاق. أرسل تذكيرًا رسميًا عبر واتساب أو سجّل اتصالًا، فيُحفظ التاريخ ويختفي العميل حتى موعد التذكير التالي.',
     orders: 'أمر الشراء طلب للمورد ولا يحرّك المال. عند الاستلام تُنشأ فاتورة المورد بالكمية الفعلية.',
     matching: 'المطابقة الثلاثية: ما طُلب، وما استُلم، وما فوتَره المورد. فرق السعر يظهر إن فوتَر بسعر غير المتفق عليه.',
-    share: 'واتساب يفتح رسالة جاهزة لرقم الطرف الآخر. PDF ينشئ ملفًا بحجم A4؛ على الهاتف يمكن مشاركته مباشرة.',
+    share: 'زر واتساب يرسل المستند نفسه (فاتورة، إيصال، كشف حساب، أمر شراء) ملفَّ PDF، لا نصًّا. على الهاتف ومعظم الحواسيب تفتح نافذة المشاركة: اختر واتساب ثم المحادثة. وإلا يُحفظ الملف وتُفتح محادثة الطرف الآخر لإرفاقه. «تنزيل PDF» يحفظ نسخة على الجهاز.',
     docs: 'أرفق صورًا أو ملفات PDF مع النوع وتاريخ الانتهاء؛ يصلك تنبيه قبل الانتهاء بثلاثين يومًا.',
     sold: 'كل حيوان بيع يبقى في السجل مع سعر البيع والمشتري والوزن والعمر والربح بعد تكاليف الشراء والعلاج.',
     saleRecord: 'سجل بيع محفوظ لا يُحذف. لإلغاء البيع احذف عملية البيع أو ألغِها، فيعود الحيوان إلى القطيع.',
@@ -157,7 +157,7 @@ const en = {
       tips: ['Device notifications arrive while the app is open, minimised or in a background tab.', 'Owners and accountants see everyone’s activity; other users see their own.'] },
     { id: 'sales', icon: 'cart', route: 'sales', title: 'Sales & invoices', intro: 'Record cash and on-account sales, then print and send invoices.',
       steps: ['Tap “Sale”. Pick the customer, or leave “Walk-in” for a counter sale.', 'Add items by quantity and price, or a direct amount. Add a discount as an amount or percent.', 'For walk-ins enter cash received to see the change. For account customers choose full, part, or on account with a due date.', 'The Invoices tab lists every invoice with its number and status (paid, partial, overdue) plus print and collect.'],
-      tips: ['From any invoice, WhatsApp sends a summary and PDF makes a file ready to share.', 'Sales draw milk from the tank oldest first, and you cannot sell more than you have.'] },
+      tips: ['From any invoice, receipt or statement, WhatsApp sends the document itself as a PDF; Download PDF keeps a copy.', 'Sales draw milk from the tank oldest first, and you cannot sell more than you have.'] },
     { id: 'payments', icon: 'cash', route: 'sales', tab: 'customers', title: 'Collecting & statements', intro: 'Record customer payments, including costs a customer paid on the farm’s behalf.',
       steps: ['From the customer account tap “Collect payment” and enter the cash received.', 'If the customer paid a farm cost (fuel, say) add it under “Costs the customer paid”: it reduces their debt and counts as a farm expense without entering the box.', 'If a manager collected the money and kept it, choose them under “Money kept by”.', '“Statement” shows opening, movements and closing for any period, ready to print or send.'], tips: [] },
     { id: 'reminders', icon: 'whatsapp', route: 'sales', tab: 'reminders', title: 'Payment reminders', intro: 'Late customers and when each was last reminded.',
@@ -239,7 +239,7 @@ const en = {
     reminders: 'Customers past their due dates. Send a formal reminder by WhatsApp or log a call; the date is kept and the customer leaves the list until the next reminder is due.',
     orders: 'A purchase order is a request to the supplier and moves no money. Receiving creates the supplier bill for what actually arrived.',
     matching: 'Three-way match: ordered, received and billed. A price difference shows when the supplier billed off the agreed price.',
-    share: 'WhatsApp opens a ready message to the other party’s number. PDF makes an A4 file; on phones it can be shared directly.',
+    share: 'WhatsApp sends the document itself (invoice, receipt, statement, purchase order) as a PDF, not as text. On phones and most computers the share sheet opens: pick WhatsApp, then the chat. Otherwise the file is saved and the other party’s chat opens so you can attach it. Download PDF keeps a copy on the device.',
     docs: 'Attach photos or PDFs with a type and expiry date; you are reminded 30 days before expiry.',
     sold: 'Every animal sold stays on record with price, buyer, weight, age and gain after purchase and treatment costs.',
     saleRecord: 'A permanent sale record. To undo the sale, delete or void the sale entry and the animal returns to the herd.',
