@@ -8,7 +8,7 @@ import { RestoreSheet } from './restore.jsx';
 import { SCREENS, Crumb, TabBar, WindowLayer, Taskbar } from './workspace.jsx';
 import { routeKey } from './ws.mjs';
 import { AppProvider, useApp } from './store.jsx';
-import { Button, Icon, IconButton, Seg, TextInput, Sheet, Avatar, Select } from './kit.jsx';
+import { Button, Icon, IconButton, Seg, TextInput, Sheet, Avatar, Select, ErrorBoundary } from './kit.jsx';
 import { RecordDrawer, DeleteDialog, PurgeDialog, VoidDialog, MasterDeleteDialog } from './tx.jsx';
 import { SaleSheet, PaymentSheet, ExpenseSheet, SupplierPaySheet, PersonSheet, MilkSheet, MilkUseSheet, EggsSheet, MedicineSheet, NewMenu } from './forms.jsx';
 import { CustomerSheet, SupplierSheet, PersonMasterSheet, AnimalSheet, AnimalEventSheet, WorkerSheet, ObligationSheet, ProfileSheet, DocSheet } from './masters.jsx';
@@ -26,6 +26,7 @@ import { BrandMark } from './brand.jsx';
 import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
+import { RefreshButton, RefreshedToast } from './refresh.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, BackupNowDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const SHEETS = {
@@ -43,7 +44,7 @@ function ModalHost() {
     const C = SHEETS[m.kind];
     if (!C) return null;
     const close = () => ui.closeTop();
-    return <div key={m.key} className="modal-layer" style={{ zIndex: 50 + i }}><C {...m.props} onClose={close} /></div>;
+    return <div key={m.key} className="modal-layer" style={{ zIndex: 50 + i }}><ErrorBoundary where={`sheet:${m.kind}`} onClose={close}><C {...m.props} onClose={close} /></ErrorBoundary></div>;
   });
 }
 
@@ -458,6 +459,7 @@ function Shell() {
           <div className="top-actions">
             <span className="ccy-chip" title={farm.settings.second?.rate > 0 ? t('flip.hint') : undefined}>{farm.settings.currency}</span><Help k="flip" />
             <NotificationBell />
+            <RefreshButton />
             <HelpMenu />
             <IconButton icon={theme === 'dark' ? 'sun' : 'moon'} label={t('set.theme')} onClick={() => setPrefs({ theme: theme === 'dark' ? 'light' : 'dark' })} />
             <button type="button" className="chip lang-toggle" onClick={() => setPrefs({ lang: prefs.lang === 'ar' ? 'en' : 'ar' })}>{prefs.lang === 'ar' ? 'EN' : 'ع'}</button>
@@ -471,7 +473,7 @@ function Shell() {
         {!online && <div className="banner warn"><Icon name="wifi" size={16} /><span>{t('offline')}</span></div>}
         {saveError && <div className="banner bad"><Icon name="alert" size={16} /><span>{t(`e.${saveError.code}`)}</span><button type="button" onClick={retrySave}>{t('e.retry')}</button></div>}
         {!demo && !prefs.dismissed?.deviceOnly && <div className="banner quiet"><span>{t('deviceOnly')}</span><button type="button" onClick={() => setPrefs({ dismissed: { ...prefs.dismissed, deviceOnly: true } })}>{t('dismiss')}</button></div>}
-        <main className="content" id="main"><Screen key={routeKey(route)} /></main>
+        <main className="content" id="main"><ErrorBoundary key={routeKey(route)} where={`page:${routeKey(route)}`}><Screen /></ErrorBoundary></main>
         <WindowLayer />
         <Taskbar />
       </div>
@@ -482,6 +484,7 @@ function Shell() {
       <TourHost />
       <UpdatePrompt />
       <WhatsNewGate />
+      <RefreshedToast />
       <Toasts />
     </div>
   );

@@ -348,6 +348,10 @@ const ar = {
   'dz.found': '{n} حركة ستُحذف', 'dz.nothing': 'لا توجد حركات في هذه الفترة.', 'dz.balancesKept': 'تحقّقنا: الصندوق وكل الأرصدة تبقى كما هي بعد الإقفال.', 'dz.balancesOff': 'لا يمكن الإقفال: الأرصدة لن تبقى كما هي. احفظ نسخة احتياطية وتواصل مع الدعم.',
   'dz.closeBtn': 'إقفال وحذف {n}', 'dz.moveBtn': 'نقل {n} إلى المحذوفات', 'dz.closed': 'أُقفلت الفترة قبل {d} ({n} حركة)', 'dz.moved': 'نُقلت {n} حركة إلى المحذوفات',
   'dz.openingRec': 'أرصدة مرحّلة من فترة مُقفلة', 'trash.hintN': 'تبقى الحركات المحذوفة هنا {n} يومًا قبل مسحها نهائيًا. غيّر المدة من الإعدادات ← منطقة الخطر.',
+  'rf.title': 'تحديث التطبيق', 'rf.button': 'تحديث ومسح الذاكرة المؤقتة', 'rf.working': 'جارٍ تحديث التطبيق…', 'rf.safe': 'بيانات المزرعة لا تُمسّ؛ يُمسح فقط ما خزّنه التطبيق من ملفاته.',
+  'rf.s.save': 'حفظ كل التغييرات', 'rf.s.check': 'البحث عن إصدار جديد', 'rf.s.clear': 'مسح الذاكرة المؤقتة', 'rf.s.reload': 'إعادة التحميل',
+  'rf.hint': 'يبحث عن إصدار جديد، ويمسح ملفات التطبيق المخزّنة ويعيد تنزيلها ليبقى سريعًا. بياناتك لا تتأثر.', 'rf.cached': 'المخزّن الآن: {n} ملفًا ({s}).',
+  'rf.offline': 'لا يمكن التحديث دون اتصال بالإنترنت. لم يُمسح شيء.', 'rf.failed': 'تعذّر التحديث. حاول مجددًا.', 'rf.done': 'تم تحديث التطبيق. أنت على أحدث إصدار ({v}).',
   'me.notCounted': 'غير محسوب', 'me.notCountedWhy': 'للجلسة نفسها إدخال أحدث أو إجمالي للقطيع، والخزان يحتسب ذلك فقط. احذف هذا الإدخال أو احفظ اليوم من الأعلى لترتيبه.', 'me.milked': 'المحلوب', 'me.foldAll': 'طيّ كل الأيام', 'me.openAll': 'فتح كل الأيام', 'me.entry': 'إدخال',
   'vm.title': 'العرض', 'vm.view': 'طريقة العرض', 'vm.sort': 'الترتيب حسب', 'vm.order': 'الاتجاه', 'vm.asc': 'تصاعدي', 'vm.desc': 'تنازلي', 'vm.reset': 'العودة إلى الافتراضي',
   'vm.v.tiles': 'بطاقات', 'vm.v.list': 'قائمة', 'vm.v.compact': 'مضغوط',
@@ -729,6 +733,10 @@ const en = {
   'dz.found': '{n} entries will be removed', 'dz.nothing': 'No entries in this range.', 'dz.balancesKept': 'Checked: cash and every balance stay the same after closing.', 'dz.balancesOff': 'Cannot close: the balances would not stay the same. Save a backup and contact support.',
   'dz.closeBtn': 'Close and remove {n}', 'dz.moveBtn': 'Move {n} to Recently deleted', 'dz.closed': 'Closed the period before {d} ({n} entries)', 'dz.moved': '{n} entries moved to Recently deleted',
   'dz.openingRec': 'Balances carried forward from a closed period', 'trash.hintN': 'Deleted entries stay here for {n} days before they are removed. Change this in Settings → Danger zone.',
+  'rf.title': 'Refresh app', 'rf.button': 'Refresh & clear cache', 'rf.working': 'Refreshing the app…', 'rf.safe': 'Farm data is not touched; only the app’s own stored files are cleared.',
+  'rf.s.save': 'Saving every change', 'rf.s.check': 'Looking for a new version', 'rf.s.clear': 'Clearing the cache', 'rf.s.reload': 'Reloading',
+  'rf.hint': 'Looks for a new version, clears the app’s stored files and downloads them fresh to keep it fast. Your data is not affected.', 'rf.cached': 'Stored now: {n} files ({s}).',
+  'rf.offline': 'Can’t refresh without an internet connection. Nothing was cleared.', 'rf.failed': 'Couldn’t refresh. Please try again.', 'rf.done': 'App refreshed. You’re on the latest version ({v}).',
   'me.notCounted': 'Not counted', 'me.notCountedWhy': 'The same session has a newer entry or a herd total, and the tank counts only that. Delete this entry or save the day above to tidy it.', 'me.milked': 'Milked', 'me.foldAll': 'Fold all days', 'me.openAll': 'Open all days', 'me.entry': 'entry',
   'vm.title': 'View', 'vm.view': 'View as', 'vm.sort': 'Sort by', 'vm.order': 'Order', 'vm.asc': 'Ascending', 'vm.desc': 'Descending', 'vm.reset': 'Back to default',
   'vm.v.tiles': 'Tiles', 'vm.v.list': 'List', 'vm.v.compact': 'Compact',
@@ -789,10 +797,11 @@ const en = {
 
 export const DICT = { ar, en };
 
-export function makeT(lang) {
+export function makeT(lang, extra) {
   const d = DICT[lang] || ar;
   return (key, vars) => {
-    let s = d[key] ?? DICT.en[key] ?? key;
+    // The farm's own names (custom expense categories) fill in for keys the dictionary does not have.
+    let s = d[key] ?? DICT.en[key] ?? extra?.[key] ?? key;
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
     return s;
   };

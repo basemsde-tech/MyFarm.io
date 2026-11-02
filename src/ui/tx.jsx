@@ -437,7 +437,7 @@ export function VoidDialog({ id, onClose }) {
 }
 
 /** A tappable movement row used in every list. */
-export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, dir, hideParty, className = '', tag, title }) {
+export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, dir, hideParty, className = '', tag, title, actions }) {
   const app = useApp();
   const d = describe(r, app);
   const status = r.voided ? 'voided' : r.editedAfterClose ? 'afterClose' : null;
@@ -454,6 +454,7 @@ export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, di
           {right ?? (d.amountC != null ? `${dir > 0 ? '+' : dir < 0 ? '−' : ''}${app.fmt(d.amountC).replace('−', '')}` : d.qty)}
         </span>
       </button>
+      {actions && <div className="row-actions">{actions}</div>}
     </div>
   );
 }

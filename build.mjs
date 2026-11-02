@@ -48,7 +48,11 @@ const CACHE = 'mazraati3-v${VERSION}';
 const SHELL = ['./', './index.html', './app.js?v=${VERSION}', './manifest.webmanifest', './icon-192.png', './icon-512.png', './favicon.png', './logo.png', './pdf.js'];
 // A first install takes over at once; an update waits until the user taps "Update now".
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => { if (!self.registration.active) return self.skipWaiting(); return undefined; })); });
-self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
+self.addEventListener('message', (e) => {
+  if (e.data === 'skip') self.skipWaiting();
+  // "Refresh app" cleared the cache: download the whole shell again (fresh) so the app still opens offline.
+  if (e.data === 'recache') e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => e.ports[0] && e.ports[0].postMessage('ok'), () => e.ports[0] && e.ports[0].postMessage('fail')));
+});
 // A tapped notification opens (or focuses) the app on the page it is about.
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();

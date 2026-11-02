@@ -24,6 +24,7 @@ import { Attachments } from './documents.jsx';
 import { Help, HelpPanel } from './help.jsx';
 import { LogoPanel } from './brand.jsx';
 import { NotifySettings } from './notify.jsx';
+import { RefreshPanel } from './refresh.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
@@ -564,7 +565,7 @@ export function TrashScreen() {
         {masters.length > 0 && <h2>{t('trash.records')}</h2>}
         {loose.length ? loose.map((r) => (
           <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))}
-            right={<span className="amt-stack"><Button size="sm" icon="undo" onClick={(e) => { e.stopPropagation(); commit((f) => restoreRecords(f, [r.id], actor), { label: t('restored') }); }}>{t('restore')}</Button><small className="muted">{t('trash.deletedBy', { n: r.deletedByName })} · {t('trash.left', { n: left(r.deletedAt) })}</small></span>} />
+            actions={<span className="amt-stack"><Button size="sm" icon="undo" onClick={() => commit((f) => restoreRecords(f, [r.id], actor), { label: t('restored') })}>{t('restore')}</Button><small className="muted">{t('trash.deletedBy', { n: r.deletedByName })} · {t('trash.left', { n: left(r.deletedAt) })}</small></span>} />
         )) : !masters.length && <Empty title={t('trash.none')} icon="trash" />}
       </section>
     </div>
@@ -713,6 +714,7 @@ export function SettingsScreen() {
           {!demo ? <Button onClick={async () => { await app.enterDemo(sampleFarm(app.lang)); setPrefs({ profileId: 'pro-demo-owner' }); }}>{t('set.demo')}</Button>
             : <Button variant="primary" onClick={async () => { const held = await app.exitDemo(); setPrefs({ profileId: held.profiles.length === 1 && !held.profiles[0].passHash ? held.profiles[0].id : null }); }}>{t('set.demoExit')}</Button>}
         </div>
+        <RefreshPanel />
       </section>
     </div>
   );

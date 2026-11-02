@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.18.1', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.19.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -175,7 +175,8 @@ function FarmProvider({ boot, children }) {
     });
   }, []);
 
-  const t = useMemo(() => makeT(prefs.lang), [prefs.lang]);
+  const catNames = farm?.settings?.categories;
+  const t = useMemo(() => makeT(prefs.lang, Object.fromEntries((catNames || []).filter((c) => c?.key && c.name).map((c) => [`c.${c.key}`, c.name]))), [prefs.lang, catNames]);
   setSoundOn(prefs.sound);
   setMilkView(farm.settings.milkUnit, t, farm.settings);
   const actor = useMemo(() => farm.profiles.find((p) => p.id === prefs.profileId) || null, [farm.profiles, prefs.profileId]);
@@ -258,6 +259,16 @@ function FarmProvider({ boot, children }) {
   }, [persist]);
 
   const retrySave = useCallback(() => { if (saveError?.farm) persist(saveError.farm); }, [saveError, persist]);
+  // Resolves once every change is written to the device (used before reloading the app).
+  const whenSaved = useCallback(async (maxMs = 8000) => {
+    const end = Date.now() + maxMs;
+    if (saving.current.next) flush();
+    while ((saving.current.busy || saving.current.next) && Date.now() < end) {
+      if (saving.current.next && !saving.current.busy) flush();
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return !saving.current.busy && !saving.current.next;
+  }, [flush]);
 
   /* ── Files (attached documents) ── */
   const files = useMemo(() => ({
@@ -420,7 +431,7 @@ function FarmProvider({ boot, children }) {
   const value = {
     farm: view, rawFarm: farm, snap, prefs, setPrefs, t, lang: prefs.lang, dir: prefs.lang === 'ar' ? 'rtl' : 'ltr', actor, today,
     commit, undo, replaceFarm, toast, toasts, setToasts, errText, fmt, names, route, nav, ui, stack, layer, ws, wsApi,
-    saveError, retrySave, demo, canUndo: undoRef.current.length > 0,
+    saveError, retrySave, whenSaved, demo, canUndo: undoRef.current.length > 0,
     logEvent, files, enterDemo, exitDemo, farms: reg.farms, farmId, switchFarm, addFarm, removeFarm, cancelNewFarm, snapshots, saveRestorePoint, clearDeviceCopies, storageMode: boot.mode,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

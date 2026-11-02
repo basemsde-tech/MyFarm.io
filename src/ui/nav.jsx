@@ -7,6 +7,7 @@ import { useOverdue } from './reminders.jsx';
 import { orderList } from '../core/orders.mjs';
 import { expiringDocs } from '../core/documents.mjs';
 import { can } from '../core/catalog.mjs';
+import { useRefresh } from './refresh.jsx';
 
 export const NAV = [
   { group: 'grp.cash', items: [['cash', 'cash'], ['people', 'people']] },
@@ -153,6 +154,7 @@ export function Dock({ go, onNew, more, setMore }) {
 export function MoreSheet({ go, onClose, onSwitch }) {
   const { t, route, actor } = useApp();
   const badges = useBadges();
+  const refresh = useRefresh();
   const [q, setQ] = useState('');
   const [leaving, setLeaving] = useState(false);
   const close = () => { setLeaving(true); setTimeout(onClose, 200); };
@@ -181,7 +183,11 @@ export function MoreSheet({ go, onClose, onSwitch }) {
             </section>
           );
         })}
-        <button type="button" className="ms-switch" onClick={onSwitch}><Icon name="logout" size={16} />{t('pf.logOff')}</button>
+        <div className="ms-foot">
+          <button type="button" className="ms-switch" onClick={refresh.run} disabled={refresh.busy}><Icon name="refresh" size={16} />{t('rf.title')}</button>
+          <button type="button" className="ms-switch" onClick={onSwitch}><Icon name="logout" size={16} />{t('pf.logOff')}</button>
+        </div>
+        {refresh.overlay}
       </div>
     </div>
   );

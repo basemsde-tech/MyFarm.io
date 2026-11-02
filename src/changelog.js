@@ -2,6 +2,13 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.19.0', date: '2026-11-03', items: [
+    ['refresh', 'زر «تحديث التطبيق» ↻: يبحث عن إصدار جديد ويمسح الذاكرة المؤقتة ويعيد التحميل، دون المساس بالبيانات', 'Refresh app ↻: checks for a new version, clears the cache and reloads, without touching your data'],
+    ['check', 'إن تعذّر عرض جزء من التطبيق تظهر بطاقة «إعادة المحاولة» بدل شاشة بيضاء', 'If part of the app fails to show, a Try again card appears instead of a blank screen'],
+    ['ledger', 'الفئات التي تنشئها تظهر بأسمائها في كل مكان (التقارير، البحث، السجل، الكشوف)', 'Categories you create show by name everywhere (reports, search, history, statements)'],
+    ['search', 'قوائم الاختيار (العملاء، الموردون) تعمل بالأسهم وEnter، وEsc يغلق القائمة فقط لا النموذج', 'Pickers (customers, suppliers) work with arrows and Enter; Esc closes the list, not the form'],
+    ['trash', 'زر «استعادة» في المحذوفات يعمل بدقة ويظهر المبلغ', 'Restore in Recently deleted works reliably and shows the amount'],
+  ] },
   { v: '3.18.1', date: '2026-11-03', items: [
     ['whatsapp', 'واتساب يرسل المستند نفسه (فاتورة، إيصال، كشف حساب، أمر شراء) ملفَّ PDF بدل نص الملخص', 'WhatsApp now sends the document itself (invoice, receipt, statement, purchase order) as a PDF instead of a text summary'],
     ['download', 'زر «تنزيل PDF» يحفظ نسخة على الجهاز', 'Download PDF keeps a copy on the device'],

@@ -50,6 +50,7 @@ const P = {
   rows: 'M4 5h16M4 9.5h16M4 14h16M4 18.5h16',
   list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
   up: 'M6 15l6-6 6 6',
+  refresh: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
   menu: 'M4 7h16M4 12h16M4 17h16',
   bank: 'M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3l9 5H3z',
   logout: 'M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10',
@@ -148,21 +149,31 @@ export function Picker({ label, value, onChange, options, placeholder, id, error
     return () => document.removeEventListener('mousedown', fn);
   }, [open]);
   const list = options.filter((o) => !q || `${o.label} ${o.sub || ''}`.toLowerCase().includes(q.toLowerCase()));
+  const [hi, setHi] = useState(0);
+  useEffect(() => { setHi(0); }, [q, open]);
+  const choose = (v) => { onChange(v); setOpen(false); setQ(''); };
+  // Keyboard: arrows move, Enter picks, Escape closes the list only (never the whole form).
+  const onKey = (e) => {
+    const all = [...(allowEmpty ? [{ value: '' }] : []), ...list.slice(0, 80)];
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOpen(false); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => (h + (e.key === 'ArrowDown' ? 1 : -1) + all.length) % Math.max(1, all.length)); return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (all[hi]) choose(all[hi].value); }
+  };
   return (
     <Field label={label} id={fid} error={error}>
-      <div className="picker" ref={ref}>
-        <button type="button" id={fid} className="input picker-btn" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <div className="picker" ref={ref} onKeyDown={open ? onKey : undefined}>
+        <button type="button" id={fid} className="input picker-btn" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="listbox">
           <span className={sel ? '' : 'muted'}>{sel ? sel.label : placeholder || t('select')}</span>
           {sel?.sub && <span className="picker-sub">{sel.sub}</span>}
           <Icon name="down" size={16} />
         </button>
         {open && (
-          <div className="picker-pop" role="listbox">
-            <input autoFocus className="input" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} />
-            <div className="picker-list">
-              {allowEmpty && <button type="button" className="picker-opt" onClick={() => { onChange(''); setOpen(false); }}>{allowEmpty}</button>}
-              {list.slice(0, 80).map((o) => (
-                <button type="button" key={o.value} className={`picker-opt ${o.value === value ? 'on' : ''}`} onClick={() => { onChange(o.value); setOpen(false); setQ(''); }}>
+          <div className="picker-pop">
+            <input autoFocus className="input" placeholder={t('search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('search')} />
+            <div className="picker-list" role="listbox" aria-label={label}>
+              {allowEmpty && <button type="button" role="option" aria-selected={value === ''} className={`picker-opt ${hi === 0 ? 'hi' : ''}`} onClick={() => choose('')}>{allowEmpty}</button>}
+              {list.slice(0, 80).map((o, i) => (
+                <button type="button" role="option" aria-selected={o.value === value} key={o.value} className={`picker-opt ${o.value === value ? 'on' : ''} ${hi === i + (allowEmpty ? 1 : 0) ? 'hi' : ''}`} onClick={() => choose(o.value)}>
                   <span>{o.label}</span>{o.sub && <span className="picker-sub">{o.sub}</span>}
                 </button>
               ))}
@@ -633,4 +644,41 @@ export function ViewMenu({ v, sorts = [], views = ['list', 'compact'] }) {
       )}
     </div>
   );
+}
+
+
+/* ── Error boundary: a page or sheet that fails to draw shows a small card instead of a white screen ── */
+const BOUNDARY_TXT = {
+  ar: { title: 'حدث خطأ في عرض هذا الجزء', body: 'بياناتك محفوظة. أعد المحاولة، أو ارجع إلى الصفحة الرئيسية.', retry: 'إعادة المحاولة', home: 'الصفحة الرئيسية', close: 'إغلاق' },
+  en: { title: 'Something went wrong showing this part', body: 'Your data is safe. Try again, or go back to the home page.', retry: 'Try again', home: 'Home', close: 'Close' },
+};
+export class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) {
+    try {
+      const log = JSON.parse(localStorage.getItem('mazraati-errors') || '[]');
+      log.unshift({ at: new Date().toISOString(), where: this.props.where || '', msg: String(error?.message || error).slice(0, 300), stack: String(info?.componentStack || '').slice(0, 600) });
+      localStorage.setItem('mazraati-errors', JSON.stringify(log.slice(0, 20)));
+    } catch { /* optional */ }
+    console.error('[Mazraati]', this.props.where, error); // eslint-disable-line no-console
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const lang = document.documentElement.lang === 'en' ? 'en' : 'ar';
+    const T = BOUNDARY_TXT[lang];
+    const { onClose } = this.props;
+    return (
+      <div className={`panel crash ${onClose ? 'in-sheet' : ''}`} role="alert">
+        <span className="crash-ico"><Icon name="alert" size={22} /></span>
+        <b>{T.title}</b>
+        <span className="muted small">{T.body}</span>
+        <code className="crash-msg">{String(this.state.error?.message || this.state.error).slice(0, 160)}</code>
+        <div className="row-btns">
+          <Button variant="primary" onClick={() => this.setState({ error: null })}>{T.retry}</Button>
+          {onClose ? <Button onClick={onClose}>{T.close}</Button> : <Button onClick={() => { this.setState({ error: null }); location.hash = '#cash'; }}>{T.home}</Button>}
+        </div>
+      </div>
+    );
+  }
 }
