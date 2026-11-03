@@ -141,3 +141,11 @@ export function receiveDelivery(farm, orderId, { day, deliveryNo = '', lines = [
   }
   return next;
 }
+
+/**
+ * Purchase orders are optional and off unless the farm turns them on in Settings
+ * (most farms just enter the purchase bill when goods arrive).
+ */
+export function usesOrders(farm) {
+  return farm.settings?.purchaseOrders === true;
+}

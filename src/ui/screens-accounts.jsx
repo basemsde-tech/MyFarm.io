@@ -303,7 +303,7 @@ function Tax() {
   return (
     <>
       <FilterPanel id="tax" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}><PeriodBarLite per={per} /></FilterPanel>
-      {!s.tax.enabled && <div className="note info"><Icon name="alert" size={16} />{t('tax.off')} <button type="button" className="link" onClick={() => nav('options')}>{t('nav.settings')}</button></div>}
+      {!s.tax.enabled && <div className="note info"><Icon name="alert" size={16} />{t('tax.off')} <button type="button" className="link" onClick={() => nav('options', null, 'smoney')}>{t('nav.settings')}</button></div>}
       <section className="stats-row">
         <Stat label={t('tax.collected')} value={fmt(ts.taxC)} />
         <Stat label={t('tax.taxable')} value={fmt(ts.netC)} />

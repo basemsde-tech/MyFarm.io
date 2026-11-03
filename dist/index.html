@@ -2156,7 +2156,56 @@ body.has-selbar .screen, body.has-selbar .win-body { padding-block-end: 150px; }
 }
 @media (max-width: 380px) { .topbar .help-menu { display: none; } }
 .page-actions .btn.keep-label span { display: inline; }
+
+/* ───────── Purchase bill items (3.21) ───────── */
+.bill-items { display: flex; flex-direction: column; gap: 8px; }
+.bill-items.has { border: 1px solid var(--line-2); border-radius: 14px; padding: 10px 12px; background: var(--surface-2); }
+.bi-head, .bi-row { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(70px, .8fr) minmax(86px, .9fr) minmax(90px, 1fr) minmax(80px, auto) 34px; gap: 8px; align-items: end; }
+.bi-head { font-size: .74rem; font-weight: 600; color: var(--muted); padding-inline: 2px; }
+.bi-row .field { margin: 0; }
+.bi-row .field > label, .bi-row .field-label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.bi-amt { align-self: center; text-align: end; font-weight: 600; white-space: nowrap; padding-block-start: 2px; }
+.bi-row .icon-btn { align-self: center; }
+.bi-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.bill-total { font-size: 1.7rem; font-weight: 700; padding: 6px 2px; color: var(--ink); }
+.bill-items-view { margin-block: 4px 10px; }
+.bill-items-view tfoot td { border-top: 2px solid var(--line); font-weight: 600; }
+@media (max-width: 640px) {
+  .bi-head { display: none; }
+  .bi-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px; grid-template-areas: 'd d x' 'q u u' 'p a a'; padding-block: 8px; border-bottom: 1px dashed var(--line); }
+  .bi-row:last-of-type { border-bottom: 0; }
+  .bi-row > :nth-child(1) { grid-area: d; } .bi-row > :nth-child(2) { grid-area: q; } .bi-row > :nth-child(3) { grid-area: u; }
+  .bi-row > :nth-child(4) { grid-area: p; } .bi-row > :nth-child(5) { grid-area: a; } .bi-row > :nth-child(6) { grid-area: x; }
+  .bi-row .field > label, .bi-row .field-label { position: static; inline-size: auto; block-size: auto; clip: auto; overflow: visible; }
+}
+
+/* ───────── Settings in groups (3.21) ───────── */
+.set-cols { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+.set-nav { position: sticky; top: calc(var(--chrome-h, var(--top-h)) + 12px); display: flex; flex-direction: column; gap: 10px; }
+.win-body .set-nav { top: 0; }
+.set-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.set-cat { display: flex; align-items: center; gap: 12px; inline-size: 100%; border: 1.5px solid transparent; background: none; border-radius: 14px; padding: 9px 10px; text-align: start; color: var(--ink); cursor: pointer; font: inherit; transition: background var(--t-fast), border-color var(--t-fast); }
+.set-cat:hover { background: var(--surface-2); }
+.set-cat.on { background: var(--teal-soft); border-color: color-mix(in srgb, var(--teal) 40%, transparent); }
+.set-cat-ico { inline-size: 36px; block-size: 36px; border-radius: 11px; background: var(--surface-3); color: var(--teal); display: grid; place-items: center; flex: none; }
+.set-cat.on .set-cat-ico { background: var(--teal); color: #fff; }
+.set-cat-text { display: flex; flex-direction: column; min-inline-size: 0; flex: 1; }
+.set-cat-text small { color: var(--muted); font-size: .76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-cat-go { color: var(--faint); flex: none; display: none; }
+.set-none { padding: 8px 10px; }
+.set-body { display: flex; flex-direction: column; gap: 16px; min-inline-size: 0; }
+.set-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 1.25rem; color: var(--teal); }
+.set-back { display: none; }
+@media (max-width: 900px) {
+  .set-cols { grid-template-columns: minmax(0, 1fr); }
+  .set-nav { position: static; }
+  .set-cat-go { display: block; }
+  .set-cat { background: var(--surface); border-color: var(--line-2); padding: 11px 12px; }
+  .set-layout:not(.has-cat) .set-body { display: none; }
+  .set-layout.has-cat .set-nav { display: none; }
+  .set-back { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; border: 0; background: var(--surface-3); color: var(--ink-2); border-radius: 99px; padding: 6px 14px; font: inherit; font-size: .86rem; cursor: pointer; }
+}
 </style>
 </head>
-<body><div id="root"></div><script src="app.js?v=3.20.0"></script></body>
+<body><div id="root"></div><script src="app.js?v=3.21.0"></script></body>
 </html>

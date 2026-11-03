@@ -399,7 +399,7 @@ function AccountMenu({ compact }) {
             <div><b>{actor?.name}</b><span>{t(`role.${actor?.role}`)}</span><small>{farm.settings.farmName}</small></div>
           </div>
           <p className="acct-pop-role">{t(`role.${actor?.role}.d`)}</p>
-          <button type="button" role="menuitem" onClick={() => { setOpen(false); nav('options'); }}><Icon name="people" size={17} />{t('pf.team')}</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); nav('options', null, 'steam'); }}><Icon name="people" size={17} />{t('pf.team')}</button>
           {(farms.length > 1 || can(actor?.role, 'settings')) && <FarmSwitch onPick={() => setOpen(false)} />}
           <button type="button" role="menuitem" className="acct-logoff" onClick={logOff}><Icon name="logout" size={17} />{t('pf.logOff')}</button>
         </div>

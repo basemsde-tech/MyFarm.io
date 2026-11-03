@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.20.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.21.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -444,7 +444,7 @@ function parseHash() {
   const name = ROUTES.includes(parts[0]) ? parts[0] : 'cash';
   // ids themselves contain dashes; the last part may be a tab name
   const rest = parts.slice(1);
-  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations', 'pl', 'bs', 'aging', 'journal', 'tax', 'sold', 'orders', 'reminders'];
+  const tabs = ['statement', 'bills', 'payments', 'activity', 'milk', 'eggs', 'workers', 'log', 'customers', 'cashier', 'invoices', 'open', 'obligations', 'pl', 'bs', 'aging', 'journal', 'tax', 'sold', 'orders', 'reminders', 'sfarm', 'smoney', 'swork', 'sdocs', 'steam', 'slook', 'salerts', 'sdata', 'sabout'];
   let tab = null;
   if (rest.length && tabs.includes(rest[rest.length - 1])) tab = rest.pop();
   const id = rest.length ? rest.join('-') : null;

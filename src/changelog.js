@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.21.0', date: '2026-11-03', items: [
+    ['receipt', 'فاتورة الشراء بالأصناف: «إضافة صنف» بالكمية والوحدة والسعر، والفاتورة تجمعها وتظهر في السجل وكشف الحساب', 'Purchase bills with items: “Add item” with quantity, unit and price; the bill adds them up and they show in the record and the statement'],
+    ['truck', 'أوامر الشراء مخفية ما لم تشغّلها من الإعدادات ← الإنتاج والمشتريات', 'Purchase orders are hidden unless you turn them on in Settings → Production and purchases'],
+    ['gear', 'الإعدادات في مجموعات واضحة مع بحث', 'Settings in clear groups, with a search'],
+  ] },
   { v: '3.20.0', date: '2026-11-03', items: [
     ['check', 'حدّد أسطرًا في أي قائمة حركات لترى عددها ومجموعها، مع التفاصيل والمتوسط وما بقي مستحقًا', 'Pick lines in any list of movements to see how many and their total, with details, the average and what is still due'],
     ['list', 'Shift+نقرة لمجموعة متتالية، ومربع الشهر أو اليوم للكل، وضغطة مطوّلة على الهاتف', 'Shift-click for a run of lines, the month or day box for all of it, and press and hold on a phone'],

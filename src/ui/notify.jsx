@@ -72,7 +72,7 @@ export function useNotifications() {
       const dry = tl.steps.find((s) => s.key === 'dryOff');
       if (a.repro.check === 'pregnant' && a.status !== 'dry' && dry && today >= dry.day && today < birth.day) out.push({ key: `dry:${a.id}:${dry.day}`, icon: 'cow', tone: 'info', text: t('nt.dryDue', { a: label }), go: ['animals', a.id] });
     }
-    if (bk?.due && !app.demo) out.push({ key: `backup:${today}`, icon: 'download', tone: 'warn', text: bk.state?.lastAt ? t('nt.backupDue') : t('bk.never'), go: ['options'] });
+    if (bk?.due && !app.demo) out.push({ key: `backup:${today}`, icon: 'download', tone: 'warn', text: bk.state?.lastAt ? t('nt.backupDue') : t('bk.never'), go: ['options', null, 'sdata'] });
     if (updateReady) out.push({ key: 'update', icon: 'download', tone: 'info', text: t('nt.update'), run: () => window.dispatchEvent(new Event('mz-update-ready')) });
     const order = { bad: 0, warn: 1, info: 2 };
     return out.sort((x, y) => (order[x.tone] ?? 3) - (order[y.tone] ?? 3));
@@ -250,7 +250,7 @@ export function NotificationBell() {
             {tab === 'activity' && n.newActivity.length > 0 && <button type="button" className="link small" onClick={n.seeActivity}>{t('nt.seen')}</button>}
             <span className="grow" />
             {perm === 'unsupported' ? null : n.st.push && perm === 'granted'
-              ? <button type="button" className="link small" onClick={() => { setOpen(false); nav('options'); setTimeout(() => document.getElementById('notify')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); }}><Icon name="gear" size={13} /> {t('nt.settings')}</button>
+              ? <button type="button" className="link small" onClick={() => { setOpen(false); nav('options', null, 'salerts'); setTimeout(() => document.getElementById('notify')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); }}><Icon name="gear" size={13} /> {t('nt.settings')}</button>
               : perm === 'denied' ? <span className="muted small">{t('nt.blocked')}</span>
                 : <Button size="sm" variant="primary" onClick={enablePush}>{t('nt.enable')}</Button>}
           </div>

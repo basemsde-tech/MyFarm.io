@@ -9,7 +9,9 @@ const GUIDE_FOR = { cash: 'cash', sales: 'sales', expenses: 'expenses', supplier
 import { RemindersPanel, useOverdue } from './reminders.jsx';
 import { OrdersList } from './orders.jsx';
 import { Attachments } from './documents.jsx';
-import { orderList, poNo } from '../core/orders.mjs';
+import { orderList, poNo, usesOrders } from '../core/orders.mjs';
+import { itemsText } from '../core/items.mjs';
+import { fmtQty } from '../core/money.mjs';
 import { expiringDocs } from '../core/documents.mjs';
 import { RecordRow, describe } from './tx.jsx';
 import { SelectScope, useSelectable, useRowPress, TickButton } from './select.jsx';
@@ -95,7 +97,7 @@ export function useAttention() {
     if (milkers && !farm.records.some((r) => r.type === 'milk' && r.day === today && !r.deletedAt) && new Date().getHours() >= 10) out.push({ key: `noMilk:${today}`, icon: 'milk', tone: 'info', text: t('att.noMilk'), go: ['production', null, 'milk'], action: 'milk' });
     const openBills = farm.records.filter((r) => live(r) && r.type === 'expense' && !r.supplierId && r.source !== 'person' && (r.paidC || 0) < r.amountC);
     if (openBills.length) out.push({ key: `openBills:${openBills.length}:${snap.payablesC}`, icon: 'receipt', tone: 'warn', text: `${t('att.openBills', { n: openBills.length })} · ${fmt(snap.payablesC)}`, go: ['expenses', null, 'open'] });
-    const lateOrders = orderList(farm).filter((o) => o.late).length;
+    const lateOrders = usesOrders(farm) ? orderList(farm).filter((o) => o.late).length : 0;
     if (lateOrders) out.push({ key: `lateOrders:${lateOrders}`, icon: 'truck', tone: 'warn', text: t('att.lateOrders', { n: lateOrders }), go: ['suppliers', null, 'orders'] });
     const docs = expiringDocs(farm, today);
     if (docs.length) out.push({ key: `docs:${docs.map((d) => d.id + d.state).join(',')}`, icon: 'file', tone: docs.some((d) => d.state === 'expired') ? 'bad' : 'warn', text: t('att.docs', { n: docs.length, d: docs[0].title }), go: docs[0].owner.list === 'animals' ? ['animals', docs[0].owner.id] : docs[0].owner.list === 'customers' ? ['sales', docs[0].owner.id] : docs[0].owner.list === 'orders' ? ['suppliers', null, 'orders'] : [docs[0].owner.list, docs[0].owner.id] });
@@ -439,7 +441,7 @@ function ExpenseRow({ e, r, tab }) {
           <span className="row-ico emoji">{CATEGORY_ICON[e.category] || '•'}</span>
           <span className="row-text">
             <span className="row-title">{cat}{r?.history?.length > 0 && <span className="edited-dot" />}</span>
-            <span className="row-sub">{dayLabel(e.day, lang)} · {e.origin === 'customer' ? t('exp.fromCustomer') : e.origin === 'person' ? t('exp.fromPerson', { n: app.names.person(e.personId) }) : e.supplierId ? app.names.supplier(e.supplierId) : (e.vendor || e.note || t(`exp.src.${r?.source || 'cash'}`))}</span>
+            <span className="row-sub">{dayLabel(e.day, lang)} · {r?.items?.length ? `${itemsText(r.items, t, fmtQty)} · ` : ''}{e.origin === 'customer' ? t('exp.fromCustomer') : e.origin === 'person' ? t('exp.fromPerson', { n: app.names.person(e.personId) }) : e.supplierId ? app.names.supplier(e.supplierId) : (e.vendor || e.note || t(`exp.src.${r?.source || 'cash'}`))}</span>
           </span>
           <span className="amt-stack"><span className="num">{fmt(e.amountC)}</span>{bill && <Pill status={st}>{t(`st.${st}`)}</Pill>}</span>
         </button>
@@ -522,9 +524,9 @@ function SupplierList({ tab }) {
   const totalOver = rows.reduce((a, r) => a + r.over, 0);
   return (
     <div className="screen">
-      <PageHead title={t('sup.title')} actions={<><Button icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button><Button icon="file" onClick={() => ui.open('order')}>{t('po.new')}</Button><Button variant="primary" icon="truck" onClick={() => ui.open('supplierPay')}>{t('sup.pay')}</Button></>} />
-      <Tabs value={tab} onChange={(x) => nav('suppliers', null, x === 'suppliers' ? null : x)} tabs={[{ value: 'suppliers', label: t('sup.title'), count: farm.suppliers.filter((s) => !s.archived).length }, { value: 'orders', label: t('po.title'), count: activeOrders || undefined }]} />
-      {tab === 'orders' ? <OrdersList /> : (<>
+      <PageHead title={t('sup.title')} actions={<><Button icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button>{usesOrders(farm) && <Button icon="file" onClick={() => ui.open('order')}>{t('po.new')}</Button>}<Button variant="primary" icon="truck" onClick={() => ui.open('supplierPay')}>{t('sup.pay')}</Button></>} />
+      <Tabs value={tab} onChange={(x) => nav('suppliers', null, x === 'suppliers' ? null : x)} tabs={[{ value: 'suppliers', label: t('sup.title'), count: farm.suppliers.filter((s) => !s.archived).length }, usesOrders(farm) && { value: 'orders', label: t('po.title'), count: activeOrders || undefined }].filter(Boolean)} />
+      {tab === 'orders' && usesOrders(farm) ? <OrdersList /> : (<>
       <section className="stats-row">
         <Stat label={t('sup.totalOwe')} value={fmt(snap.supplierDueC)} />
         <Stat label={t('sup.overdue')} value={fmt(totalOver)} tone={totalOver ? 'out' : null} />
@@ -576,13 +578,13 @@ function SupplierAccount({ id, tab }) {
       <section className="account-head sticky-bal">
         <div><div className="muted">{creditC ? t('sup.credit') : t('sup.we_owe')}</div><div className="acct-big num">{fmt(creditC || due)}</div></div>
         <div className="row-btns">
-          <Button icon="file" onClick={() => ui.open('order', { supplierId: id })}>{t('po.new')}</Button>
+          {usesOrders(farm) && <Button icon="file" onClick={() => ui.open('order', { supplierId: id })}>{t('po.new')}</Button>}
           <Button icon="receipt" onClick={() => ui.open('expense', { supplierId: id })}>{t('sup.bill')}</Button>
           <Button variant="primary" icon="cash" onClick={() => ui.open('supplierPay', { supplierId: id })}>{t('sup.pay')}</Button>
         </div>
       </section>
-      <Tabs value={tab} onChange={(x) => nav('suppliers', id, x)} tabs={[{ value: 'bills', label: t('sup.bills'), count: bills.filter((b) => b.dueC > 0).length }, { value: 'payments', label: t('sup.payments'), count: pays.length }, { value: 'orders', label: t('po.title'), count: orderList(farm).filter((o) => o.order.supplierId === id).length || undefined }]} />
-      {tab === 'orders' ? <OrdersList supplierId={id} /> : <section className="panel"><SelectScope>
+      <Tabs value={tab} onChange={(x) => nav('suppliers', id, x)} tabs={[{ value: 'bills', label: t('sup.bills'), count: bills.filter((b) => b.dueC > 0).length }, { value: 'payments', label: t('sup.payments'), count: pays.length }, usesOrders(farm) && { value: 'orders', label: t('po.title'), count: orderList(farm).filter((o) => o.order.supplierId === id).length || undefined }].filter(Boolean)} />
+      {tab === 'orders' && usesOrders(farm) ? <OrdersList supplierId={id} /> : <section className="panel"><SelectScope>
         {tab === 'bills' ? (bills.length ? [...bills].reverse().map((b) => <BillRow key={b.id} b={b} s={s} />
         ) : <Empty title={t('sup.bills')} icon="receipt" />) : (
           pays.length ? (showAll ? pays : pays.slice(0, 12)).map((r) => <RecordRow key={r.id} r={r} dir={-1} selItem={{ sign: undefined }} onOpen={() => ui.open('drawer', { id: r.id })} />) : <Empty title={t('sup.payments')} icon="cash" />
@@ -606,7 +608,7 @@ function BillRow({ b, s }) {
       <div className="row-mw">
         <button type="button" className="row-main" {...press}>
           <span className="row-ico emoji">{CATEGORY_ICON[b.category] || '•'}</span>
-          <span className="row-text"><span className="row-title">{name}</span><span className="row-sub">{b.record?.orderId && <span className="row-no num">{poNo((farm.orders || []).find((o) => o.id === b.record.orderId), farm.settings)}{b.record.deliveryNo ? ` · ${b.record.deliveryNo}` : ''}</span>}{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}</span></span>
+          <span className="row-text"><span className="row-title">{name}</span><span className="row-sub">{b.record?.orderId && <span className="row-no num">{poNo((farm.orders || []).find((o) => o.id === b.record.orderId), farm.settings)}{b.record.deliveryNo ? ` · ${b.record.deliveryNo}` : ''}</span>}{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}{b.record?.items?.length ? ` · ${itemsText(b.record.items, t, fmtQty)}` : ''}</span></span>
           <span className="amt-stack"><span className="num">{fmt(b.amountC)}</span><Pill status={b.status}>{t(`st.${b.status}`)}{b.dueC > 0 && b.dueC < b.amountC ? ` · ${fmt(b.dueC)}` : ''}</Pill></span>
         </button>
         {sel && <TickButton st={sel} k={item.key} />}

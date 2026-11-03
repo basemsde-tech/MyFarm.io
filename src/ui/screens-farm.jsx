@@ -8,6 +8,7 @@ import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput,
 import { RecordRow } from './tx.jsx';
 import { SelectScope, SelGroup } from './select.jsx';
 import { ReadingPanel } from './reading.jsx';
+import { usesOrders } from '../core/orders.mjs';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
 import { SPECIES, reproTimeline, daysBetween } from '../core/species.mjs';
@@ -593,9 +594,9 @@ export function SettingsScreen() {
     commit((f) => ({ ...updateSettings(f, { salt }), recovery: hash }), { silent: true, undoable: false });
     setRecovery(code);
   };
-  return (
-    <div className="screen settings">
-      <PageHead title={t('set.title')} />
+  // Settings in groups: a list of groups (with search) and the open group's panels.
+  const groups = [
+    { id: 'farm', icon: 'cow', panels: <>
       <fieldset className="panel" disabled={!canSet}>
         <h2>{t('set.farm')}</h2>
         <div className="grid2">
@@ -606,6 +607,8 @@ export function SettingsScreen() {
         </div>
       </fieldset>
       <LogoPanel canSet={canSet} />
+    </>, words: [t('set.farmName'), t('phone'), t('set.address'), t('set.email'), 'logo'] },
+    { id: 'money', icon: 'cash', panels: <>
       <fieldset className="panel" disabled={!canSet}>
         <h2>{t('set.money')}</h2>
         <div className="grid3">
@@ -620,8 +623,6 @@ export function SettingsScreen() {
         </div>
         <div className="grid3">
           <QtyInput label={t('set.terms')} value={s.termsDays} onValue={(v) => set({ termsDays: Math.round(v) })} />
-          <Seg label={t('set.milkMode')} value={s.milkMode} onChange={(v) => set({ milkMode: v })} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />
-          <Seg label={t('set.milkUnit')} value={s.milkUnit} onChange={(v) => set({ milkUnit: v })} options={[{ value: 'kg', label: t('u.kg') }, { value: 'L', label: t('u.L') }]} />
         </div>
       </fieldset>
       <fieldset className="panel" disabled={!canSet}>
@@ -635,6 +636,30 @@ export function SettingsScreen() {
             <Check label={t('set.taxIncl')} checked={s.tax.inclusive} onChange={(v) => set({ tax: { ...s.tax, inclusive: v } })} />
           </div>
         )}
+      </fieldset>
+      <section className="panel">
+        <h2>{t('set.lock')} <Help k="lock" more="edit" /></h2>
+        <p className="muted small">{t('set.lockHint')}</p>
+        <div className="row-btns">
+          {s.lockedThrough && <span>{t('set.lockedThrough')} <b className="num">{s.lockedThrough}</b></span>}
+          {canSet && <Button size="sm" icon="lock" onClick={() => set({ lockedThrough: lastMonthEnd })}>{t('set.lockMonth')} ({lastMonthEnd})</Button>}
+          {canSet && s.lockedThrough && <Button size="sm" onClick={() => set({ lockedThrough: '' })}>{t('set.unlock')}</Button>}
+        </div>
+      </section>
+    </>, words: [t('set.currency'), t('set.second'), t('set.rate'), t('set.eggPrice'), t('set.wage'), t('set.terms'), t('set.tax'), t('set.taxRate'), t('set.lock')] },
+    { id: 'work', icon: 'milk', panels: <>
+      <fieldset className="panel" disabled={!canSet}>
+        <h2>{t('set.work')}</h2>
+        <div className="grid2">
+          <Seg label={t('set.milkMode')} value={s.milkMode} onChange={(v) => set({ milkMode: v })} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />
+          <Seg label={t('set.milkUnit')} value={s.milkUnit} onChange={(v) => set({ milkUnit: v })} options={[{ value: 'kg', label: t('u.kg') }, { value: 'L', label: t('u.L') }]} />
+        </div>
+        <Check label={t('set.orders')} hint={t('set.ordersHint')} checked={usesOrders(farm)} onChange={(v) => set({ purchaseOrders: v })} />
+      </fieldset>
+      <CustomCategories canSet={canSet} />
+    </>, words: [t('set.milkMode'), t('set.milkUnit'), t('set.orders'), t('po.title'), t('nav.expenses')] },
+    { id: 'docs', icon: 'file', panels: <>
+      <fieldset className="panel" disabled={!canSet}>
         <h2>{t('set.docs')}</h2>
         <div className="grid3">
           <TextInput label={t('set.prefix')} value={s.doc.prefix} onChange={(v) => set({ doc: { ...s.doc, prefix: v } })} />
@@ -645,6 +670,9 @@ export function SettingsScreen() {
         </div>
         <Check label={t('set.signatures')} checked={s.doc.signatures} onChange={(v) => set({ doc: { ...s.doc, signatures: v } })} />
       </fieldset>
+      <MessagingPanel canSet={canSet} />
+    </>, words: [t('set.docs'), t('set.prefix'), t('set.rctPrefix'), t('set.thanks'), t('set.footer'), t('set.signatures'), t('msg.settings'), 'WhatsApp', t('sale.invoice')] },
+    { id: 'team', icon: 'people', panels: <>
       <section className="panel">
         <div className="panel-head"><h2>{t('set.team')} <Help k="team" more="security" /></h2>{canSet && <Button size="sm" icon="plus" onClick={() => ui.open('profile')}>{t('set.addProfile')}</Button>}</div>
         <div className="team-grid">
@@ -667,21 +695,9 @@ export function SettingsScreen() {
           </div>
         )}
       </section>
-      <section className="panel">
-        <h2>{t('set.lock')} <Help k="lock" more="edit" /></h2>
-        <p className="muted small">{t('set.lockHint')}</p>
-        <div className="row-btns">
-          {s.lockedThrough && <span>{t('set.lockedThrough')} <b className="num">{s.lockedThrough}</b></span>}
-          {canSet && <Button size="sm" icon="lock" onClick={() => set({ lockedThrough: lastMonthEnd })}>{t('set.lockMonth')} ({lastMonthEnd})</Button>}
-          {canSet && s.lockedThrough && <Button size="sm" onClick={() => set({ lockedThrough: '' })}>{t('set.unlock')}</Button>}
-        </div>
-      </section>
-      <HelpPanel />
       <SecurityPanel canSet={canSet} />
-      <FarmsPanel />
-      <MessagingPanel canSet={canSet} />
-      <CustomCategories canSet={canSet} />
-      <BackupPanel canSet={canSet} />
+    </>, words: [t('set.team'), t('set.recovery'), t('pf.team'), t('sec.title'), 'PIN', t('pf.codeOn')] },
+    { id: 'look', icon: 'sun', panels: <>
       <section className="panel">
         <h2>{t('set.appearance')}</h2>
         <div className="grid2">
@@ -711,8 +727,15 @@ export function SettingsScreen() {
         </div>
         <ReadingPanel />
       </section>
-      <NotifySettings />
+    </>, words: [t('set.theme'), t('set.language'), t('set.palette'), t('set.sound'), t('rd.title'), t('rd.size'), t('rd.font'), t('set.dark')] },
+    { id: 'alerts', icon: 'alert', panels: <NotifySettings />, words: [t('nt.title'), t('set.sound')] },
+    { id: 'data', icon: 'download', panels: <>
+      <BackupPanel canSet={canSet} />
+      <FarmsPanel />
       <DangerZone locked={demo ? 'demo' : !can(actor?.role, 'purge') ? 'role' : null} />
+    </>, words: [t('set.backup'), t('farms.title'), t('dz.title')] },
+    { id: 'about', icon: 'help', panels: <>
+      <HelpPanel />
       <section className="panel">
         <h2>{t('set.about')}</h2>
         <p className="num">{t('set.version', { v: VERSION.name })} · {VERSION.season[prefs.lang]} <button type="button" className="link" onClick={() => ui.open('whatsNew')}>{t('upd.whatsNew')}</button></p>
@@ -722,6 +745,46 @@ export function SettingsScreen() {
         </div>
         <RefreshPanel />
       </section>
+    </>, words: [t('set.version', { v: '' }), t('upd.whatsNew'), t('rf.title'), t('set.demo'), t('nav.guide')] },
+  ];
+  return <SettingsLayout groups={groups} />;
+}
+
+/** Settings: groups on the side (a list on phones), with a search over every setting's name. */
+function SettingsLayout({ groups }) {
+  const { t, route, nav } = useApp();
+  const [q, setQ] = useState('');
+  const tab = route.tab?.startsWith('s') ? route.tab.slice(1) : null;
+  const cur = groups.find((g) => g.id === tab) || null;
+  const shown = cur || groups[0];
+  const norm = (x) => String(x || '').toLowerCase();
+  const hits = q.trim() ? groups.filter((g) => [t(`sg.${g.id}`), t(`sg.${g.id}.sub`), ...g.words].some((w) => norm(w).includes(norm(q.trim())))) : groups;
+  const go = (id) => { nav('options', null, `s${id}`); setQ(''); window.scrollTo({ top: 0 }); };
+  return (
+    <div className={`screen settings set-layout ${cur ? 'has-cat' : ''}`}>
+      <PageHead title={t('set.title')} />
+      <div className="set-cols">
+        <nav className="set-nav" aria-label={t('set.title')}>
+          <input className="input search" type="search" placeholder={t('sg.search')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('sg.search')} />
+          <ul>
+            {hits.map((g) => (
+              <li key={g.id}>
+                <button type="button" className={`set-cat ${shown.id === g.id ? 'on' : ''}`} aria-current={shown.id === g.id ? 'page' : undefined} onClick={() => go(g.id)}>
+                  <span className="set-cat-ico"><Icon name={g.icon} size={18} /></span>
+                  <span className="set-cat-text"><b>{t(`sg.${g.id}`)}</b><small>{t(`sg.${g.id}.sub`)}</small></span>
+                  <Icon name="chev" size={15} className="flip-rtl set-cat-go" />
+                </button>
+              </li>
+            ))}
+            {!hits.length && <li className="muted small set-none">{t('sg.none')}</li>}
+          </ul>
+        </nav>
+        <div className="set-body">
+          <button type="button" className="set-back" onClick={() => nav('options')}><Icon name="back" size={16} className="flip-rtl" />{t('sg.all')}</button>
+          <h2 className="set-title"><Icon name={shown.icon} size={20} />{t(`sg.${shown.id}`)}</h2>
+          {shown.panels}
+        </div>
+      </div>
     </div>
   );
 }

@@ -373,6 +373,7 @@ export function DocSheet({ kind, id, party, partyId, onClose }) {
     const map = { opening: t('cash.opening'), sale: t('t.sale'), paidAtSale: t('sale.payNow'), payment: t('t.payment'), paymentKept: `${t('t.payment')} · ${t('pay.keptBy')} ${names.person(l.record?.keptBy)}`, offset: `${t(`c.${l.category}`)} · ${l.desc || ''}`, bill: `${t('sup.bill')} · ${t(`c.${l.category}`)}`, paidAtBill: t('exp.paid'), supplierPay: t('t.supplierPay'), inject: t('pp.inject'), cashOut: t('pp.cashOut'), personal: t('pp.personal'), outOfPocket: `${t('pp.outOfPocket')} · ${t(`c.${l.category}`)}`, supplierFromPocket: `${t('pp.supplier')} · ${names.supplier(l.record?.supplierId)}`, retained: `${t('pp.retained')} · ${names.customer(l.record?.customerId)}` };
     let d = map[l.kind] || l.kind;
     if (l.kind === 'sale') d += ` · ${l.record.lines.map((x) => `${t(`pr.${x.product}`)} ${fmtQty(x.qty)} ${t(`u.${x.unit}`)}`).join('، ')}`;
+    if (l.kind === 'bill' && l.record?.items?.length) d += ` · ${l.record.items.map((x) => `${x.desc || ''} ${fmtQty(x.qty)} ${t(`u.${x.unit}`)} × ${fmt(x.priceC)}`.trim()).join('، ')}`;
     return d;
   };
   const no = (r) => docNo(r, s) || `${s.doc.prefix || 'INV-'}${r.id.slice(-6).toUpperCase()}`;

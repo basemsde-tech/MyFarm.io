@@ -10,6 +10,7 @@ import { fmtQty } from '../core/money.mjs';
 import { can } from '../core/catalog.mjs';
 import { docNo } from '../core/accounts.mjs';
 import { measureOf, useSelectable, useRowPress, TickButton } from './select.jsx';
+import { itemsText } from '../core/items.mjs';
 import { removeRecords, produceOf, deleteMaster, setArchived, linkedRecords, herdRecords } from '../core/removal.mjs';
 
 /** One-line description of any record, for lists and drawers. */
@@ -22,7 +23,7 @@ export function describe(r, { t, names, fmt }) {
     case 'payment':
       return { title: names.customer(r.customerId), sub: [r.keptBy && `${t('pay.keptBy')} ${names.person(r.keptBy)}`, r.offsets?.length && `${t('pay.offsets')}: ${fmt(offsetsC(r))}`].filter(Boolean).join(' · ') || t(`m.${r.method || 'cash'}`), amountC: (r.cashC || 0) + offsetsC(r), icon: 'cash', kind: t('t.payment') };
     case 'expense':
-      return { title: t(`c.${r.category}`) !== `c.${r.category}` ? t(`c.${r.category}`) : r.category, sub: [r.supplierId && names.supplier(r.supplierId), r.vendor, r.source === 'person' && t('exp.fromPerson', { n: names.person(r.personId) }), r.note].filter(Boolean).join(' · '), amountC: r.amountC, icon: 'receipt', kind: t('t.expense') };
+      return { title: t(`c.${r.category}`) !== `c.${r.category}` ? t(`c.${r.category}`) : r.category, sub: [r.items?.length && itemsText(r.items, t, fmtQty), r.supplierId && names.supplier(r.supplierId), r.vendor, r.source === 'person' && t('exp.fromPerson', { n: names.person(r.personId) }), r.note].filter(Boolean).join(' · '), amountC: r.amountC, icon: 'receipt', kind: t('t.expense') };
     case 'supplierPay':
       return { title: names.supplier(r.supplierId), sub: r.source === 'person' ? t('exp.fromPerson', { n: names.person(r.personId) }) : t(`acc.${r.source === 'bank' ? 'bank' : 'cash'}`), amountC: r.amountC, icon: 'truck', kind: t('t.supplierPay') };
     case 'opening':
@@ -232,6 +233,13 @@ export function RecordDrawer({ id, onClose }) {
           </div>
         );
       })()}
+      {r.type === 'expense' && r.items?.length > 0 && (
+        <table className="tbl bill-items-view">
+          <thead><tr><th>{t('items.desc')}</th><th className="num">{t('qty')}</th><th className="num">{t('items.price')}</th><th className="num">{t('total')}</th></tr></thead>
+          <tbody>{r.items.map((it, i) => <tr key={i}><td>{it.desc || '—'}</td><td className="num">{fmtQty(it.qty)} {t(`u.${it.unit}`)}</td><td className="num">{fmt(it.priceC)}</td><td className="num">{fmt(it.amountC)}</td></tr>)}</tbody>
+          <tfoot><tr><td colSpan={3}>{t('items.total')}</td><td className="num"><b>{fmt(r.amountC)}</b></td></tr></tfoot>
+        </table>
+      )}
       <dl className="kv">
         {fieldList.map(([k, v]) => v != null && v !== '' && (<React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>))}
         <dt>{t('by')}</dt><dd>{r.createdByName}</dd>
@@ -265,7 +273,7 @@ export function RecordDrawer({ id, onClose }) {
 }
 
 function fieldName(f, t) {
-  const map = { amountC: 'amount', paidC: 'exp.paid', cashC: 'pay.cash', totalC: 'total', paidNowC: 'sale.payNow', lines: 'items', liters: 'qty', count: 'qty', day: 'date', customerId: 'sale.customer', supplierId: 'exp.supplier', personId: 'cap.person', category: 'exp.item', note: 'note', offsets: 'pay.offsets', source: 'exp.source', voided: 'status', costC: 'med.cost', session: 'prod.day' };
+  const map = { amountC: 'amount', paidC: 'exp.paid', cashC: 'pay.cash', totalC: 'total', paidNowC: 'sale.payNow', lines: 'items', items: 'items', liters: 'qty', count: 'qty', day: 'date', customerId: 'sale.customer', supplierId: 'exp.supplier', personId: 'cap.person', category: 'exp.item', note: 'note', offsets: 'pay.offsets', source: 'exp.source', voided: 'status', costC: 'med.cost', session: 'prod.day' };
   return map[f] ? t(map[f]) : f;
 }
 function fmtVal(v, f, { fmt, t, names }) {
@@ -276,6 +284,7 @@ function fmtVal(v, f, { fmt, t, names }) {
   if (f === 'personId' || f === 'keptBy') return names.person(v);
   if (f === 'lines') return v.map((l) => `${t(`pr.${l.product}`)} ${fmtQty(l.qty)}×${fmt(l.priceC)}`).join('، ');
   if (f === 'offsets') return v.map((o) => `${t(`c.${o.category}`)} ${fmt(o.amountC)}`).join('، ') || '—';
+  if (f === 'items') return Array.isArray(v) ? v.map((i) => `${i.desc || ''} ${fmtQty(i.qty)}×${fmt(i.priceC)}`.trim()).join('، ') || '—' : '—';
   if (f === 'voided') return v ? t('st.voided') : '—';
   if (f === 'category') return t(`c.${v}`);
   if (typeof v === 'object') return JSON.stringify(v);

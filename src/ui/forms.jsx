@@ -6,6 +6,7 @@ import { TxFooter, issuesFor } from './tx.jsx';
 import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledger.mjs';
 import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
+import { cleanItems, itemAmountC, itemsTotalC, itemsQty } from '../core/items.mjs';
 import { deleteRecords, updateSettings, newId } from '../core/commands.mjs';
 import { litresOf, saleMilkL, lToKg, kgToL, KG_PER_L } from '../core/milk.mjs';
 
@@ -209,16 +210,34 @@ export function ExpenseSheet({ record, supplierId: presetSup, personId: presetPe
     day: record.day, group: groupOf(record.category, custom), category: record.category, amountC: record.amountC,
     payMode: record.paidC >= record.amountC ? 'all' : record.paidC > 0 ? 'part' : 'none', paidC: record.paidC || 0, source: record.source || 'cash', personId: record.personId || '',
     supplierId: record.supplierId || '', vendor: record.vendor || '', qty: record.qty || 0, unit: record.unit || '', dueDay: record.dueDay || '', capital: !!record.capital, receipt: record.receipt || '', note: record.note || '',
+    items: (record.items || []).map((it) => ({ ...it, key: newId() })),
   } : {
     day: today, group: presetCat ? groupOf(presetCat, custom) : '', category: presetCat || '', amountC: presetAmt || 0, payMode: presetSup ? 'none' : 'all', paidC: 0,
-    source: presetPerson ? 'person' : 'cash', personId: presetPerson || '', supplierId: presetSup || '', vendor: '', qty: 0, unit: '', dueDay: '', capital: false, receipt: '', note: '',
+    source: presetPerson ? 'person' : 'cash', personId: presetPerson || '', supplierId: presetSup || '', vendor: '', qty: 0, unit: '', dueDay: '', capital: false, receipt: '', note: '', items: [],
   };
   const [f, setF, clearDraft, restored] = useDraft(`exp:${presetSup || ''}:${presetPerson || ''}:${presetCat || ''}`, init, !record && !presetAmt);
   const set = (p) => setF((x) => ({ ...x, ...p }));
-  const paidC = f.source === 'person' ? f.amountC : f.payMode === 'all' ? f.amountC : f.payMode === 'none' ? 0 : f.paidC;
+  // Items: when the bill lists what was bought, its amount is their sum.
+  const itemList = f.items || [];
+  const hasItems = itemList.length > 0;
+  const billItems = cleanItems(itemList);
+  const amt = hasItems ? itemsTotalC(itemList) : f.amountC;
+  const iq = hasItems ? itemsQty(itemList) : null;
+  const setItem = (k, p) => set({ items: itemList.map((it) => (it.key === k ? { ...it, ...p } : it)) });
+  const addItem = () => {
+    const unit = f.unit || CATEGORY_UNIT[f.category] || 'item';
+    // The first item takes over what was typed so far, so the total does not jump.
+    if (!hasItems && f.amountC > 0) {
+      const q = f.qty > 0 ? f.qty : 1;
+      set({ items: [{ key: newId(), desc: catLabel(f.category), qty: q, unit, priceC: Math.round(f.amountC / q) }, { key: newId(), desc: '', qty: 1, unit, priceC: 0 }] });
+    } else set({ items: [...itemList, { key: newId(), desc: hasItems ? '' : catLabel(f.category), qty: 1, unit, priceC: 0 }] });
+  };
+  const dropItem = (k) => { const rest = itemList.filter((it) => it.key !== k); set(rest.length ? { items: rest } : { items: [], amountC: itemsTotalC(itemList) }); };
+  const paidC = f.source === 'person' ? amt : f.payMode === 'all' ? amt : f.payMode === 'none' ? 0 : f.paidC;
   const rec = {
-    type: 'expense', day: f.day, category: f.category, amountC: f.amountC, paidC, source: f.source, personId: f.source === 'person' ? f.personId : null,
-    supplierId: f.supplierId || null, vendor: f.vendor, qty: f.qty || null, unit: f.qty ? (f.unit || CATEGORY_UNIT[f.category] || 'item') : null,
+    type: 'expense', day: f.day, category: f.category, amountC: amt, paidC, source: f.source, personId: f.source === 'person' ? f.personId : null,
+    ...(hasItems ? { items: billItems } : record?.items ? { items: null } : {}),
+    supplierId: f.supplierId || null, vendor: f.vendor, qty: hasItems ? (iq?.qty || null) : (f.qty || null), unit: hasItems ? (iq?.unit || null) : f.qty ? (f.unit || CATEGORY_UNIT[f.category] || 'item') : null,
     dueDay: f.dueDay || null, capital: f.capital, receipt: f.receipt || null, note: f.note, ...(workerId ? { workerId } : {}), ...(payroll || record?.payroll ? { payroll: true } : {}),
   };
   const issues = validateRecord(rec, { today });
@@ -227,8 +246,8 @@ export function ExpenseSheet({ record, supplierId: presetSup, personId: presetPe
   const catLabel = (k) => { const c = custom.find((x) => x.key === k); return c ? c.name : t(`c.${k}`); };
   const step = !f.group ? 1 : !f.category ? 2 : 3;
   return (
-    <Sheet title={record ? t('exp.edit') : t('exp.title')} onClose={onClose} wide
-      footer={step === 3 ? <TxFooter recs={[rec]} editing={record} extraOp={extraOp} onDone={(m) => { clearDraft(); if (m === 'close' || record) onClose(); else set({ amountC: 0, paidC: 0, note: '', vendor: '', qty: 0, receipt: '' }); }} /> : null}>
+    <Sheet title={record ? t('exp.edit') : f.supplierId ? t('sup.bill') : t('exp.title')} onClose={onClose} wide
+      footer={step === 3 ? <TxFooter recs={[rec]} editing={record} extraOp={extraOp} onDone={(m) => { clearDraft(); if (m === 'close' || record) onClose(); else set({ amountC: 0, paidC: 0, note: '', vendor: '', qty: 0, receipt: '', items: [] }); }} /> : null}>
       {restored && <div className="note info">{t('ed.draft')} <button type="button" className="link" onClick={clearDraft}>{t('ed.discard')}</button></div>}
       <div className="crumbs">
         <button type="button" className={step === 1 ? 'on' : ''} onClick={() => set({ group: '', category: '' })}>{f.group ? t(`g.${f.group}`) : t('exp.group')}</button>
@@ -247,15 +266,38 @@ export function ExpenseSheet({ record, supplierId: presetSup, personId: presetPe
       {step === 3 && (
         <>
           <div className="grid2">
-            <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad error={issuesFor(issues, 'amount', t, f.amountC)} />
+            {hasItems
+              ? <Field label={t('items.total')}><div className="bill-total num">{fmt(amt)}</div></Field>
+              : <MoneyInput big autoFocus label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad error={issuesFor(issues, 'amount', t, f.amountC)} />}
             <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
+          </div>
+          <div className={`bill-items ${hasItems ? 'has' : ''}`}>
+            {hasItems && (
+              <>
+                <div className="bi-head" aria-hidden="true"><span>{t('items.desc')}</span><span>{t('qty')}</span><span>{t('unit')}</span><span>{t('items.price')}</span><span className="num">{t('total')}</span><span /></div>
+                {itemList.map((it, i) => (
+                  <div className="bi-row" key={it.key}>
+                    <TextInput label={t('items.desc')} value={it.desc} onChange={(v) => setItem(it.key, { desc: v })} placeholder={catLabel(f.category)} autoFocus={i === itemList.length - 1 && i > 0 && !it.desc} />
+                    <QtyInput label={t('qty')} value={it.qty} onValue={(v) => setItem(it.key, { qty: v })} error={issuesFor(issues, `items.${i}`, t) && !(it.qty > 0) ? t('e.item.qty') : null} />
+                    <Select label={t('unit')} value={it.unit} onChange={(v) => setItem(it.key, { unit: v })} options={opts(['kg', 'bag', 'L', 'head', 'dose', 'item'], t, 'u.')} />
+                    <MoneyInput label={t('items.price')} cents={it.priceC} onCents={(c) => setItem(it.key, { priceC: c })} error={issuesFor(issues, `items.${i}`, t) && !(it.priceC > 0) ? t('e.item.price') : null} />
+                    <span className="bi-amt num">{itemAmountC(it) ? fmt(itemAmountC(it)) : '—'}</span>
+                    <IconButton icon="close" label={t('items.remove')} onClick={() => dropItem(it.key)} />
+                  </div>
+                ))}
+              </>
+            )}
+            <div className="bi-foot">
+              <Button size="sm" icon="plus" onClick={addItem}>{t('items.add')}</Button>
+              {hasItems ? <span className="muted small">{t('items.count', { n: billItems.length })} · <b className="num">{fmt(amt)}</b></span> : <span className="muted small">{t('items.hint')}</span>}
+            </div>
           </div>
           <Seg label={t('exp.source')} value={f.source} onChange={(v) => set({ source: v })} options={opts(['cash', 'person'], t, 'exp.src.')} />
           {f.source === 'person' && <Select label={t('exp.person')} value={f.personId} onChange={(v) => set({ personId: v })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />}
           {f.source !== 'person' && (
             <>
               <Seg value={f.payMode} onChange={(v) => set({ payMode: v })} options={[{ value: 'all', label: t('exp.payAll') }, { value: 'part', label: t('exp.payPart') }, { value: 'none', label: t('exp.payNone') }]} />
-              {f.payMode === 'part' && <MoneyInput label={t('exp.paid')} cents={f.paidC} onCents={(c) => set({ paidC: c })} hint={t('exp.remain', { a: fmt(Math.max(0, f.amountC - f.paidC)) })} error={issuesFor(issues, 'paid', t)} />}
+              {f.payMode === 'part' && <MoneyInput label={t('exp.paid')} cents={f.paidC} onCents={(c) => set({ paidC: c })} hint={t('exp.remain', { a: fmt(Math.max(0, amt - f.paidC)) })} error={issuesFor(issues, 'paid', t)} />}
               {f.payMode !== 'all' && <DateInput label={t('exp.due')} value={f.dueDay} onChange={(v) => set({ dueDay: v })} />}
             </>
           )}
@@ -263,10 +305,12 @@ export function ExpenseSheet({ record, supplierId: presetSup, personId: presetPe
             <Picker label={t('exp.supplier')} value={f.supplierId} onChange={(v) => set({ supplierId: v })} options={parties.suppliers} allowEmpty={t('exp.noSupplier')} placeholder={t('exp.noSupplier')} />
             <TextInput label={t('exp.vendor')} value={f.vendor} onChange={(v) => set({ vendor: v })} />
           </div>
-          <div className="grid2">
-            <QtyInput label={`${t('qty')} (${t('optional')})`} value={f.qty} onValue={(v) => set({ qty: v })} />
-            <Select label={t('unit')} value={f.unit || CATEGORY_UNIT[f.category] || 'item'} onChange={(v) => set({ unit: v })} options={opts(['kg', 'bag', 'L', 'head', 'dose', 'item'], t, 'u.')} />
-          </div>
+          {!hasItems && (
+            <div className="grid2">
+              <QtyInput label={`${t('qty')} (${t('optional')})`} value={f.qty} onValue={(v) => set({ qty: v })} />
+              <Select label={t('unit')} value={f.unit || CATEGORY_UNIT[f.category] || 'item'} onChange={(v) => set({ unit: v })} options={opts(['kg', 'bag', 'L', 'head', 'dose', 'item'], t, 'u.')} />
+            </div>
+          )}
           {f.source !== 'person' && snap.capitalC > 0 && <Check label={t('exp.capital')} checked={f.capital} onChange={(v) => set({ capital: v })} hint={`${t('cash.capital')}: ${fmt(snap.capitalC)}`} />}
           <Field label={t('exp.receipt')}>
             <div className="receipt-row">

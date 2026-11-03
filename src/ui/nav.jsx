@@ -4,7 +4,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useApp } from './store.jsx';
 import { Icon } from './kit.jsx';
 import { useOverdue } from './reminders.jsx';
-import { orderList } from '../core/orders.mjs';
+import { orderList, usesOrders } from '../core/orders.mjs';
 import { expiringDocs } from '../core/documents.mjs';
 import { can } from '../core/catalog.mjs';
 import { useRefresh } from './refresh.jsx';
@@ -27,7 +27,7 @@ function useBadges() {
   return useMemo(() => {
     const b = {};
     if (overdue.length) b.sales = { n: overdue.length, tone: 'warn', hint: t('nb.overdue', { n: overdue.length }) };
-    const open = orderList(farm).filter((o) => o.status === 'open' || o.status === 'partial');
+    const open = usesOrders(farm) ? orderList(farm).filter((o) => o.status === 'open' || o.status === 'partial') : [];
     if (open.length) b.suppliers = { n: open.length, tone: open.some((o) => o.late) ? 'warn' : 'info', hint: t('nb.orders', { n: open.length }) };
     const docs = expiringDocs(farm, today);
     if (docs.length) b.options = { n: docs.length, tone: docs.some((d) => d.state === 'expired') ? 'bad' : 'warn', hint: t('nb.docs', { n: docs.length }) };

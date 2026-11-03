@@ -77,7 +77,7 @@ export function Icon({ name, size = 18, className = '', style }) {
 
 export function Button({ variant = 'quiet', size, icon, children, className = '', ...rest }) {
   return (
-    <button type="button" className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`} {...rest}>
+    <button type="button" className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`} aria-label={typeof children === 'string' && icon ? children : undefined} {...rest}>
       {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
       {children && <span>{children}</span>}
     </button>

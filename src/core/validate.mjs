@@ -45,6 +45,11 @@ export function validateRecord(rec, ctx = {}) {
       if ((rec.paidC || 0) > (rec.amountC || 0)) out.push(err('paid.overAmount', 'paid'));
       if (rec.source === 'person' && !rec.personId) out.push(err('person.required', 'personId'));
       if (rec.qty && rec.unitPriceC && Math.abs(Math.round(rec.qty * rec.unitPriceC) - rec.amountC) > 1) out.push(warn('qtyPrice.mismatch', 'amount'));
+      if (Array.isArray(rec.items) && rec.items.length) {
+        rec.items.forEach((it, i) => { if (!(it.qty > 0) || !(it.priceC > 0)) out.push(err('item.incomplete', `items.${i}`)); });
+        const sum = rec.items.reduce((s, it) => s + (it.amountC || 0), 0);
+        if (sum !== rec.amountC) out.push(err('items.total', 'amount'));
+      }
       break;
     }
     case 'supplierPay': {
