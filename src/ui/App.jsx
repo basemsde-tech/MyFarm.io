@@ -5,6 +5,7 @@ import { initMoneyFlip } from './moneyflip.js';
 import { initPrint } from './print.js';
 import { play as playSound } from './sound.js';
 import { RestoreSheet } from './restore.jsx';
+import { PartBackupSheet } from './parts.jsx';
 import { SCREENS, Crumb, TabBar, WindowLayer, Taskbar } from './workspace.jsx';
 import { routeKey } from './ws.mjs';
 import { AppProvider, useApp } from './store.jsx';
@@ -34,7 +35,7 @@ const SHEETS = {
   sale: SaleSheet, payment: PaymentSheet, expense: ExpenseSheet, supplierPay: SupplierPaySheet, capital: PersonSheet, milk: MilkSheet, milkUse: MilkUseSheet,
   eggs: EggsSheet, medicine: MedicineSheet, new: NewMenu, drawer: RecordDrawer, delete: DeleteDialog, purge: PurgeDialog, void: VoidDialog,
   customer: CustomerSheet, supplier: SupplierSheet, person: PersonMasterSheet, animal: AnimalSheet, animalEvent: AnimalEventSheet, worker: WorkerSheet,
-  obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
+  obligation: ObligationSheet, profile: ProfileSheet, restore: RestoreSheet, backupParts: PartBackupSheet, deleteMaster: MasterDeleteDialog, doc: DocSheet, palette: Palette, erase: EraseDialog, attendance: () => null,
   whatsNew: ({ onClose }) => <WhatsNew all onClose={onClose} />,
   order: OrderSheet, orderView: OrderView, receive: ReceiveSheet, reason: ReasonSheet, reminder: ReminderSheet, document: DocumentSheet, removeFarm: RemoveFarmDialog, logoff: LogOffDialog, backupNow: BackupNowDialog, dangerConfirm: DangerConfirm, dangerRange: DangerRange,
 };

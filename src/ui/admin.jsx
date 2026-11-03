@@ -247,6 +247,7 @@ export function BackupPanel({ canSet }) {
       </div>
       <div className="row-btns">
         <Button icon="download" onClick={() => ui.open('backupNow')}>{t('set.export')}</Button>
+        <Button icon="list" onClick={() => ui.open('backupParts')}>{t('pt.open')}</Button>
         <Button icon="upload" onClick={() => ui.open('restore')} disabled={!canSet}>{t('set.import')}</Button>
       </div>
       {snaps.length > 0 && (

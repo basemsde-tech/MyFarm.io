@@ -4,6 +4,8 @@ import { Button, Icon, Pill, Sheet, Check } from './kit.jsx';
 import { readBackup, backupEnvelope } from '../core/backup.mjs';
 import { downloadText } from './screens-money.jsx';
 import { compute } from '../core/ledger.mjs';
+import { isPartFile } from '../core/partial.mjs';
+import { PartRestore } from './parts.jsx';
 
 /** Pick a backup file, review exactly what will be restored and how balances compare, then replace the farm. */
 export function RestoreSheet({ onClose, fromSetup, preset }) {
@@ -14,6 +16,7 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const [keepCopy, setKeepCopy] = useState(true);
+  const [part, setPart] = useState(null);
   const input = useRef(null);
   const hasData = farm.records.length > 0 || farm.customers.length > 0;
 
@@ -26,9 +29,13 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
   }, [preset?.text]); // eslint-disable-line react-hooks/exhaustive-deps
   const load = async (file) => {
     if (!file) return;
-    setError(''); setRes(null); setBusy(true); setFileName(file.name);
+    setError(''); setRes(null); setPart(null); setBusy(true); setFileName(file.name);
     try {
       const text = await file.text();
+      // A selective backup (only some parts) restores into this farm instead of replacing it.
+      let data = null;
+      try { data = JSON.parse(text); } catch { /* reported below */ }
+      if (isPartFile(data)) { setPart(data); setBusy(false); return; }
       const r = readBackup(text, { lang });
       if (!r.ok) setError(t(`rs.${r.code === 'backup.notJson' ? 'notJson' : 'unknown'}`));
       else setRes(r);
@@ -70,7 +77,8 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
           <Button variant="primary" icon="upload" onClick={restore}>{t('rs.restore')}</Button>
         </div>
       ) : null}>
-      {!res && (
+      {part && <PartRestore env={part} fileName={fileName} fromSetup={fromSetup} onDone={onClose} onOther={() => { setPart(null); setFileName(''); }} />}
+      {!res && !part && (
         <label className={`drop ${drag ? 'over' : ''}`} onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
           onDrop={(e) => { e.preventDefault(); setDrag(false); load(e.dataTransfer.files?.[0]); }}>
           <input ref={input} type="file" accept="application/json,.json" hidden onChange={(e) => { load(e.target.files?.[0]); e.target.value = ''; }} />

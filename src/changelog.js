@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.22.0', date: '2026-11-03', items: [
+    ['download', 'نسخ أجزاء مختارة: احفظ الحيوانات أو المبيعات أو الإنتاج أو غيرها وحدها', 'Back up chosen parts: save animals, sales, production or any other part on its own'],
+    ['upload', 'استعادة جزء دون استبدال المزرعة: إضافة الناقص أو استبدال الأجزاء المختارة، مع معاينة الأرصدة قبل التغيير', 'Restore a part without replacing the farm: add what is missing or replace the chosen parts, with a preview of balances first'],
+  ] },
   { v: '3.21.0', date: '2026-11-03', items: [
     ['receipt', 'فاتورة الشراء بالأصناف: «إضافة صنف» بالكمية والوحدة والسعر، والفاتورة تجمعها وتظهر في السجل وكشف الحساب', 'Purchase bills with items: “Add item” with quantity, unit and price; the bill adds them up and they show in the record and the statement'],
     ['truck', 'أوامر الشراء مخفية ما لم تشغّلها من الإعدادات ← الإنتاج والمشتريات', 'Purchase orders are hidden unless you turn them on in Settings → Production and purchases'],
