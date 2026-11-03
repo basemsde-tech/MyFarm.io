@@ -11,7 +11,8 @@ import { OrdersList } from './orders.jsx';
 import { Attachments } from './documents.jsx';
 import { orderList, poNo } from '../core/orders.mjs';
 import { expiringDocs } from '../core/documents.mjs';
-import { RecordRow, SelectionBar, describe } from './tx.jsx';
+import { RecordRow, describe } from './tx.jsx';
+import { SelectScope, useSelectable, useRowPress, TickButton } from './select.jsx';
 import { customerInvoices, supplierBills, live } from '../core/ledger.mjs';
 import { partyLines } from '../core/statement.mjs';
 import { periodRange } from '../core/statement.mjs';
@@ -124,7 +125,6 @@ export function CashScreen() {
   const [dir, setDir] = useState('all');
   const account = 'cash';
   const [kind, setKind] = useState('');
-  const [sel, setSel] = useState([]);
   const cv = useListView('cash', { view: 'list', sort: 'day', dir: 'desc' });
   const att = useAttention();
   const todayFlows = snap.flows.filter((f) => f.day === today && f.account === 'cash');
@@ -161,12 +161,11 @@ export function CashScreen() {
       renderRow={(f) => {
         const rec = recById.get(f.id);
         if (!rec) return null;
-        return <RecordRow key={f.id + f.kind} r={rec} dir={f.dir} onOpen={() => ui.open('drawer', { id: f.id })} selectable selected={sel.includes(f.id)}
-          onSelect={(on) => setSel((cur) => (on ? [...cur, f.id] : cur.filter((x) => x !== f.id)))}
+        return <RecordRow key={f.id + f.kind} r={rec} dir={f.dir} onOpen={() => ui.open('drawer', { id: f.id })}
+          selKey={`${f.id}|${f.kind}|${f.account}`} selItem={{ type: f.kind, typeLabel: t(FLOW_LABEL[f.kind] || f.kind), label: t(FLOW_LABEL[f.kind] || f.kind), amountC: f.amountC, sign: f.dir > 0 ? 1 : -1, qty: null, unit: null, skip: false }}
           right={<span className="amt-stack"><span className={f.dir > 0 ? 'in' : 'out'}>{f.dir > 0 ? '+' : '−'}{fmt(f.amountC).replace('−', '')}</span><small className="muted">{fmt(f.balC)}</small></span>} />;
       }} />
-  ), [listRows, recById, sel, lang, fmt, farm.settings, cv.sort, cv.dir]); // eslint-disable-line react-hooks/exhaustive-deps
-  const selTotal = rows.filter((r) => sel.includes(r.id)).reduce((s, r) => s + r.dir * r.amountC, 0);
+  ), [listRows, recById, lang, fmt, farm.settings, cv.sort, cv.dir, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const exportCSV = () => downloadText(`cash-${per.range.from}-${per.range.to}.csv`, toCSV([
     [t('date'), t('details'), t('in'), t('out'), t('balance'), t('by')],
     ...[...rows].reverse().map((r) => { const rec = recById.get(r.id); const d = rec ? describe(rec, app) : {}; return [r.day, `${t(FLOW_LABEL[r.kind])} · ${d.title || ''}`, r.dir > 0 ? r.amountC / 100 : '', r.dir < 0 ? r.amountC / 100 : '', r.balC / 100, r.by]; }),
@@ -233,10 +232,9 @@ export function CashScreen() {
           <span className="out">{outP ? `−${fmt(outP)}` : fmt(0)}</span>
           <span>{t('cash.closing')} <b>{fmt(opening + inP - outP)}</b></span>
         </div>
-        {rows.length ? <div className={`dv-${cv.view}`}>{journalList}</div> : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
+        {rows.length ? <SelectScope><div className={`dv-${cv.view}`}>{journalList}</div></SelectScope> : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>
       </div>
-      <SelectionBar selected={sel} clear={() => setSel([])} totalC={selTotal} />
     </div>
   );
 }
@@ -321,13 +319,14 @@ function CustomerAccount({ id, tab = 'activity' }) {
         </div>
       </section>
       <Tabs value={tab} onChange={(x) => nav('sales', id, x)} tabs={[{ value: 'activity', label: t('cust.activity') }, { value: 'invoices', label: t('cust.sales'), count: inv.length }, { value: 'payments', label: t('cust.payments') }]} />
-      <section className="panel">
+      <section className="panel"><SelectScope>
         {list.length ? list.map((r) => {
           const i = invMap.get(r.id);
           return <RecordRow key={r.id} r={r} hideParty dir={r.type === 'payment' ? 1 : 0} onOpen={() => ui.open('drawer', { id: r.id })}
+            selItem={{ sign: undefined, ...(r.type === 'sale' ? { amountC: r.totalC, extras: i && !r.voided ? { due: { label: t('sel.stillDue'), c: i.dueC || 0 } } : null } : null) }}
             right={r.type === 'sale' ? <span className="amt-stack"><span>{r.voided ? <s>{fmt(r.totalC)}</s> : fmt(r.totalC)}</span>{i && <Pill status={i.status}>{t(`st.${i.status}`)}{i.status !== 'paid' && ` · ${fmt(i.dueC)}`}</Pill>}</span> : undefined} />;
         }) : <Empty title={t('sales.noSales')} icon="cart" />}
-      </section>
+      </SelectScope></section>
       <Attachments list="customers" id={id} />
     </div>
   );
@@ -341,7 +340,6 @@ export function ExpensesScreen() {
   const per = usePeriod('month');
   const [q, setQ] = useState('');
   const [group, setGroup] = useState('');
-  const [sel, setSel] = useState([]);
   const recById = useMemo(() => new Map(farm.records.map((r) => [r.id, r])), [farm.records]);
   const rows = snap.expenses.filter((e) => e.day >= per.range.from && e.day <= per.range.to)
     .filter((e) => !group || groupOf(e.category, farm.settings.categories) === group)
@@ -411,29 +409,11 @@ export function ExpensesScreen() {
               </div>
             </FilterPanel>
             {rows.length ? (
-              <div className={`dv-${ev.view}`}><Grouped key={ev.sort + ev.dir} rows={shownRows} groupKey={ev.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.amountC, 0))}</span></>}
-                renderRow={(e) => {
-                  const r = recById.get(e.id);
-                  const st = e.paidC >= e.amountC ? 'paid' : e.paidC > 0 ? 'partial' : (e.dueDay && e.dueDay < today ? 'overdue' : 'unpaid');
-                  return (
-                    <div key={e.id + e.category + e.amountC} className="row">
-                      {r?.type === 'expense' && <input type="checkbox" className="row-check" checked={sel.includes(e.id)} onChange={(ev) => setSel(ev.target.checked ? [...sel, e.id] : sel.filter((x) => x !== e.id))} aria-label={t('select')} />}
-                      <button type="button" className="row-main" onClick={() => ui.open('drawer', { id: e.id })}>
-                        <span className="row-ico emoji">{CATEGORY_ICON[e.category] || '•'}</span>
-                        <span className="row-text">
-                          <span className="row-title">{t(`c.${e.category}`) !== `c.${e.category}` ? t(`c.${e.category}`) : (farm.settings.categories.find((c) => c.key === e.category)?.name || e.category)}{r?.history?.length > 0 && <span className="edited-dot" />}</span>
-                          <span className="row-sub">{dayLabel(e.day, lang)} · {e.origin === 'customer' ? t('exp.fromCustomer') : e.origin === 'person' ? t('exp.fromPerson', { n: app.names.person(e.personId) }) : e.supplierId ? app.names.supplier(e.supplierId) : (e.vendor || e.note || t(`exp.src.${r?.source || 'cash'}`))}</span>
-                        </span>
-                        <span className="amt-stack"><span className="num">{fmt(e.amountC)}</span>{(e.origin === 'farm' || e.origin === 'supplier') && <Pill status={st}>{t(`st.${st}`)}</Pill>}</span>
-                      </button>
-                      {tab === 'open' && r?.type === 'expense' && (e.origin === 'farm') && <Button size="sm" onClick={() => commit((f) => editRecord(f, e.id, { paidC: e.amountC }, actor, t('exp.payBill')), { label: t('st.paid') })}>{t('exp.payBill')}</Button>}
-                      {tab === 'open' && e.origin === 'supplier' && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: e.supplierId, billId: e.id })}>{t('exp.payBill')}</Button>}
-                    </div>
-                  );
-                }} /></div>
+              <SelectScope><div className={`dv-${ev.view}`}><Grouped key={ev.sort + ev.dir} rows={shownRows} groupKey={ev.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.amountC, 0))}</span></>}
+                renderRow={(e) => <ExpenseRow key={e.id + e.category + e.amountC} e={e} r={recById.get(e.id)} tab={tab} />}
+                /></div></SelectScope>
             ) : <Empty title={t('exp.none')} body={t('exp.noneHint')} icon="receipt" action={<Button variant="primary" icon="plus" onClick={() => ui.open('expense')}>{t('new.expense')}</Button>} />}
           </section>
-          <SelectionBar selected={sel} clear={() => setSel([])} totalC={rows.filter((e) => sel.includes(e.id)).reduce((s, e) => s + e.amountC, 0)} />
         </>
       )}
     </div>
@@ -441,6 +421,36 @@ export function ExpensesScreen() {
 }
 
 /** The next due day of a repeating cost. Months keep their day (31 → 28/29/30 → 31), never drifting to the 3rd. */
+/** One expense line, pickable for totals. */
+function ExpenseRow({ e, r, tab }) {
+  const app = useApp();
+  const { farm, t, fmt, ui, lang, today, commit, actor } = app;
+  const st = e.paidC >= e.amountC ? 'paid' : e.paidC > 0 ? 'partial' : (e.dueDay && e.dueDay < today ? 'overdue' : 'unpaid');
+  const cat = t(`c.${e.category}`) !== `c.${e.category}` ? t(`c.${e.category}`) : (farm.settings.categories.find((c) => c.key === e.category)?.name || e.category);
+  const bill = e.origin === 'farm' || e.origin === 'supplier';
+  const item = { key: `${e.id}|${e.category}|${e.amountC}`, recId: r?.type === 'expense' ? e.id : null, type: 'expense', typeLabel: t('t.expense'), label: cat, amountC: e.amountC,
+    extras: bill ? { unpaid: { label: t('sel.unpaid'), c: Math.max(0, e.amountC - (e.paidC || 0)) } } : null };
+  const sel = useSelectable(item);
+  const press = useRowPress(sel, () => ui.open('drawer', { id: e.id }));
+  return (
+    <div className={`row ${sel?.on ? 'selected' : ''}`}>
+      <div className="row-mw">
+        <button type="button" className="row-main" {...press}>
+          <span className="row-ico emoji">{CATEGORY_ICON[e.category] || '•'}</span>
+          <span className="row-text">
+            <span className="row-title">{cat}{r?.history?.length > 0 && <span className="edited-dot" />}</span>
+            <span className="row-sub">{dayLabel(e.day, lang)} · {e.origin === 'customer' ? t('exp.fromCustomer') : e.origin === 'person' ? t('exp.fromPerson', { n: app.names.person(e.personId) }) : e.supplierId ? app.names.supplier(e.supplierId) : (e.vendor || e.note || t(`exp.src.${r?.source || 'cash'}`))}</span>
+          </span>
+          <span className="amt-stack"><span className="num">{fmt(e.amountC)}</span>{bill && <Pill status={st}>{t(`st.${st}`)}</Pill>}</span>
+        </button>
+        {sel && <TickButton st={sel} k={item.key} />}
+      </div>
+      {tab === 'open' && r?.type === 'expense' && (e.origin === 'farm') && <Button size="sm" onClick={() => commit((f) => editRecord(f, e.id, { paidC: e.amountC }, actor, t('exp.payBill')), { label: t('st.paid') })}>{t('exp.payBill')}</Button>}
+      {tab === 'open' && e.origin === 'supplier' && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: e.supplierId, billId: e.id })}>{t('exp.payBill')}</Button>}
+    </div>
+  );
+}
+
 export function nextDue(day, freq, anchor) {
   if (freq === 'weekly') return addDays(day, 7);
   const [y, m, d] = day.split('-').map(Number);
@@ -572,22 +582,36 @@ function SupplierAccount({ id, tab }) {
         </div>
       </section>
       <Tabs value={tab} onChange={(x) => nav('suppliers', id, x)} tabs={[{ value: 'bills', label: t('sup.bills'), count: bills.filter((b) => b.dueC > 0).length }, { value: 'payments', label: t('sup.payments'), count: pays.length }, { value: 'orders', label: t('po.title'), count: orderList(farm).filter((o) => o.order.supplierId === id).length || undefined }]} />
-      {tab === 'orders' ? <OrdersList supplierId={id} /> : <section className="panel">
-        {tab === 'bills' ? (bills.length ? [...bills].reverse().map((b) => (
-          <div className="row" key={b.id}>
-            <button type="button" className="row-main" onClick={() => (b.record ? ui.open('drawer', { id: b.id }) : ui.open('supplier', { record: s }))}>
-              <span className="row-ico emoji">{CATEGORY_ICON[b.category] || '•'}</span>
-              <span className="row-text"><span className="row-title">{b.opening ? t('c.opening') : t(`c.${b.category}`)}</span><span className="row-sub">{b.record?.orderId && <span className="row-no num">{poNo((farm.orders || []).find((o) => o.id === b.record.orderId), farm.settings)}{b.record.deliveryNo ? ` · ${b.record.deliveryNo}` : ''}</span>}{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}</span></span>
-              <span className="amt-stack"><span className="num">{fmt(b.amountC)}</span><Pill status={b.status}>{t(`st.${b.status}`)}{b.dueC > 0 && b.dueC < b.amountC ? ` · ${fmt(b.dueC)}` : ''}</Pill></span>
-            </button>
-            {b.dueC > 0 && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: id, billId: b.id })}>{t('exp.payBill')}</Button>}
-          </div>
-        )) : <Empty title={t('sup.bills')} icon="receipt" />) : (
-          pays.length ? (showAll ? pays : pays.slice(0, 12)).map((r) => <RecordRow key={r.id} r={r} dir={-1} onOpen={() => ui.open('drawer', { id: r.id })} />) : <Empty title={t('sup.payments')} icon="cash" />
+      {tab === 'orders' ? <OrdersList supplierId={id} /> : <section className="panel"><SelectScope>
+        {tab === 'bills' ? (bills.length ? [...bills].reverse().map((b) => <BillRow key={b.id} b={b} s={s} />
+        ) : <Empty title={t('sup.bills')} icon="receipt" />) : (
+          pays.length ? (showAll ? pays : pays.slice(0, 12)).map((r) => <RecordRow key={r.id} r={r} dir={-1} selItem={{ sign: undefined }} onOpen={() => ui.open('drawer', { id: r.id })} />) : <Empty title={t('sup.payments')} icon="cash" />
         )}
         {tab === 'payments' && pays.length > 12 && !showAll && <Button className="more-btn" onClick={() => setShowAll(true)}>{t('more')} ({pays.length - 12})</Button>}
-      </section>}
+      </SelectScope></section>}
       <Attachments list="suppliers" id={id} />
+    </div>
+  );
+}
+
+/** One supplier bill, pickable for totals. */
+function BillRow({ b, s }) {
+  const { farm, t, fmt, ui, lang } = useApp();
+  const name = b.opening ? t('c.opening') : t(`c.${b.category}`) !== `c.${b.category}` ? t(`c.${b.category}`) : (farm.settings.categories.find((c) => c.key === b.category)?.name || b.category);
+  const item = { key: b.id, recId: b.record ? b.id : null, type: 'bill', typeLabel: t('sup.bills'), label: name, amountC: b.amountC, extras: { due: { label: t('sel.stillDue'), c: b.dueC || 0 } } };
+  const sel = useSelectable(item);
+  const press = useRowPress(sel, () => (b.record ? ui.open('drawer', { id: b.id }) : ui.open('supplier', { record: s })));
+  return (
+    <div className={`row ${sel?.on ? 'selected' : ''}`}>
+      <div className="row-mw">
+        <button type="button" className="row-main" {...press}>
+          <span className="row-ico emoji">{CATEGORY_ICON[b.category] || '•'}</span>
+          <span className="row-text"><span className="row-title">{name}</span><span className="row-sub">{b.record?.orderId && <span className="row-no num">{poNo((farm.orders || []).find((o) => o.id === b.record.orderId), farm.settings)}{b.record.deliveryNo ? ` · ${b.record.deliveryNo}` : ''}</span>}{b.opening ? t('sup.openingHint') : dayLabel(b.day, lang)}{b.dueDay ? ` · ${t('exp.due')} ${dayLabel(b.dueDay, lang)}` : ''}</span></span>
+          <span className="amt-stack"><span className="num">{fmt(b.amountC)}</span><Pill status={b.status}>{t(`st.${b.status}`)}{b.dueC > 0 && b.dueC < b.amountC ? ` · ${fmt(b.dueC)}` : ''}</Pill></span>
+        </button>
+        {sel && <TickButton st={sel} k={item.key} />}
+      </div>
+      {b.dueC > 0 && <Button size="sm" onClick={() => ui.open('supplierPay', { supplierId: s.id, billId: b.id })}>{t('exp.payBill')}</Button>}
     </div>
   );
 }
@@ -648,10 +672,11 @@ function PersonAccount({ id }) {
         <FilterPanel id="person" onReset={per.reset} chips={[{ label: per.label, active: !per.isDefault }]}>
           <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} options={['month', 'year', 'all', 'custom']} />
         </FilterPanel>
-        {lines.length ? lines.map((l, i) => l.record && (
+        <SelectScope>{lines.length ? lines.map((l, i) => l.record && (
           <RecordRow key={l.ref + l.kind + i} r={l.record} onOpen={() => ui.open('drawer', { id: l.ref })}
+            selKey={`${l.ref}|${l.kind}|${i}`} selItem={{ amountC: l.chargeC || l.creditC, sign: l.chargeC ? 1 : -1 }}
             right={<span className={`num ${l.chargeC ? 'in' : 'out'}`}>{l.chargeC ? `+${fmt(l.chargeC)}` : `−${fmt(l.creditC).replace('−', '')}`}</span>} />
-        )) : <Empty title={t('cash.empty')} icon="people" action={<Button variant="primary" onClick={() => ui.open('capital', { personId: id })}>{t('ppl.what')}</Button>} />}
+        )) : <Empty title={t('cash.empty')} icon="people" action={<Button variant="primary" onClick={() => ui.open('capital', { personId: id })}>{t('ppl.what')}</Button>} />}</SelectScope>
       </section>
       <Attachments list="people" id={id} />
     </div>

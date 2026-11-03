@@ -3,12 +3,16 @@
 //   preview/   a single self-contained page for previews (React from cdnjs, no service worker)
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } from 'node:fs';
+import { TEXT_SIZES, FONTS } from './src/fonts.mjs';
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const VERSION = pkg.version;
 const css = readFileSync('src/styles.css', 'utf8');
-const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap">';
-const BOOT = `<script>try{var p=JSON.parse(localStorage.getItem('mazraati-device-v4')||'{}');var l=p.lang||'ar';document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';if(p.theme&&p.theme!=='system')document.documentElement.setAttribute('data-theme',p.theme);}catch(e){document.documentElement.dir='rtl';}</script>`;
+const FONT_LINKS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap">';
+const FS = JSON.stringify(TEXT_SIZES);
+const FC = JSON.stringify(Object.fromEntries(Object.entries(FONTS).map(([k, f]) => [k, f.css || ''])));
+// Before the app loads: language, theme and the reading settings (text size, font, clearer text).
+const BOOT = `<script>try{var p=JSON.parse(localStorage.getItem('mazraati-device-v4')||'{}');var d=document.documentElement;var l=p.lang||'ar';d.lang=l;d.dir=l==='ar'?'rtl':'ltr';if(p.theme&&p.theme!=='system')d.setAttribute('data-theme',p.theme);var fs=${FS}[p.textSize];if(fs&&fs!==1)d.style.setProperty('--fs',fs);var fc=${FC};if(p.font&&p.font!=='readex'&&p.font in fc){d.setAttribute('data-font',p.font);if(fc[p.font]){var k=document.createElement('link');k.id='mz-font';k.rel='stylesheet';k.href=fc[p.font];document.head.appendChild(k);}}if(p.clearText)d.setAttribute('data-clear','');}catch(e){document.documentElement.dir='rtl';}</script>`;
 
 mkdirSync('dist', { recursive: true });
 mkdirSync('preview', { recursive: true });
@@ -31,7 +35,7 @@ writeFileSync('dist/index.html', `<!doctype html>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="icon" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-${FONTS}
+${FONT_LINKS}
 ${BOOT}
 <style>${css}</style>
 </head>
@@ -90,7 +94,7 @@ const prev = await build({ entryPoints: ['src/main.jsx'], bundle: true, minify: 
 const js = prev.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 writeFileSync('preview/index.html', `<title>Mazraati Farm Office</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-${FONTS}
+${FONT_LINKS}
 ${BOOT}
 <style>${css}
 #root{min-height:100%}

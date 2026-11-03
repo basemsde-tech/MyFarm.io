@@ -27,6 +27,7 @@ import { NAV, navLabel, SideNav, Dock, MoreSheet } from './nav.jsx';
 import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { RefreshButton, RefreshedToast } from './refresh.jsx';
+import { applyReading } from '../fonts.mjs';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, BackupNowDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const SHEETS = {
@@ -499,6 +500,7 @@ function Root() {
     if (prefs.theme === 'system') el.removeAttribute('data-theme'); else el.setAttribute('data-theme', prefs.theme);
     el.setAttribute('data-palette', prefs.palette || 'sage');
   }, [lang, dir, prefs.theme, prefs.palette]);
+  useEffect(() => { applyReading(document, prefs); }, [prefs.textSize, prefs.font, prefs.clearText]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!farm.settings.setupDone) return <><Setup /><Toasts /></>;
   if (!actor) return <><ProfileGate /><Toasts /></>;
   return <BackupProvider><NotifyProvider><Shell /></NotifyProvider></BackupProvider>;

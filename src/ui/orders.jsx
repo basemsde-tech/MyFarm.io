@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useApp, inFrame } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Seg, Select, TextInput, TextArea, DateInput, MoneyInput, QtyInput, Sheet, FilterPanel, Picker, dayLabel } from './kit.jsx';
+import { SelectScope, SelBox, SelGroup } from './select.jsx';
 import { orderList, orderStatus, saveOrder, receiveDelivery, cancelOrder, closeOrder, reopenOrder, poNo, lineTotalC, validateOrder } from '../core/orders.mjs';
 import { EXPENSE_GROUPS, CATEGORY_UNIT } from '../core/catalog.mjs';
 import { fmtQty } from '../core/money.mjs';
@@ -28,6 +29,7 @@ export function OrdersList({ supplierId }) {
   const { farm, t, fmt, ui, lang, names } = useApp();
   const [status, setStatus] = useState(supplierId ? 'all' : 'active');
   const [q, setQ] = useState('');
+  const tbl = useRef(null);
   const all = useMemo(() => orderList(farm).filter((o) => !supplierId || o.order.supplierId === supplierId), [farm, supplierId]);
   const rows = all.filter((o) => (status === 'all' || (status === 'active' ? ['open', 'partial'].includes(o.status) : o.status === status))
     && (!q || `${poNo(o.order, farm.settings)} ${names.supplier(o.order.supplierId)} ${o.order.lines.map((l) => l.desc).join(' ')}`.toLowerCase().includes(q.toLowerCase())));
@@ -57,15 +59,16 @@ export function OrdersList({ supplierId }) {
           </div>
         </FilterPanel>
         {rows.length ? (
-          <div className="table-wrap">
+          <SelectScope deletable={false}><div className="table-wrap" ref={tbl}>
             <table className="tbl po-tbl">
-              <thead><tr><th>{t('po.no')}</th>{!supplierId && <th>{t('exp.supplier')}</th>}<th>{t('date')}</th><th>{t('po.expected')}</th><th>{t('po.progress')}</th><th className="num">{t('po.ordered')}</th><th>{t('status')}</th></tr></thead>
+              <thead><tr><th className="cell-sel"><SelGroup getEl={() => tbl.current?.querySelector('tbody')} /></th><th>{t('po.no')}</th>{!supplierId && <th>{t('exp.supplier')}</th>}<th>{t('date')}</th><th>{t('po.expected')}</th><th>{t('po.progress')}</th><th className="num">{t('po.ordered')}</th><th>{t('status')}</th></tr></thead>
               <tbody>
                 {rows.map((o) => {
                   const q1 = o.lines.reduce((a, l) => a + (+l.qty || 0), 0);
                   const q2 = o.lines.reduce((a, l) => a + Math.min(+l.qty || 0, l.receivedQty), 0);
                   return (
                     <tr key={o.order.id} className={`clickable ${o.status === 'cancelled' ? 'is-void' : ''}`} onClick={() => ui.open('orderView', { id: o.order.id })}>
+                      <td className="cell-sel" onClick={(e) => e.stopPropagation()}><SelBox item={{ key: o.order.id, recId: null, type: 'order', typeLabel: t('po.title'), label: t('po.title'), amountC: o.orderedC, skip: o.status === 'cancelled', extras: { billed: { label: t('po.billed'), c: o.billedC || 0 } } }} /></td>
                       <td className="num"><b>{poNo(o.order, farm.settings)}</b><div className="muted small">{o.order.lines.length} {t('items')}</div></td>
                       {!supplierId && <td>{names.supplier(o.order.supplierId)}</td>}
                       <td className="num">{dayLabel(o.order.day, lang)}</td>
@@ -78,7 +81,7 @@ export function OrdersList({ supplierId }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </div></SelectScope>
         ) : <Empty title={t('po.none')} body={t('po.noneHint')} icon="truck" action={<Button variant="primary" icon="plus" onClick={() => ui.open('order', { supplierId })}>{t('po.new')}</Button>} />}
       </section>
     </>

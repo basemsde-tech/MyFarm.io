@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, DateInput, FilterPanel, dayLabel, monthLabel } from './kit.jsx';
+import { SelectScope, SelBox, SelGroup } from './select.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { profitAndLoss, balanceSheet, receivablesAging, payablesAging, trialBalance, journal, taxSummary, invoiceRegister, journalRows, docNo, BUCKETS } from '../core/accounts.mjs';
 import { toCSV } from '../core/reports.mjs';
@@ -243,14 +244,15 @@ function Journal() {
       {view === 'journal' ? (
         <section className="panel">
           <p className="muted small">{t('acc.journalHint')} <Help k="journal" /></p>
-          {entries.length ? entries.slice(0, limit).map((e) => (
+          {entries.length ? <SelectScope deletable={false}>{entries.slice(0, limit).map((e) => (
             <div key={e.id} className="je">
+              <div className="je-top"><SelBox item={{ key: e.id, recId: null, type: 'je', typeLabel: t('acc.journal'), label: e.type === 'opening' ? t('cash.opening') : t(`t.${e.type}`), amountC: e.lines.reduce((a, l) => a + (l.dr || 0), 0) }} />
               <button type="button" className="je-head" onClick={() => e.record && ui.open('drawer', { id: e.id })} disabled={!e.record}>
                 <span className="je-date num">{e.day.startsWith('0000') ? '—' : dayLabel(e.day, lang)}</span>
                 {e.record?.no && <span className="row-no num">{docNo(e.record, farm.settings)}</span>}
                 <span className="je-type">{e.type === 'opening' ? t('cash.opening') : t(`t.${e.type}`)}</span>
                 <span className="je-party muted">{party(e.lines.find((l) => l.party)?.party, e.lines.find((l) => l.party)?.acct || '')}</span>
-              </button>
+              </button></div>
               <table className="je-lines"><tbody>
                 {e.lines.map((l, i) => (
                   <tr key={i} className={l.cr ? 'is-cr' : ''}>
@@ -261,7 +263,7 @@ function Journal() {
                 ))}
               </tbody></table>
             </div>
-          )) : <Empty title={t('cash.empty')} icon="ledger" />}
+          ))}</SelectScope> : <Empty title={t('cash.empty')} icon="ledger" />}
           {entries.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + 60)}>{t('more')} ({entries.length - limit})</Button>}
         </section>
       ) : (
@@ -346,6 +348,7 @@ export function InvoiceRegister() {
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
   const [limit, setLimit] = useState(100);
+  const invTbl = useRef(null);
   const all = useMemo(() => invoiceRegister(farm, snap, { today, termsDays: farm.settings.termsDays, ...per.range }), [farm, snap, today, per.range]);
   const rows = all.filter((r) => (status === 'all' || (status === 'open' ? r.dueC > 0 : r.status === status))
     && (!q || `${docNo(r.sale, farm.settings)} ${names.customer(r.customerId)}`.toLowerCase().includes(q.toLowerCase())));
@@ -371,12 +374,13 @@ export function InvoiceRegister() {
           </div>
         </FilterPanel>
         {rows.length ? (
-          <div className="table-wrap">
+          <SelectScope><div className="table-wrap" ref={invTbl}>
             <table className="tbl inv-tbl">
-              <thead><tr><th>{t('doc.invoiceNo')}</th><th>{t('sale.customer')}</th><th>{t('doc.issued')}</th><th>{t('doc.due')}</th><th className="num">{t('total')}</th><th className="num">{t('doc.balanceDue')}</th><th>{t('status')}</th><th /></tr></thead>
+              <thead><tr><th className="cell-sel"><SelGroup getEl={() => invTbl.current?.querySelector('tbody')} /></th><th>{t('doc.invoiceNo')}</th><th>{t('sale.customer')}</th><th>{t('doc.issued')}</th><th>{t('doc.due')}</th><th className="num">{t('total')}</th><th className="num">{t('doc.balanceDue')}</th><th>{t('status')}</th><th /></tr></thead>
               <tbody>
                 {rows.slice(0, limit).map((r) => (
                   <tr key={r.sale.id} className={`clickable ${r.status === 'voided' ? 'is-void' : ''}`} onClick={() => ui.open('drawer', { id: r.sale.id })}>
+                    <td className="cell-sel" onClick={(e) => e.stopPropagation()}><SelBox item={{ key: r.sale.id, recId: r.sale.id, type: 'sale', typeLabel: t('t.sale'), label: t('t.sale'), amountC: r.totalC, skip: r.status === 'voided', extras: { paid: { label: t('doc.paidToDate'), c: r.paidC }, due: { label: t('sel.stillDue'), c: r.dueC } } }} /></td>
                     <td className="num"><b>{docNo(r.sale, farm.settings)}</b></td>
                     <td>{r.customerId ? names.customer(r.customerId) : <span className="muted">{t('sale.walkin')}</span>}</td>
                     <td className="num">{dayLabel(r.day, lang)}</td>
@@ -393,7 +397,7 @@ export function InvoiceRegister() {
               </tbody>
             </table>
             {rows.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + 100)}>{t('more')} ({rows.length - limit})</Button>}
-          </div>
+          </div></SelectScope>
         ) : <Empty title={t('sales.noSales')} icon="file" action={<Button variant="primary" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>
     </>

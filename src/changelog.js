@@ -2,6 +2,12 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.20.0', date: '2026-11-03', items: [
+    ['check', 'حدّد أسطرًا في أي قائمة حركات لترى عددها ومجموعها، مع التفاصيل والمتوسط وما بقي مستحقًا', 'Pick lines in any list of movements to see how many and their total, with details, the average and what is still due'],
+    ['list', 'Shift+نقرة لمجموعة متتالية، ومربع الشهر أو اليوم للكل، وضغطة مطوّلة على الهاتف', 'Shift-click for a run of lines, the month or day box for all of it, and press and hold on a phone'],
+    ['sliders', 'النص والقراءة: حجم الخط ونوعه و«نص أوضح» لقراءة أسهل', 'Text and reading: text size, font and Clearer text for easier reading'],
+    ['milk', 'زر «استخدام حليب» أعلى صفحة الإنتاج', 'A Milk use button at the top of Production'],
+  ] },
   { v: '3.19.0', date: '2026-11-03', items: [
     ['refresh', 'زر «تحديث التطبيق» ↻: يبحث عن إصدار جديد ويمسح الذاكرة المؤقتة ويعيد التحميل، دون المساس بالبيانات', 'Refresh app ↻: checks for a new version, clears the cache and reloads, without touching your data'],
     ['check', 'إن تعذّر عرض جزء من التطبيق تظهر بطاقة «إعادة المحاولة» بدل شاشة بيضاء', 'If part of the app fails to show, a Try again card appears instead of a blank screen'],

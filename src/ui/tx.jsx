@@ -9,6 +9,7 @@ import { offsetsC } from '../core/ledger.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { can } from '../core/catalog.mjs';
 import { docNo } from '../core/accounts.mjs';
+import { measureOf, useSelectable, useRowPress, TickButton } from './select.jsx';
 import { removeRecords, produceOf, deleteMaster, setArchived, linkedRecords, herdRecords } from '../core/removal.mjs';
 
 /** One-line description of any record, for lists and drawers. */
@@ -437,38 +438,34 @@ export function VoidDialog({ id, onClose }) {
 }
 
 /** A tappable movement row used in every list. */
-export function RecordRow({ r, onOpen, selectable, selected, onSelect, right, dir, hideParty, className = '', tag, title, actions }) {
+export function RecordRow({ r, onOpen, right, dir, hideParty, className = '', tag, title, actions, selKey, selItem, selectable = true }) {
   const app = useApp();
   const d = describe(r, app);
   const status = r.voided ? 'voided' : r.editedAfterClose ? 'afterClose' : null;
+  const m = measureOf(r);
+  const item = selectable ? {
+    key: selKey || r.id, recId: r.id, type: r.type, typeLabel: d.kind, label: r.type === 'expense' ? d.title : d.kind,
+    amountC: d.amountC ?? null, sign: dir === 1 || dir === -1 ? dir : undefined, qty: m.qty ?? null, unit: m.unit || null, skip: !!r.voided, ...selItem,
+  } : null;
+  const st = useSelectable(item);
+  const press = useRowPress(st, () => onOpen(r));
+  const main = (
+    <button type="button" className="row-main" {...press} title={title}>
+      <span className="row-ico"><Icon name={d.icon} size={18} /></span>
+      <span className="row-text">
+        <span className="row-title">{hideParty ? (d.sub || d.kind) : d.title}{status && <Pill status={status}>{app.t(`st.${status}`)}</Pill>}{r.history?.length > 0 && !status && <span className="edited-dot" title={app.t('st.edited')} />}{tag && <Pill tone="neutral">{tag}</Pill>}</span>
+        <span className="row-sub">{r.no && <span className="row-no num">{docNo(r, app.farm.settings)}</span>}{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
+      </span>
+      <span className={`row-amt num ${dir > 0 ? 'in' : dir < 0 ? 'out' : ''}`}>
+        {right ?? (d.amountC != null ? `${dir > 0 ? '+' : dir < 0 ? '−' : ''}${app.fmt(d.amountC).replace('−', '')}` : d.qty)}
+      </span>
+    </button>
+  );
   return (
-    <div className={`row ${selected ? 'selected' : ''} ${r.voided ? 'is-void' : ''} ${className}`}>
-      {selectable && <input type="checkbox" className="row-check" checked={!!selected} onChange={(e) => onSelect(e.target.checked)} aria-label={app.t('select')} />}
-      <button type="button" className="row-main" onClick={() => onOpen(r)} title={title}>
-        <span className="row-ico"><Icon name={d.icon} size={18} /></span>
-        <span className="row-text">
-          <span className="row-title">{hideParty ? (d.sub || d.kind) : d.title}{status && <Pill status={status}>{app.t(`st.${status}`)}</Pill>}{r.history?.length > 0 && !status && <span className="edited-dot" title={app.t('st.edited')} />}{tag && <Pill tone="neutral">{tag}</Pill>}</span>
-          <span className="row-sub">{r.no && <span className="row-no num">{docNo(r, app.farm.settings)}</span>}{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
-        </span>
-        <span className={`row-amt num ${dir > 0 ? 'in' : dir < 0 ? 'out' : ''}`}>
-          {right ?? (d.amountC != null ? `${dir > 0 ? '+' : dir < 0 ? '−' : ''}${app.fmt(d.amountC).replace('−', '')}` : d.qty)}
-        </span>
-      </button>
+    <div className={`row ${st?.on ? 'selected' : ''} ${r.voided ? 'is-void' : ''} ${className}`}>
+      {st ? <div className="row-mw">{main}<TickButton st={st} k={item.key} /></div> : main}
       {actions && <div className="row-actions">{actions}</div>}
     </div>
   );
 }
 
-/** Excel-style selection: a floating bar summarising the selected rows. */
-export function SelectionBar({ selected, clear, totalC }) {
-  const { t, ui, fmt, actor } = useApp();
-  if (!selected.length) return null;
-  return (
-    <div className="sel-bar" role="status">
-      <span>{t('ed.selected', { n: selected.length })}</span>
-      {totalC != null && <b className="num">{fmt(totalC)}</b>}
-      <Button size="sm" onClick={clear}>{t('cancel')}</Button>
-      {can(actor?.role, 'money.delete') && <Button size="sm" variant="danger" icon="trash" onClick={() => ui.open('delete', { ids: selected, onDone: clear })}>{t('delete')}</Button>}
-    </div>
-  );
-}

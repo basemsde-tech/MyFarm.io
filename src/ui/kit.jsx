@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { parseCents, parseQty, fromCents } from '../core/money.mjs';
 import { useApp } from './store.jsx';
 import { Help } from './help.jsx';
+import { SelGroup, useSel } from './select.jsx';
 
 const P = {
   cash: 'M3 7h18v10H3zM7 12h.01M17 12h.01M12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z',
@@ -423,6 +424,8 @@ export function Grouped({ rows, groupKey, renderGroup, renderRow, pageSize = 40,
   const [limit, setLimit] = useState(pageSize);
   const [collapsed, setCollapsed] = useState({});
   const { t } = useApp();
+  const sel = useSel();
+  const secs = useRef({});
   const groups = [];
   let cur = null;
   for (const r of rows.slice(0, limit)) {
@@ -442,12 +445,15 @@ export function Grouped({ rows, groupKey, renderGroup, renderRow, pageSize = 40,
     <div className="grouped">
       {groups.map((g, i) => {
         const isC = collapsed[g.key] ?? collapsedDefault(i);
+        const head = (
+          <button type="button" className="group-head" onClick={() => setCollapsed({ ...collapsed, [g.key]: !isC })} aria-expanded={!isC}>
+            <Icon name={isC ? 'chev' : 'down'} size={16} className="flip-rtl" />
+            {renderGroup(g)}
+          </button>
+        );
         return (
-          <section key={g.key} className="group">
-            <button type="button" className="group-head" onClick={() => setCollapsed({ ...collapsed, [g.key]: !isC })} aria-expanded={!isC}>
-              <Icon name={isC ? 'chev' : 'down'} size={16} className="flip-rtl" />
-              {renderGroup(g)}
-            </button>
+          <section key={g.key} className="group" ref={(el) => { secs.current[g.key] = el; }}>
+            {sel && !isC ? <div className="group-top"><SelGroup getEl={() => secs.current[g.key]?.querySelector('.group-rows')} />{head}</div> : head}
             {!isC && <div className="group-rows">{g.rows.map(renderRow)}</div>}
           </section>
         );

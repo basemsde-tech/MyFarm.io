@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { DangerZone } from './danger.jsx';
 import { trashDaysOf } from '../core/danger.mjs';
 import { milkQ } from './units.js';
 import { play as playSound, setSoundOn } from './sound.js';
 import { useApp, VERSION } from './store.jsx';
 import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput, MoneyInput, QtyInput, Check, Field, monthLabel, dayLabel, Avatar, FilterPanel, Fold, ViewMenu, useListView, sortRows } from './kit.jsx';
-import { RecordRow, SelectionBar } from './tx.jsx';
+import { RecordRow } from './tx.jsx';
+import { SelectScope, SelGroup } from './select.jsx';
+import { ReadingPanel } from './reading.jsx';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
 import { SPECIES, reproTimeline, daysBetween } from '../core/species.mjs';
@@ -28,13 +30,16 @@ import { RefreshPanel } from './refresh.jsx';
 
 /* ───────────── Production ───────────── */
 export function ProductionScreen() {
-  const { route, nav, t } = useApp();
+  const { route, nav, t, ui, today } = useApp();
   const tab = route.tab || 'milk';
+  const [milkDay, setMilkDay] = useState(today);
   return (
     <div className="screen">
-      <PageHead title={t('prod.title')} />
+      <PageHead title={t('prod.title')} actions={tab === 'milk' && <>
+        <Button icon="milk" className="keep-label" onClick={() => ui.open('milkUse', { day: milkDay })}>{t('new.milkUse')}</Button>
+      </>} />
       <Tabs value={tab} onChange={(x) => nav('production', null, x)} tabs={[{ value: 'milk', label: t('prod.milk') }, { value: 'eggs', label: t('prod.eggs') }, { value: 'workers', label: t('prod.workers') }, { value: 'log', label: t('prod.log') }]} />
-      {tab === 'milk' && <MilkTab />}
+      {tab === 'milk' && <MilkTab day={milkDay} setDay={setMilkDay} />}
       {tab === 'eggs' && <EggsTab />}
       {tab === 'workers' && <WorkersTab />}
       {tab === 'log' && <ProdLog />}
@@ -43,10 +48,9 @@ export function ProductionScreen() {
 }
 
 /* Milk: record a day's milk, and see the entries. Nothing else. */
-function MilkTab() {
-  const { farm, today } = useApp();
+function MilkTab({ day, setDay }) {
+  const { farm } = useApp();
   const recs = useMemo(() => farm.records.filter(live), [farm.records]);
-  const [day, setDay] = useState(today);
   return (
     <>
       <MilkDay day={day} setDay={setDay} recs={recs} />
@@ -174,6 +178,7 @@ function MilkEntries({ recs, day, setDay }) {
   const [kind, setKind] = useState('');
   const [show, setShow] = useState(7);
   const [openDays, setOpenDays] = useState({});
+  const dayEls = useRef({});
   const v = useListView('milkEntries', { view: 'list', sort: 'day', dir: 'desc' });
   const all = recs.filter((r) => r.type === 'milk' || r.type === 'milkUse');
   const rows = all.filter((r) => !kind || r.type === kind);
@@ -204,13 +209,14 @@ function MilkEntries({ recs, day, setDay }) {
   );
   return (
     <Fold id="milkEntries" title={t('me.title')} summary={summary} extra={extra} className={`milk-entries dv-${v.view}`}>
+      <SelectScope>
       <div className="me-tools">
         <Seg small value={kind} onChange={(x) => { setKind(x); setShow(7); }} options={[{ value: '', label: t('all') }, { value: 'milk', label: t('t.milk') }, { value: 'milkUse', label: t('t.milkUse') }]} />
         {byDayFlat && byDay.length > 1 && <button type="button" className="me-all" onClick={() => setAll(!anyOpen)}><Icon name={anyOpen ? 'up' : 'down'} size={14} />{anyOpen ? t('me.foldAll') : t('me.openAll')}</button>}
       </div>
       {!rows.length ? <Empty title={t('prod.noMilk')} body={t('prod.noMilkHint')} icon="milk" />
         : !byDayFlat ? (
-          <div className="me-flat">{sorted.slice(0, show * 6).map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} />)}
+          <div className="me-flat">{sorted.slice(0, show * 6).map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} selItem={r.type === 'milk' && !counted.has(r.id) ? { skip: true } : undefined} />)}
             {sorted.length > show * 6 && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 7)}>{t('fold.more', { n: Math.min(42, sorted.length - show * 6) })}</Button></div>}
           </div>
         ) : shown.map((g, i) => {
@@ -221,7 +227,8 @@ function MilkEntries({ recs, day, setDay }) {
           const o = isOpen(g.day);
           return (
             <div key={g.day} className={`me-day ${g.day === day ? 'on' : ''} ${o ? 'open' : 'shut'}`} style={{ '--i': i }}>
-              <div className="me-day-head">
+              <div className="me-day-head" ref={(el) => { dayEls.current[g.day] = el?.parentElement || null; }}>
+                <SelGroup getEl={() => dayEls.current[g.day]?.querySelector('.me-day-inner')} label={g.day} />
                 <button type="button" className="me-day-toggle" onClick={() => setOpenDays({ ...openDays, [g.day]: !o })} aria-expanded={o}>
                   <Icon name="down" size={15} className="me-chev" />
                   <b>{dayLabel(g.day, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</b>
@@ -237,12 +244,13 @@ function MilkEntries({ recs, day, setDay }) {
                 <button type="button" className="me-edit-btn" onClick={() => { setDay(g.day); window.scrollTo({ top: 0, behavior: 'smooth' }); }} title={t('me.editDay')} aria-label={t('me.editDay')}><Icon name="edit" size={14} /></button>
               </div>
               <div className="me-day-body"><div className="me-day-inner" ref={(el) => { if (el) { if (o) el.removeAttribute('inert'); else el.setAttribute('inert', ''); } }}>
-                {g.rows.map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} className={r.type === 'milk' && !counted.has(r.id) ? 'not-counted' : ''} tag={r.type === 'milk' && !counted.has(r.id) ? t('me.notCounted') : null} title={r.type === 'milk' && !counted.has(r.id) ? t('me.notCountedWhy') : undefined} />)}
+                {g.rows.map((r) => <RecordRow key={r.id} r={r} onOpen={() => open(r)} selItem={r.type === 'milk' && !counted.has(r.id) ? { skip: true } : undefined} className={r.type === 'milk' && !counted.has(r.id) ? 'not-counted' : ''} tag={r.type === 'milk' && !counted.has(r.id) ? t('me.notCounted') : null} title={r.type === 'milk' && !counted.has(r.id) ? t('me.notCountedWhy') : undefined} />)}
               </div></div>
             </div>
           );
         })}
       {byDayFlat && byDay.length > show && <div className="more-row"><Button size="sm" onClick={() => setShow(show + 14)}>{t('fold.more', { n: Math.min(14, byDay.length - show) })}</Button></div>}
+      </SelectScope>
     </Fold>
   );
 }
@@ -259,7 +267,7 @@ function EggsTab() {
         <Button variant="primary" size="sm" icon="egg" onClick={() => ui.open('eggs')} disabled={!flocks.length}>{t('new.eggs')}</Button>
       </div>
       {!flocks.length ? <Empty title={t('prod.noFlock')} icon="egg" action={<Button onClick={() => ui.open('animal', { species: 'chicken' })}>{t('ani.new')}</Button>} />
-        : rows.length ? <Grouped rows={rows} groupKey={(r) => r.day} renderGroup={(g) => <><span>{dayLabel(g.key, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</span><span className="num muted">{g.rows.reduce((s, r) => s + (r.type === 'eggs' ? (r.count || 0) - (r.broken || 0) : 0), 0)}</span></>} renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} />
+        : rows.length ? <SelectScope><Grouped rows={rows} groupKey={(r) => r.day} renderGroup={(g) => <><span>{dayLabel(g.key, lang, { weekday: 'long', day: 'numeric', month: 'short' })}</span><span className="num muted">{g.rows.reduce((s, r) => s + (r.type === 'eggs' ? (r.count || 0) - (r.broken || 0) : 0), 0)}</span></>} renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} /></SelectScope>
           : <Empty title={t('prod.eggs')} icon="egg" />}
     </section>
   );
@@ -307,7 +315,6 @@ function WorkersTab() {
 function ProdLog() {
   const { farm, t, ui, lang } = useApp();
   const [type, setType] = useState('');
-  const [sel, setSel] = useState([]);
   const types = ['milk', 'milkUse', 'eggs', 'medicine', 'animalEvent'];
   const pv = useListView('prodlog', { view: 'list', sort: 'day', dir: 'desc' });
   const base = farm.records.filter((r) => live(r) && types.includes(r.type) && (!type || r.type === type)).sort((a, b) => b.day.localeCompare(a.day) || b.createdAt.localeCompare(a.createdAt));
@@ -317,10 +324,9 @@ function ProdLog() {
       <FilterPanel id="prodlog" onReset={() => setType('')} chips={[type && { label: t(`t.${type}`), active: true }]} extra={<ViewMenu v={pv} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />}>
         <Seg small wrap label={t('flt.kind')} value={type} onChange={setType} options={[{ value: '', label: t('all') }, ...types.map((x) => ({ value: x, label: t(`t.${x}`) }))]} />
       </FilterPanel>
-      {rows.length ? <Grouped key={pv.sort + pv.dir} rows={rows} groupKey={pv.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="muted num">{g.rows.length}</span></>}
-        renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))} />} />
+      {rows.length ? <SelectScope><Grouped key={pv.sort + pv.dir} rows={rows} groupKey={pv.sort === 'day' ? (r) => r.day.slice(0, 7) : null} renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="muted num">{g.rows.length}</span></>}
+        renderRow={(r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />} /></SelectScope>
         : <Empty title={t('prod.noMilk')} icon="milk" />}
-      <SelectionBar selected={sel} clear={() => setSel([])} />
     </section>
   );
 }
@@ -462,7 +468,7 @@ function AnimalDetail({ id }) {
       )}
       <section className="panel">
         <h2>{t('ani.events')}</h2>
-        {events.length ? events.map((r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />) : <p className="muted">—</p>}
+        {events.length ? <SelectScope>{events.map((r) => <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} />)}</SelectScope> : <p className="muted">—</p>}
       </section>
       <Attachments list="animals" id={a.id} />
     </div>
@@ -532,7 +538,6 @@ export function ReportsScreen() {
 /* ───────────── Recently deleted ───────────── */
 export function TrashScreen() {
   const { farm, rawFarm, t, ui, commit, actor, lang } = useApp();
-  const [sel, setSel] = useState([]);
   const rows = farm.records.filter((r) => r.deletedAt && r.deleteReason !== 'replaced').sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
   const keepDays = trashDaysOf(farm);
   const left = (d) => Math.max(0, keepDays - Math.floor((Date.now() - new Date(d).getTime()) / 86400000));
@@ -543,10 +548,7 @@ export function TrashScreen() {
   const loose = rows.filter((r) => !r.deleteBatch || !batchIds.has(r.deleteBatch));
   return (
     <div className="screen">
-      <PageHead title={t('trash.title')} sub={t('trash.hintN', { n: keepDays })} actions={sel.length > 0 && <>
-        <Button icon="undo" onClick={() => { commit((f) => restoreRecords(f, sel, actor), { label: t('restored') }); setSel([]); }}>{t('restore')} ({sel.length})</Button>
-        {can(actor?.role, 'purge') && <Button variant="danger" onClick={() => ui.open('purge', { ids: sel })}>{t('ed.purge')}</Button>}
-      </>} />
+      <PageHead title={t('trash.title')} sub={t('trash.hintN', { n: keepDays })} />
       {masters.length > 0 && (
         <section className="panel">
           <h2>{t('trash.masters')}</h2>
@@ -563,10 +565,13 @@ export function TrashScreen() {
       )}
       <section className="panel">
         {masters.length > 0 && <h2>{t('trash.records')}</h2>}
-        {loose.length ? loose.map((r) => (
-          <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })} selectable selected={sel.includes(r.id)} onSelect={(on) => setSel(on ? [...sel, r.id] : sel.filter((x) => x !== r.id))}
+        {loose.length ? <SelectScope deletable={false} actions={(items, clear) => { const ids = [...new Set(items.map((i) => i.recId).filter(Boolean))]; return <>
+          <button type="button" className="sb-btn" onClick={() => { commit((f) => restoreRecords(f, ids, actor), { label: t('restored') }); clear(); }}><Icon name="undo" size={16} /><span>{t('restore')}</span></button>
+          {can(actor?.role, 'purge') && <button type="button" className="sb-btn danger" onClick={() => ui.open('purge', { ids, onDone: clear })}><Icon name="trash" size={16} /><span>{t('ed.purge')}</span></button>}
+        </>; }}>{loose.map((r) => (
+          <RecordRow key={r.id} r={r} onOpen={() => ui.open('drawer', { id: r.id })}
             actions={<span className="amt-stack"><Button size="sm" icon="undo" onClick={() => commit((f) => restoreRecords(f, [r.id], actor), { label: t('restored') })}>{t('restore')}</Button><small className="muted">{t('trash.deletedBy', { n: r.deletedByName })} · {t('trash.left', { n: left(r.deletedAt) })}</small></span>} />
-        )) : !masters.length && <Empty title={t('trash.none')} icon="trash" />}
+        ))}</SelectScope> : !masters.length && <Empty title={t('trash.none')} icon="trash" />}
       </section>
     </div>
   );
@@ -704,6 +709,7 @@ export function SettingsScreen() {
           </div>
           <div className="field-msg">{t('set.paletteHint')}</div>
         </div>
+        <ReadingPanel />
       </section>
       <NotifySettings />
       <DangerZone locked={demo ? 'demo' : !can(actor?.role, 'purge') ? 'role' : null} />

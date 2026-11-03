@@ -427,13 +427,13 @@ export function MilkSheet({ record, onClose }) {
   );
 }
 
-export function MilkUseSheet({ record, onClose }) {
+export function MilkUseSheet({ record, day, onClose }) {
   const { farm, t, today, snap, commit } = useApp();
   const kg = farm.settings.milkUnit !== 'L';
   const uses = milkUses(farm.settings);
   const r3 = (x) => Math.round(x * 1000) / 1000;
   // Typed in the farm's milk unit; stored in litres.
-  const [f, setF] = useState(record ? { day: record.day, qty: kg ? r3(lToKg(record.liters)) : record.liters, reason: record.reason, note: record.note || '' } : { day: today, qty: 0, reason: 'calves', note: '' });
+  const [f, setF] = useState(record ? { day: record.day, qty: kg ? r3(lToKg(record.liters)) : record.liters, reason: record.reason, note: record.note || '' } : { day: day && day <= today ? day : today, qty: 0, reason: 'calves', note: '' });
   const set = (p) => setF((x) => ({ ...x, ...p }));
   const rec = { type: 'milkUse', day: f.day, liters: kg ? r3(kgToL(f.qty)) : f.qty, reason: f.reason, note: f.note };
   const [edit, setEdit] = useState(null); // { id?, name, emoji }
