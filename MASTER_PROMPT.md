@@ -272,3 +272,8 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - person.cashBox (default true). src/core/people.mjs: inCashBox, capitalAccountFor (new capital entries post to 'cash' or 'outside'), entriesToMove, setPersonCashBox(farm, id, on, { movePast }) — moves earlier capital entries (history reason cashBox:in/out), skipping locked months.
 - Ledger: flow account 'outside' → snapshot.outsideC (not the cash box, not in the cash book). Books: asset account 'outside'; balance sheet assets.outside ("Money outside the cash box"); opening records carry outsideC (closeBefore). diffSnapshots adds 'outside'.
 - UI: person Edit has the checkbox (+ “also move their N earlier entries”, showing the cash-box change); the put-in / take-out form has “Through the cash box”, defaulting from the person; people cards and the person page show “Outside the cash box”; the cash box page shows “Outside the box” when not zero.
+
+## 34. 3.25 — One date format, cash table, money pills
+- src/core/dates.mjs: fullDate ("Monday 1/1/2026", Arabic weekday + isolated d/m/yyyy) and fullDateTime. kit dayLabel(day, lang) now always uses it (opts ignored); every toLocale date/time in the UI and messages goes through it. monthLabel unchanged.
+- Cash box: CashTable (screens-money.jsx) — Date · Statement (who/what + kind) · Cash in · Cash out · Balance, month separator rows with in/out, opening row, tfoot period total + closing; ticks for selection; stacked layout under 720px.
+- AmtPill (kit): green/red pill with a dot for money in/out; used in the cash table, RecordRow amounts with a direction, and person statements. `.ltr` keeps signs and $ in place in Arabic.

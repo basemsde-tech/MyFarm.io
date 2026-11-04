@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.25.0', date: '2026-11-04', items: [
+    ['calendar', 'صيغة تاريخ واحدة في كل التطبيق: الاثنين 1/1/2026', 'One date format across the app: Monday 1/1/2026'],
+    ['cash', 'الصندوق جدول واضح: التاريخ، البيان، نقد داخل، نقد خارج، الرصيد', 'The cash box is a clear table: Date, Statement, Cash in, Cash out, Balance'],
+    ['check', 'المبالغ الداخلة والخارجة بشارات ملوّنة كشارات الحالة', 'Money in and out shown as coloured pills, like the status pills'],
+  ] },
   { v: '3.24.0', date: '2026-11-04', items: [
     ['people', 'المديرون والممولون: خيار «تمرّ أمواله عبر الصندوق» لكل شخص', 'Managers and funders: a “Their money goes through the cash box” box for each person'],
     ['cash', 'من هو خارج الصندوق: ما يضعه أو يسحبه لا يغيّر الصندوق، ويظهر المجموع «خارج الصندوق»', 'For someone outside the cash box, what they put in or take out leaves the cash box alone; the total shows as “Outside the cash box”'],

@@ -3,6 +3,7 @@
 // handled. Read, dismissed and already-pushed state is kept per farm and profile on this device.
 // Desktop/phone notifications use the browser's notification system through the service worker:
 // they appear while the app is open, minimised or in a background tab.
+import { fullDate } from '../core/dates.mjs';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp, readJSON } from './store.jsx';
 import { Icon, Avatar, Button, Check } from './kit.jsx';
@@ -184,7 +185,7 @@ export function NotificationBell() {
     if (d < 60000) return t('nt.now');
     if (d < 3600000) return t('nt.min', { n: Math.round(d / 60000) });
     if (d < DAY) return t('nt.hr', { n: Math.round(d / 3600000) });
-    return new Date(at).toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' });
+    return fullDate(at, lang);
   };
   const what = (e) => (e.type ? `${t(`act.${e.kind}`)} · ${t(`t.${e.type}`)}` : e.kind === 'change' ? (e.label || t('act.change')) : t(`act.${e.kind}`));
   const seenAt = n.st.seenAt || '';

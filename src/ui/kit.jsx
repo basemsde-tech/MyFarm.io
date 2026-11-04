@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { parseCents, parseQty, fromCents } from '../core/money.mjs';
 import { useApp } from './store.jsx';
 import { Help } from './help.jsx';
+import { fullDate, fullDateTime } from '../core/dates.mjs';
 import { SelGroup, useSel } from './select.jsx';
 
 const P = {
@@ -298,6 +299,11 @@ export function Check({ label, checked, onChange, hint }) {
 }
 
 const TONE = { paid: 'good', clear: 'good', fresh: 'good', good: 'good', healthy: 'good', laying: 'good', lactating: 'good', partial: 'warn', aging: 'warn', served: 'info', pregnant: 'info', unpaid: 'neutral', owing: 'warn', overdue: 'bad', old: 'bad', sick: 'bad', voided: 'neutral', deleted: 'neutral', dry: 'neutral', credit: 'info', growing: 'info', stopped: 'neutral', sold: 'neutral', dead: 'bad', edited: 'neutral', afterClose: 'warn' };
+/** Money in (green) or out (red) as a pill, like the status pills. */
+export function AmtPill({ dir, children, strong }) {
+  return <span className={`amt-pill ${dir > 0 ? 'in' : dir < 0 ? 'out' : 'zero'} ${strong ? 'strong' : ''}`}><span className="ltr">{children}</span></span>;
+}
+
 export function Pill({ status, tone, children }) {
   return <span className={`pill pill-${tone || TONE[status] || 'neutral'}`}>{children}</span>;
 }
@@ -510,13 +516,18 @@ export function monthLabel(key, lang) {
   if (s == null) { const [y, m] = key.split('-'); s = dtf(lang, { month: 'long', year: 'numeric' }).format(new Date(Number(y), Number(m) - 1, 15)); LABELS.set(k, s); }
   return s;
 }
-export function dayLabel(day, lang, opts = { day: 'numeric', month: 'short' }) {
+/**
+ * The one date format on screen: weekday, then day/month/year ("Monday 1/1/2026", "الاثنين 1/1/2026").
+ * `opts` is accepted for older calls and ignored, so every screen, document and message reads the same.
+ */
+export function dayLabel(day, lang) {
   if (!day || day.startsWith('0000')) return '—';
-  const k = `${lang}${day}${opts.day || ''}${opts.month || ''}${opts.year || ''}${opts.weekday || ''}`;
+  const k = `${lang}${day}`;
   let s = LABELS.get(k);
-  if (s == null) { s = dtf(lang, opts).format(new Date(day + 'T12:00:00')); if (LABELS.size > 20000) LABELS.clear(); LABELS.set(k, s); }
+  if (s == null) { s = fullDate(day, lang); if (LABELS.size > 20000) LABELS.clear(); LABELS.set(k, s); }
   return s;
 }
+export { fullDateTime as whenLabel };
 
 /**
  * Sort and filter controls, folded away by default.

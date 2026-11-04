@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { fullDate } from '../core/dates.mjs';
 import { DangerConfirm, DangerRange } from './danger.jsx';
 import { LOGO } from './logo-data.js';
 import { initMoneyFlip } from './moneyflip.js';
@@ -296,7 +297,7 @@ function ProfileGate() {
           <p>{t('pf.pitch')}</p>
         </div>
         {farms.length > 1 && <SignInFarms />}
-        <div className="signin-foot">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+        <div className="signin-foot">{fullDate(new Date(), lang)}</div>
       </aside>
       <main className="signin-main">
         <div className="signin-hero" aria-hidden="true"><span className="sh-glow" /><BrandMark className="hero" /></div>

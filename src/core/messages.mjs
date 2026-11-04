@@ -1,6 +1,7 @@
 // Messages sent from the app: WhatsApp links, invoice / receipt / statement texts and
 // payment reminders. Text builders take the app's t() and fmt() so they stay pure.
 
+import { fullDate } from './dates.mjs';
 import { customerInvoices } from './ledger.mjs';
 import { daysBetween } from './species.mjs';
 
@@ -21,7 +22,7 @@ export function waUrl(phone, text, countryCode) {
   return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
 }
 
-const dayTxt = (d, lang) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+const dayTxt = (d, lang) => (d ? fullDate(d, lang) : '');
 
 /** Invoice or receipt summary for a sale. */
 export function saleText({ farm, sale, inv, t, fmt, lang, number, productName }) {

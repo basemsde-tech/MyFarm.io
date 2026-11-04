@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { milkQ, milkN } from './units.js';
 import { useApp } from './store.jsx';
 import { SkyClock } from './skyclock.jsx';
-import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel, ViewMenu, useListView, sortRows } from './kit.jsx';
+import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, DateInput, monthLabel, dayLabel, IconButton, useCountUp, Sparkline, FilterPanel, ViewMenu, useListView, sortRows, AmtPill } from './kit.jsx';
 import { InvoiceRegister } from './screens-accounts.jsx';
 import { Help } from './help.jsx';
 const GUIDE_FOR = { cash: 'cash', sales: 'sales', expenses: 'expenses', suppliers: 'suppliers', production: 'production', animals: 'animals', accounts: 'accounts', options: 'security', trash: 'edit', activity: 'security', people: 'payments' };
@@ -14,7 +14,7 @@ import { itemsText } from '../core/items.mjs';
 import { fmtQty } from '../core/money.mjs';
 import { expiringDocs } from '../core/documents.mjs';
 import { RecordRow, describe } from './tx.jsx';
-import { SelectScope, useSelectable, useRowPress, TickButton } from './select.jsx';
+import { SelectScope, useSelectable, useRowPress, TickButton, SelBox, SelGroup } from './select.jsx';
 import { customerInvoices, supplierBills, live } from '../core/ledger.mjs';
 import { partyLines } from '../core/statement.mjs';
 import { periodRange } from '../core/statement.mjs';
@@ -155,19 +155,12 @@ export function CashScreen() {
     for (let i = 30; i >= 0; i--) { const d = addDays(today, -i); if (byDay.has(d)) last = byDay.get(d); out.push(last); }
     return out;
   }, [snap.flows, today]);
-  // The movement list is the heaviest part of the page: rebuild it only when its inputs change,
+  // The movement table is the heaviest part of the page: rebuild it only when its inputs change,
   // not on every toast or animation frame.
   const journalList = useMemo(() => (
-    <Grouped key={cv.sort + cv.dir} rows={listRows} groupKey={cv.sort === 'day' ? (r) => r.day.slice(0, 7) : null}
-      renderGroup={(g) => <><span>{monthLabel(g.key, lang)}</span><span className="num muted">{fmt(g.rows.reduce((s, r) => s + r.dir * r.amountC, 0))}</span></>}
-      renderRow={(f) => {
-        const rec = recById.get(f.id);
-        if (!rec) return null;
-        return <RecordRow key={f.id + f.kind} r={rec} dir={f.dir} onOpen={() => ui.open('drawer', { id: f.id })}
-          selKey={`${f.id}|${f.kind}|${f.account}`} selItem={{ type: f.kind, typeLabel: t(FLOW_LABEL[f.kind] || f.kind), label: t(FLOW_LABEL[f.kind] || f.kind), amountC: f.amountC, sign: f.dir > 0 ? 1 : -1, qty: null, unit: null, skip: false }}
-          right={<span className="amt-stack"><span className={f.dir > 0 ? 'in' : 'out'}>{f.dir > 0 ? '+' : '−'}{fmt(f.amountC).replace('−', '')}</span><small className="muted">{fmt(f.balC)}</small></span>} />;
-      }} />
-  ), [listRows, recById, lang, fmt, farm.settings, cv.sort, cv.dir, t]); // eslint-disable-line react-hooks/exhaustive-deps
+    <CashTable rows={listRows} recById={recById} byDay={cv.sort === 'day'} newestFirst={cv.dir === 'desc'}
+      opening={opening} inC={inP} outC={outP} showOpening={cv.sort === 'day' && dir === 'all' && !kind} />
+  ), [listRows, recById, lang, fmt, farm.settings, cv.sort, cv.dir, opening, inP, outP, dir, kind, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const exportCSV = () => downloadText(`cash-${per.range.from}-${per.range.to}.csv`, toCSV([
     [t('date'), t('details'), t('in'), t('out'), t('balance'), t('by')],
     ...[...rows].reverse().map((r) => { const rec = recById.get(r.id); const d = rec ? describe(rec, app) : {}; return [r.day, `${t(FLOW_LABEL[r.kind])} · ${d.title || ''}`, r.dir > 0 ? r.amountC / 100 : '', r.dir < 0 ? r.amountC / 100 : '', r.balC / 100, r.by]; }),
@@ -221,7 +214,7 @@ export function CashScreen() {
             <Button size="sm" icon="download" onClick={exportCSV}>{t('export')}</Button>
           </div>
         </div>
-        <FilterPanel id="cash" onReset={() => { per.reset(); setDir('all'); setKind(''); }} extra={<ViewMenu v={cv} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'amount', label: t('vm.s.amount'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />}
+        <FilterPanel id="cash" onReset={() => { per.reset(); setDir('all'); setKind(''); }} extra={<ViewMenu v={cv} views={[]} sorts={[{ value: 'day', label: t('vm.s.date'), dir: 'desc' }, { value: 'amount', label: t('vm.s.amount'), dir: 'desc' }, { value: 'kind', label: t('vm.s.type'), dir: 'asc' }]} />}
           chips={[{ label: per.label, active: !per.isDefault }, dir !== 'all' && { label: t(dir), active: true }, kind && { label: t(FLOW_LABEL[kind]), active: true }]}>
           <PeriodBar value={per.p} onChange={per.onChange} range={per.range} setRange={per.setRange} />
           <div className="filter-row">
@@ -229,15 +222,86 @@ export function CashScreen() {
             <Select className="compact" label={t('flt.kind')} value={kind} onChange={setKind} options={Object.keys(FLOW_LABEL).map((k) => ({ value: k, label: t(FLOW_LABEL[k]) }))} placeholder={t('all')} />
           </div>
         </FilterPanel>
-        <div className="statement-strip num">
-          <span>{t('cash.opening')} <b>{fmt(opening)}</b></span>
-          <span className="in">+{fmt(inP)}</span>
-          <span className="out">{outP ? `−${fmt(outP)}` : fmt(0)}</span>
-          <span>{t('cash.closing')} <b>{fmt(opening + inP - outP)}</b></span>
-        </div>
-        {rows.length ? <SelectScope><div className={`dv-${cv.view}`}>{journalList}</div></SelectScope> : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
+        {rows.length ? <SelectScope>{journalList}</SelectScope> : <Empty title={t('cash.empty')} body={t('cash.emptyHint')} icon="cash" action={<Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button>} />}
       </section>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The cash book as a plain table: Date · Statement · Cash in · Cash out · Balance.
+ * Months are separator rows with their own in/out; the period's opening and closing frame the list.
+ */
+function CashTable({ rows, recById, byDay, newestFirst, opening, inC, outC, showOpening }) {
+  const app = useApp();
+  const { t, fmt, lang, ui } = app;
+  const [limit, setLimit] = useState(80);
+  const box = useRef(null);
+  const money = (c) => fmt(c).replace('−', '');
+  const shown = rows.slice(0, limit);
+  const body = [];
+  let month = null;
+  const openRow = (
+    <tr key="opening" className="ct-edge">
+      <td className="ct-sel" /><td className="ct-date" /><td className="ct-st"><b>{t('cash.opening')}</b></td><td className="ct-in" /><td className="ct-out" /><td className="ct-bal num"><b className="ltr">{fmt(opening)}</b></td>
+    </tr>
+  );
+  if (showOpening && !newestFirst) body.push(openRow);
+  for (const f of shown) {
+    if (byDay && f.day.slice(0, 7) !== month) {
+      month = f.day.slice(0, 7);
+      const m = rows.filter((x) => x.day.slice(0, 7) === month);
+      const mi = m.filter((x) => x.dir > 0).reduce((s, x) => s + x.amountC, 0);
+      const mo = m.filter((x) => x.dir < 0).reduce((s, x) => s + x.amountC, 0);
+      body.push(
+        <tr key={`m${month}`} className="ct-month">
+          <td className="ct-sel" /><td colSpan={2} className="ct-mlabel">{monthLabel(month, lang)}</td>
+          <td className="ct-in num">{mi ? <span className="ct-msum in ltr">+{money(mi)}</span> : null}</td>
+          <td className="ct-out num">{mo ? <span className="ct-msum out ltr">−{money(mo)}</span> : null}</td>
+          <td className="ct-bal" />
+        </tr>,
+      );
+    }
+    const rec = recById.get(f.id);
+    if (!rec) continue;
+    const d = describe(rec, app);
+    const kind = t(FLOW_LABEL[f.kind] || f.kind);
+    // One line: who or what, then the kind only when it adds something.
+    const main = d.title || kind;
+    const extra = main === kind ? '' : kind;
+    const key = `${f.id}|${f.kind}|${f.account}`;
+    body.push(
+      <tr key={key} className="ct-row clickable" onClick={() => ui.open('drawer', { id: f.id })}>
+        <td className="ct-sel" onClick={(e) => e.stopPropagation()}>
+          <SelBox item={{ key, recId: f.id, type: f.kind, typeLabel: kind, label: kind, amountC: f.amountC, sign: f.dir > 0 ? 1 : -1 }} />
+        </td>
+        <td className="ct-date">{dayLabel(f.day, lang)}</td>
+        <td className="ct-st"><span className="ct-main">{main}</span>{extra && <span className="ct-kind">{extra}</span>}{rec.voided && <Pill status="voided">{t('st.voided')}</Pill>}</td>
+        <td className="ct-in num">{f.dir > 0 ? <AmtPill dir={1}>+{money(f.amountC)}</AmtPill> : null}</td>
+        <td className="ct-out num">{f.dir < 0 ? <AmtPill dir={-1}>−{money(f.amountC)}</AmtPill> : null}</td>
+        <td className="ct-bal num">{fmt(f.balC)}</td>
+      </tr>,
+    );
+  }
+  if (showOpening && newestFirst && shown.length === rows.length) body.push(openRow);
+  return (
+    <div className="table-wrap ct-wrap" ref={box}>
+      <table className="tbl cash-tbl">
+        <thead><tr>
+          <th className="ct-sel"><SelGroup getEl={() => box.current?.querySelector('tbody')} /></th>
+          <th className="ct-date">{t('date')}</th><th className="ct-st">{t('ct.statement')}</th>
+          <th className="ct-in num">{t('ct.in')}</th><th className="ct-out num">{t('ct.out')}</th><th className="ct-bal num">{t('balance')}</th>
+        </tr></thead>
+        <tbody>{body}</tbody>
+        <tfoot><tr className="ct-total">
+          <td className="ct-sel" /><td className="ct-date" /><td className="ct-st"><b>{t('ct.total')}</b></td>
+          <td className="ct-in num"><AmtPill dir={1} strong>+{money(inC)}</AmtPill></td>
+          <td className="ct-out num"><AmtPill dir={-1} strong>−{money(outC)}</AmtPill></td>
+          <td className="ct-bal num"><span className="ct-close-l">{t('cash.closing')}</span><b className="ltr">{fmt(opening + inC - outC)}</b></td>
+        </tr></tfoot>
+      </table>
+      {rows.length > limit && <Button className="more-btn" onClick={() => setLimit(limit + 80)}>{t('more')} ({rows.length - limit})</Button>}
     </div>
   );
 }
@@ -678,7 +742,7 @@ function PersonAccount({ id }) {
         <SelectScope>{lines.length ? lines.map((l, i) => l.record && (
           <RecordRow key={l.ref + l.kind + i} r={l.record} onOpen={() => ui.open('drawer', { id: l.ref })}
             selKey={`${l.ref}|${l.kind}|${i}`} selItem={{ amountC: l.chargeC || l.creditC, sign: l.chargeC ? 1 : -1 }}
-            right={<span className={`num ${l.chargeC ? 'in' : 'out'}`}>{l.chargeC ? `+${fmt(l.chargeC)}` : `−${fmt(l.creditC).replace('−', '')}`}</span>} />
+            right={<AmtPill dir={l.chargeC ? 1 : -1}>{l.chargeC ? `+${fmt(l.chargeC)}` : `−${fmt(l.creditC).replace('−', '')}`}</AmtPill>} />
         )) : <Empty title={t('cash.empty')} icon="people" action={<Button variant="primary" onClick={() => ui.open('capital', { personId: id })}>{t('ppl.what')}</Button>} />}</SelectScope>
       </section>
       <Attachments list="people" id={id} />

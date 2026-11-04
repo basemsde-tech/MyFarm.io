@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { fullDateTime } from '../core/dates.mjs';
 import { milkUseLabel, milkQ } from './units.js';
 import { play as playSound } from './sound.js';
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Sheet, TextInput, Seg, dayLabel } from './kit.jsx';
+import { Button, Icon, Pill, Sheet, TextInput, Seg, dayLabel, AmtPill } from './kit.jsx';
 import { addRecord, editRecord, deleteRecords, restoreRecords, purgeRecords, voidSale, unvoidSale, preview, changedFields, isMoney, MONEY_FIELDS } from '../core/commands.mjs';
 import { validateRecord, findDuplicate } from '../core/validate.mjs';
 import { offsetsC } from '../core/ledger.mjs';
@@ -243,7 +244,7 @@ export function RecordDrawer({ id, onClose }) {
       <dl className="kv">
         {fieldList.map(([k, v]) => v != null && v !== '' && (<React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>))}
         <dt>{t('by')}</dt><dd>{r.createdByName}</dd>
-        <dt>{t('when')}</dt><dd className="num">{new Date(r.createdAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB')}</dd>
+        <dt>{t('when')}</dt><dd className="num">{fullDateTime(r.createdAt, lang)}</dd>
       </dl>
       {r.receipt && <img className="receipt-img" src={r.receipt} alt={t('exp.receipt')} />}
       {effects.length > 0 && (
@@ -258,7 +259,7 @@ export function RecordDrawer({ id, onClose }) {
           <ol className="history">
             {[...r.history].reverse().map((h, i) => (
               <li key={i}>
-                <div className="h-head"><b>{h.byName}</b> <span className="muted num">{new Date(h.at).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB')}</span>{h.afterClose && <Pill status="afterClose">{t('st.afterClose')}</Pill>}</div>
+                <div className="h-head"><b>{h.byName}</b> <span className="muted num">{fullDateTime(h.at, lang)}</span>{h.afterClose && <Pill status="afterClose">{t('st.afterClose')}</Pill>}</div>
                 {h.reason && h.reason !== 'edit' && <div className="h-reason">“{h.reason}”</div>}
                 {h.fields?.filter((f) => !['history'].includes(f)).map((f) => (
                   <div key={f} className="h-change"><span className="muted">{fieldName(f, t)}</span> <span className="was">{fmtVal(h.before?.[f], f, app)}</span></div>
@@ -467,7 +468,9 @@ export function RecordRow({ r, onOpen, right, dir, hideParty, className = '', ta
         <span className="row-sub">{r.no && <span className="row-no num">{docNo(r, app.farm.settings)}</span>}{dayLabel(r.day, app.lang)} · {hideParty ? d.kind : (d.sub || d.kind)}</span>
       </span>
       <span className={`row-amt num ${dir > 0 ? 'in' : dir < 0 ? 'out' : ''}`}>
-        {right ?? (d.amountC != null ? `${dir > 0 ? '+' : dir < 0 ? '−' : ''}${app.fmt(d.amountC).replace('−', '')}` : d.qty)}
+        {right ?? (d.amountC != null
+          ? (dir ? <AmtPill dir={dir}>{`${dir > 0 ? '+' : '−'}${app.fmt(d.amountC).replace('−', '')}`}</AmtPill> : app.fmt(d.amountC))
+          : d.qty)}
       </span>
     </button>
   );

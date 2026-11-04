@@ -1,4 +1,5 @@
 // Selective backup: choose parts to save, and restore a part file without touching the rest of the farm.
+import { fullDateTime } from '../core/dates.mjs';
 import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Sheet, Check, Seg, Pill, dayLabel, TextInput } from './kit.jsx';
@@ -133,7 +134,7 @@ export function PartRestore({ env, fileName, fromSetup, onDone, onOther }) {
       <section className="restore-head">
         <div>
           <div className="restore-farm">{env.farm.settings?.farmName || t('brand')}</div>
-          <div className="muted small">{pl(t, 'pt.fileOf', env.parts.length)}{env.range ? ` · ${t('pt.fileRange', { a: dayLabel(env.range.from, lang, { day: 'numeric', month: 'short', year: 'numeric' }), b: dayLabel(env.range.to, lang, { day: 'numeric', month: 'short', year: 'numeric' }) })}` : ''}{env.exportedAt && ` · ${t('rs.savedOn')} ${new Date(env.exportedAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB')}`}</div>
+          <div className="muted small">{pl(t, 'pt.fileOf', env.parts.length)}{env.range ? ` · ${t('pt.fileRange', { a: dayLabel(env.range.from, lang, { day: 'numeric', month: 'short', year: 'numeric' }), b: dayLabel(env.range.to, lang, { day: 'numeric', month: 'short', year: 'numeric' }) })}` : ''}{env.exportedAt && ` · ${t('rs.savedOn')} ${fullDateTime(env.exportedAt, lang)}`}</div>
         </div>
         <Pill tone="info">{t('pt.partial')}</Pill>
       </section>

@@ -1,6 +1,7 @@
 // Clock and weather for where the farm is, from the device's precise location.
 // Weather: Open-Meteo (free, no key). Place name: BigDataCloud's free reverse lookup.
 // The last reading is kept on the device, so the card still shows something offline.
+import { fullDate } from '../core/dates.mjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp, readJSON } from './store.jsx';
 import { Icon } from './kit.jsx';
@@ -106,7 +107,7 @@ export function SkyClock() {
 
   const hh = String(now.getHours()).padStart(2, '0');
   const mm = String(now.getMinutes()).padStart(2, '0');
-  const dateText = now.toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateText = fullDate(now, lang);
   const hour = now.getHours();
   const greet = hour < 5 ? 'sk.night' : hour < 12 ? 'sk.morning' : hour < 17 ? 'sk.afternoon' : hour < 21 ? 'sk.evening' : 'sk.night';
   const c = st.w?.current;

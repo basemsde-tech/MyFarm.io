@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { fullDate, fullDateTime } from '../core/dates.mjs';
 import { isoDay } from '../core/species.mjs';
 import { LOGO } from './logo-data.js';
 import { useApp, KEYS, readJSON, MAX_BYTES, inFrame } from './store.jsx';
@@ -184,13 +185,13 @@ export function BackupProvider({ children }) {
 export const useBackup = () => useContext(BackupCtx);
 
 export function BackupBanner({ bk }) {
-  const { t, actor, ui } = useApp();
+  const { t, actor, ui, lang } = useApp();
   if (!bk.due || !can(actor?.role, 'settings')) return null;
   if (bk.dir && bk.perm !== 'granted') {
     return <div className="banner warn"><Icon name="alert" size={16} /><span>{t('bk.reconnectHint')}</span><button type="button" onClick={bk.reconnect}>{t('bk.reconnect')}</button></div>;
   }
   if (bk.dir) return null;
-  return <div className="banner warn"><Icon name="download" size={16} /><span>{bk.state.lastAt ? t('bk.dueSince', { d: new Date(bk.state.lastAt).toLocaleDateString() }) : t('bk.never')}</span><button type="button" onClick={() => ui.open('backupNow')} disabled={bk.busy}>{t('bk.now')}</button></div>;
+  return <div className="banner warn"><Icon name="download" size={16} /><span>{bk.state.lastAt ? t('bk.dueSince', { d: fullDate(bk.state.lastAt, lang) }) : t('bk.never')}</span><button type="button" onClick={() => ui.open('backupNow')} disabled={bk.busy}>{t('bk.now')}</button></div>;
 }
 
 export function BackupPanel({ canSet }) {
@@ -204,7 +205,7 @@ export function BackupPanel({ canSet }) {
   const size = useMemo(() => (storageMode === 'idb' ? 0 : JSON.stringify(farm).length), [farm, storageMode]);
   const s = farm.settings.backup || {};
   const setB = (patch) => commit((f) => updateSettings(f, { backup: { ...f.settings.backup, ...patch } }), { silent: true, undoable: false });
-  const when = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const when = bk.state.lastAt ? fullDateTime(bk.state.lastAt, lang) : null;
   const quota = storageMode === 'idb' ? est?.quota : MAX_BYTES;
   const used = storageMode === 'idb' ? est?.used : size;
   return (
@@ -307,7 +308,7 @@ export function recordAttempt(id, ok, max = 5) {
 
 /* ───────────── Farms on this device ───────────── */
 export function FarmsPanel() {
-  const { t, farms, farmId, switchFarm, addFarm, ui, actor } = useApp();
+  const { t, farms, farmId, switchFarm, addFarm, ui, actor, lang } = useApp();
   return (
     <section className="panel">
       <div className="panel-head"><h2>{t('farms.title')} <Help k="farms" more="farms" /></h2>{can(actor?.role, 'settings') && <Button size="sm" icon="plus" onClick={addFarm}>{t('farms.add')}</Button>}</div>
@@ -316,7 +317,7 @@ export function FarmsPanel() {
         {farms.map((f) => (
           <li key={f.id} className={f.id === farmId ? 'on' : ''}>
             <span className="brand-mark app-logo sm"><img src={LOGO} alt="" /></span>
-            <span className="fl-text"><b>{f.name || t('farms.unnamed')}</b><small className="muted">{f.id === farmId ? t('farms.current') : t('farms.since', { d: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : '—' })}{f.demo ? ` · ${t('farms.demo')}` : ''}</small></span>
+            <span className="fl-text"><b>{f.name || t('farms.unnamed')}</b><small className="muted">{f.id === farmId ? t('farms.current') : t('farms.since', { d: f.createdAt ? fullDate(f.createdAt, lang) : '—' })}{f.demo ? ` · ${t('farms.demo')}` : ''}</small></span>
             {f.id !== farmId && <Button size="sm" onClick={() => switchFarm(f.id)}>{t('farms.open')}</Button>}
             {farms.length > 1 && actor?.role === 'owner' && <Button size="sm" variant="quiet" icon="trash" aria-label={t('farms.remove')} onClick={() => ui.open('removeFarm', { id: f.id, name: f.name })} />}
           </li>
@@ -401,7 +402,7 @@ export function ActivityScreen() {
     e.label && e.kind !== 'change' ? e.label : null,
     e.day && e.type ? dayLabel(e.day, lang, { day: 'numeric', month: 'short', year: 'numeric' }) : null,
   ].filter(Boolean).join(' · ');
-  const stamp = (at) => new Date(at).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const stamp = (at) => fullDateTime(at, lang);
   const exportCSV = () => downloadText(`activity-${per.range.from}.csv`, toCSV([[t('date'), t('act.who'), t('act.what'), t('details')], ...rows.map((e) => [e.at.replace('T', ' ').slice(0, 16), e.by, what(e), detail(e)])]));
   const fails = rows.filter((e) => e.kind === 'failed' || e.kind === 'lockout').length;
   return (
@@ -451,7 +452,7 @@ export function LogOffDialog({ onClose }) {
   const bk = useBackup();
   const [err, setErr] = useState('');
   const where = bk.dir && bk.perm !== 'none' ? t('lo.toFolder', { f: bk.dir.name }) : bk.fileSupported ? (bk.state.file ? t('lo.toFile', { f: bk.state.file }) : t('lo.pickFile')) : t('lo.download');
-  const last = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const last = bk.state.lastAt ? fullDateTime(bk.state.lastAt, lang) : null;
   const out = (msg) => { onClose(); logEvent('signout'); setPrefs({ profileId: null }); setToasts([]); toast(msg || t('pf.loggedOff'), { sound: 'success' }); };
   const backupAndOut = async () => {
     setErr('');
@@ -496,7 +497,7 @@ export function BackupNowDialog({ onClose }) {
   const existing = folder ? `${bk.dir.name} / ${(bk.state.name || '').split('/').pop() || 'latest'}` : bk.fileSupported ? bk.state.file : null;
   // A name matters whenever a new file is made: downloading, sharing, or saving to a new file.
   const named = !folder;
-  const last = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const last = bk.state.lastAt ? fullDateTime(bk.state.lastAt, lang) : null;
   const done = (name) => { if (name) { toast(t('bn.done', { f: `⁨${name}⁩` }), { sound: 'success' }); onClose(); } else setErr(t('lo.failed')); };
   const replace = async () => { setErr(''); done(await bk.backupNow()); };
   const fresh = async () => { setErr(''); done(folder ? await bk.backupNow() : await bk.toNewFile(fname)); };

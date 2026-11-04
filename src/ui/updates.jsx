@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { fullDate } from '../core/dates.mjs';
 import { createPortal } from 'react-dom';
 import { useApp, VERSION } from './store.jsx';
 import { Button, Icon } from './kit.jsx';
@@ -81,7 +82,7 @@ export function WhatsNew({ since, all, onClose }) {
         <div className="wn-list">
           {shown.map((r) => (
             <section key={r.v} className="wn-rel">
-              {(shown.length > 1 || all) && <div className="wn-rel-head"><b className="num">{r.v}</b>{r.date && <span className="muted small num">{new Date(`${r.date}T12:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}</div>}
+              {(shown.length > 1 || all) && <div className="wn-rel-head"><b className="num">{r.v}</b>{r.date && <span className="muted small num">{fullDate(r.date, lang)}</span>}</div>}
               <ul>
                 {r.items.map((it) => (
                   <li key={it[2]} style={{ '--d': `${Math.min(n++, 14) * 55 + 250}ms` }}>

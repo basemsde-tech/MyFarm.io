@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { fullDateTime } from '../core/dates.mjs';
 import { useApp } from './store.jsx';
 import { Button, Icon, Pill, Sheet, Check, Seg } from './kit.jsx';
 import { readBackup, backupEnvelope } from '../core/backup.mjs';
@@ -106,7 +107,7 @@ export function RestoreSheet({ onClose, fromSetup, preset, startParts }) {
               <div className="restore-farm">{res.farm.settings.farmName || t('brand')}</div>
               <div className="muted small">
                 {res.legacy ? t('rs.fromOld') : t('rs.fromNew')}
-                {report?.exportedAt && ` · ${t('rs.savedOn')} ${new Date(report.exportedAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB')}`}
+                {report?.exportedAt && ` · ${t('rs.savedOn')} ${fullDateTime(report.exportedAt, lang)}`}
               </div>
             </div>
             {res.legacy && (failed.length ? <Pill tone="warn">{t('rs.differ', { n: failed.length })}</Pill> : <Pill tone="good">{t('rs.allMatch')}</Pill>)}

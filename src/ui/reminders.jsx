@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { fullDate } from '../core/dates.mjs';
 import { useApp } from './store.jsx';
 import { Button, Icon, Empty, Stat, Seg, Sheet, TextArea, dayLabel } from './kit.jsx';
 import { overdueCustomers, reminderText, logReminder } from '../core/messages.mjs';
@@ -18,7 +19,7 @@ export function RemindersPanel() {
   const [show, setShow] = useState('due');
   const list = rows.filter((r) => show === 'all' || r.remindNow);
   const total = rows.reduce((s, r) => s + r.overdueC, 0);
-  const since = (r) => (r.last ? new Date(r.last.at).toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short' }) : null);
+  const since = (r) => (r.last ? fullDate(r.last.at, lang) : null);
   return (
     <>
       <section className="stats-row">

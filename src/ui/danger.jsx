@@ -1,6 +1,7 @@
 // Settings → Danger zone: everything that removes data, in one clearly marked place.
 // Every action shows exactly what it removes, offers a backup first, saves a restore point on this
 // device, and asks for a typed confirmation.
+import { fullDate } from '../core/dates.mjs';
 import React, { useMemo, useState } from 'react';
 import { useApp } from './store.jsx';
 import { Button, Icon, Seg, DateInput, Check, Sheet, TextInput } from './kit.jsx';
@@ -133,7 +134,7 @@ export function DangerRange({ onClose }) {
     const a = compute(farm), b = compute(pv.next);
     return a.cashC === b.cashC && a.receivableC === b.receivableC && a.supplierDueC === b.supplierDueC && a.payablesC === b.payablesC;
   }, [realMode, pv, farm]);
-  const fmtDay = (d) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  const fmtDay = (d) => (d ? fullDate(d, lang) : '—');
   const go = async () => {
     const done = await s.run(t('dz.range'), async () => {
       commit(op, { label: realMode === 'close' ? t('dz.closed', { n: sum.total, d: fmtDay(cutoff) }) : t('dz.moved', { n: sum.total }) });
