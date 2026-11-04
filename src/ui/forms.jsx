@@ -7,6 +7,7 @@ import { saleTotals, offsetsC, supplierBills, invoiceDueDay } from '../core/ledg
 import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, MEDICINE_KINDS, MEDICINE_SUGGEST, PERSON_PURPOSES, milkUses, milkUseName, saveMilkUse, dropMilkUse, USE_EMOJIS, groupOf } from '../core/catalog.mjs';
 import { validateRecord } from '../core/validate.mjs';
 import { cleanItems, itemAmountC, itemsTotalC, itemsQty } from '../core/items.mjs';
+import { capitalAccountFor } from '../core/people.mjs';
 import { deleteRecords, updateSettings, newId } from '../core/commands.mjs';
 import { litresOf, saleMilkL, lToKg, kgToL, KG_PER_L } from '../core/milk.mjs';
 
@@ -384,11 +385,11 @@ export function SupplierPaySheet({ record, supplierId, billId, personId, onClose
 
 /* ───────────── Manager / funder movement ───────────── */
 export function PersonSheet({ record, personId, purpose: presetPurpose, onClose }) {
-  const { t, today, ui } = useApp();
+  const { farm, t, today, ui } = useApp();
   const parties = useParties();
   const recPurpose = record ? (record.kind === 'inject' ? 'inject' : record.purpose === 'personal' ? 'personal' : 'cashOut') : null;
   const [f, setF] = useState(record ? { day: record.day, personId: record.personId, purpose: recPurpose, amountC: record.amountC, account: record.account || 'cash', note: record.note || '' }
-    : { day: today, personId: personId || '', purpose: presetPurpose || 'inject', amountC: 0, account: 'cash', note: '' });
+    : { day: today, personId: personId || '', purpose: presetPurpose || 'inject', amountC: 0, account: personId ? capitalAccountFor(farm, personId) : 'cash', note: '' });
   const set = (p) => setF((x) => ({ ...x, ...p }));
   // Purposes that post into other departments open that department's sheet.
   const redirect = (p) => {
@@ -403,7 +404,7 @@ export function PersonSheet({ record, personId, purpose: presetPurpose, onClose 
   return (
     <Sheet title={t('cap.title')} onClose={onClose}
       footer={<TxFooter recs={[rec]} editing={record} onDone={(m) => { if (m === 'close' || record) onClose(); else set({ amountC: 0, note: '' }); }} />}>
-      <Select label={t('cap.person')} value={f.personId} onChange={(v) => set({ personId: v })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />
+      <Select label={t('cap.person')} value={f.personId} onChange={(v) => set({ personId: v, ...(record ? {} : { account: capitalAccountFor(farm, v) }) })} options={parties.people} placeholder={t('select')} error={issuesFor(issues, 'personId', t, f.amountC)} />
       <div className="purpose-list" role="radiogroup" aria-label={t('ppl.what')}>
         {list.map((p) => (
           <button type="button" role="radio" aria-checked={f.purpose === p} key={p} className={`purpose ${f.purpose === p ? 'on' : ''}`} disabled={!f.personId && ['outOfPocket', 'supplier', 'retained'].includes(p)}
@@ -416,6 +417,10 @@ export function PersonSheet({ record, personId, purpose: presetPurpose, onClose 
         <MoneyInput big label={t('amount')} cents={f.amountC} onCents={(c) => set({ amountC: c })} keypad error={issuesFor(issues, 'amount', t, f.amountC)} />
         <DateInput label={t('date')} value={f.day} onChange={(v) => set({ day: v })} />
       </div>
+      {f.personId && (
+        <Check label={t('cap.viaBox')} checked={f.account !== 'outside'} onChange={(v) => set({ account: v ? 'cash' : 'outside' })}
+          hint={t(f.account !== 'outside' ? (f.purpose === 'inject' ? 'cap.viaBoxIn' : 'cap.viaBoxOut') : 'cap.outsideHint')} />
+      )}
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
   );

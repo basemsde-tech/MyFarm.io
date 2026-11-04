@@ -183,6 +183,7 @@ export function CashScreen() {
           <div className="cash-spark"><Sparkline points={trend} label={t('cash.trend')} /><span className="cash-spark-label">{t('cash.trend')}</span></div>
           <div className="cash-row">
             {snap.capitalC !== 0 && <span>{t('cash.capital')} <b className="num">{fmt(snap.capitalC)}</b></span>}
+            {snap.outsideC !== 0 && <span title={t('bs.outsideHint')}>{t('cash.outside')} <b className="num">{fmt(snap.outsideC)}</b></span>}
           </div>
         </div>
         <div className="cash-today">
@@ -643,7 +644,7 @@ function PeopleList() {
                 <button type="button" key={p.id} className="party-card" onClick={() => nav('people', p.id)}>
                   <div className="pc-top"><b>{p.name}</b><Pill tone={owed > 0 ? 'info' : owed < 0 ? 'warn' : 'good'}>{t(`ppl.${st}`)}</Pill></div>
                   <div className="pc-amt num">{fmt(Math.abs(owed))}</div>
-                  <div className="pc-sub">{p.phone}</div>
+                  <div className="pc-sub">{p.cashBox === false ? <span className="pc-out">{t('ppl.outsideTag')}</span> : null}{p.cashBox === false && p.phone ? ' · ' : ''}{p.phone}</div>
                 </button>
               );
             })}
@@ -664,7 +665,7 @@ function PersonAccount({ id }) {
   const owed = snap.people[id]?.owedC || 0;
   return (
     <div className="screen">
-      <PageHead back={() => nav('people')} title={p.name} sub={p.phone}
+      <PageHead back={() => nav('people')} title={p.name} sub={[p.phone, p.cashBox === false ? t('ppl.outsideTag') : null].filter(Boolean).join(' · ')}
         actions={<><Button icon="file" onClick={() => ui.open('doc', { kind: 'statement', party: 'person', partyId: id })}>{t('cust.statement')}</Button><Button icon="edit" onClick={() => ui.open('person', { record: p })}>{t('edit')}</Button><Button icon="trash" variant="danger" onClick={() => ui.open('deleteMaster', { list: 'people', id, onDone: (m) => m !== 'archive' && nav('people') })}>{t('delete')}</Button></>} />
       <section className="account-head sticky-bal">
         <div><div className="muted">{owed >= 0 ? t('ppl.owedToThem') : t('ppl.owesFarm')}</div><div className="acct-big num">{fmt(Math.abs(owed))}</div></div>

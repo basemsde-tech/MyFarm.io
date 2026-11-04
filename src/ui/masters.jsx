@@ -8,6 +8,7 @@ import { saleOfAnimal } from '../core/animals.mjs';
 import { ShareBar } from './share.jsx';
 import { DocBrand } from './brand.jsx';
 import { ROLES, EXPENSE_GROUPS } from '../core/catalog.mjs';
+import { inCashBox, entriesToMove, setPersonCashBox } from '../core/people.mjs';
 import { partyLines, statement, periodRange } from '../core/statement.mjs';
 import { compute } from '../core/ledger.mjs';
 import { docNo, invoiceRegister } from '../core/accounts.mjs';
@@ -85,16 +86,42 @@ export function SupplierSheet({ record, onClose }) {
 }
 
 export function PersonMasterSheet({ record, onClose }) {
-  const { farm, t } = useApp();
-  const [f, setF] = useState(record || { name: '', phone: '', openingC: 0, note: '' });
+  const { farm, t, commit, actor, fmt, toast } = useApp();
+  const [f, setF] = useState(record ? { ...record, cashBox: inCashBox(record) } : { name: '', phone: '', openingC: 0, note: '', cashBox: true });
+  const [movePast, setMovePast] = useState(true);
   const set = (p) => setF((x) => ({ ...x, ...p }));
-  const save = useSaveMaster('people', onClose);
   const err = !f.name.trim() ? t('e.name.required') : nameTaken(farm.people, f.name, record?.id) ? t('e.name.taken') : null;
+  // Switching an existing person: their earlier put-in / take-out entries can move with them.
+  const switched = !!record && inCashBox(record) !== f.cashBox;
+  const past = switched ? entriesToMove(farm, record.id, f.cashBox) : [];
+  const pastC = past.reduce((s, r) => s + (r.kind === 'inject' ? 1 : -1) * (r.amountC || 0), 0);
+  const save = () => {
+    const item = { ...f, name: f.name.trim() };
+    let info = null;
+    const next = commit((x) => {
+      const y = upsert(x, 'people', item, actor);
+      if (!switched) return y;
+      const r = setPersonCashBox(y, record.id, f.cashBox, { movePast: movePast && past.length > 0 }, actor);
+      info = r;
+      return r.farm;
+    }, { label: t('saved') });
+    if (next) {
+      if (info?.skipped) setTimeout(() => toast(t('ppl.cbSkipped', { n: info.skipped }), { tone: 'warn', ms: 8000 }), 600);
+      onClose?.(next);
+    }
+  };
   return (
     <Sheet title={record ? `${t('edit')} · ${record.name}` : t('ppl.new')} onClose={onClose}
-      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err} onClick={() => save({ ...f, name: f.name.trim() })}>{t('save')}</Button></div>}>
+      footer={<div className="foot-btns"><Button onClick={onClose}>{t('cancel')}</Button><Button variant="primary" disabled={!!err} onClick={save}>{t('save')}</Button></div>}>
       <TextInput label={t('name')} value={f.name} onChange={(v) => set({ name: v })} error={f.name ? err : null} autoFocus />
       <TextInput label={t('phone')} value={f.phone} onChange={(v) => set({ phone: v })} inputMode="tel" />
+      <div className="cb-box">
+        <Check label={t('ppl.cashBox')} hint={t(f.cashBox ? 'ppl.cashBoxOn' : 'ppl.cashBoxOff')} checked={f.cashBox} onChange={(v) => set({ cashBox: v })} />
+        {switched && past.length > 0 && (
+          <Check label={t(f.cashBox ? 'ppl.moveIn' : 'ppl.moveOut', { n: past.length })} hint={t('ppl.moveHint', { a: fmt(Math.abs(pastC)) })} checked={movePast} onChange={setMovePast} />
+        )}
+        {switched && !past.length && <div className="field-msg">{t('ppl.cbNewOnly')}</div>}
+      </div>
       <TextArea label={t('note')} value={f.note} onChange={(v) => set({ note: v })} />
     </Sheet>
   );

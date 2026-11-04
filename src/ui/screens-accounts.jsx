@@ -138,7 +138,7 @@ function BalanceSheet() {
         <section className="panel fin">
           <div className="fin-head"><h2>{t('bs.owns')} <Help k="bs" more="accounts" /></h2><span className="muted small">{dayLabel(asOf, lang, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
           <table className="tbl fin-tbl"><tbody>
-            {line('cash', bs.assets.cash)}{line('bank', bs.assets.bank)}{line('receivable', bs.assets.receivable, t('bs.receivableHint'))}
+            {line('cash', bs.assets.cash)}{line('bank', bs.assets.bank)}{bs.assets.outside ? line('outside', bs.assets.outside, t('bs.outsideHint')) : null}{line('receivable', bs.assets.receivable, t('bs.receivableHint'))}
             {line('supplierCredit', bs.assets.supplierCredit)}{line('peopleOwe', bs.assets.peopleOwe)}
             <tr className="fin-net"><td>{t('bs.totalOwns')}</td><td className="num">{fmt(bs.totalAssets)}</td></tr>
           </tbody></table>

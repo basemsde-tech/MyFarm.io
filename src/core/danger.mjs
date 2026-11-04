@@ -72,7 +72,7 @@ export function closeBefore(farm, cutoff, actor, { groups = ['money', 'productio
     next.suppliers = (farm.suppliers || []).map((s) => ({ ...s, openingC: net(snap.sup[s.id], 'billC', 'paidC'), openingDay: end, updatedAt: at }));
     next.people = (farm.people || []).map((p) => ({ ...p, openingC: snap.people[p.id]?.owedC || 0, updatedAt: at }));
     // Cash in the box (and owner's capital) carried forward on the cutoff day.
-    added.push(stamp({ type: 'opening', day: cutoff, cashC: snap.cashC, capitalC: snap.capitalC, note: `→ ${end}` }));
+    added.push(stamp({ type: 'opening', day: cutoff, cashC: snap.cashC, ...(snap.outsideC ? { outsideC: snap.outsideC } : {}), capitalC: snap.capitalC, note: `→ ${end}` }));
     // Animals sold in the closed period keep their sale record.
     next.animals = (farm.animals || []).map((a) => (a.status === 'sold' && a.sold?.saleId && goneIds.has(a.sold.saleId) ? { ...a, sold: { ...a.sold, archived: true } } : a));
   }

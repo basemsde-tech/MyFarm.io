@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.24.0', date: '2026-11-04', items: [
+    ['people', 'المديرون والممولون: خيار «تمرّ أمواله عبر الصندوق» لكل شخص', 'Managers and funders: a “Their money goes through the cash box” box for each person'],
+    ['cash', 'من هو خارج الصندوق: ما يضعه أو يسحبه لا يغيّر الصندوق، ويظهر المجموع «خارج الصندوق»', 'For someone outside the cash box, what they put in or take out leaves the cash box alone; the total shows as “Outside the cash box”'],
+  ] },
   { v: '3.23.0', date: '2026-11-04', items: [
     ['upload', 'استعادة أجزاء من أي نسخة، حتى الكاملة: مثلًا الحيوانات فقط دون الإنتاج', 'Restore only some parts from any backup, even a full one: for example Animals but not Production'],
     ['calendar', 'نسخ واستعادة فترة محددة: هذا الشهر أو الماضي أو السنة أو تواريخ مخصصة', 'Back up and restore a period: this month, last month, this year or custom dates'],

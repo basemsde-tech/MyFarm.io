@@ -8,13 +8,13 @@ import { live, customerInvoices, supplierBills, invoiceDueDay, offsetsC } from '
 /* ── Chart of accounts ──
    Accounts are keys; some carry a party (customer, supplier or person). */
 export const ACCOUNT_TYPES = {
-  cash: 'asset', bank: 'asset', ar: 'asset',
+  cash: 'asset', bank: 'asset', outside: 'asset', ar: 'asset',
   ap: 'liability', bills: 'liability', owed: 'liability', tax: 'liability',
   opening: 'equity', adjust: 'equity',
   rev: 'income', exp: 'expense',
 };
 export const typeOf = (acct) => ACCOUNT_TYPES[acct.split(':')[0]];
-const money = (r) => (r === 'bank' ? 'bank' : 'cash');
+const money = (r) => (r === 'bank' ? 'bank' : r === 'outside' ? 'outside' : 'cash');
 const methodAcct = (m) => (m === 'card' || m === 'transfer' ? 'bank' : 'cash');
 
 /** Split an amount across weights in whole cents, the remainder going to the last share. */
@@ -91,8 +91,10 @@ export function entryFor(r) {
     }
     case 'opening': {
       // Cash carried forward when old years were closed; the other side is opening equity.
-      if (!r.cashC) return null;
-      if (r.cashC > 0) { dr('cash', r.cashC); cr('opening', r.cashC); } else { dr('opening', -r.cashC); cr('cash', -r.cashC); }
+      if (!r.cashC && !r.outsideC) return null;
+      for (const [acct, v] of [['cash', r.cashC || 0], ['outside', r.outsideC || 0]]) {
+        if (v > 0) { dr(acct, v); cr('opening', v); } else if (v < 0) { dr('opening', -v); cr(acct, -v); }
+      }
       break;
     }
     case 'transfer': {
@@ -179,6 +181,7 @@ export function balanceSheet(farm, { asOf = '9999-12-31' } = {}) {
   const assets = {
     cash: get('cash')?.balance || 0,
     bank: get('bank')?.balance || 0,
+    outside: get('outside')?.balance || 0,
     receivable: pos(ar),
     supplierCredit: pos(ap),
     peopleOwe: pos(owed),

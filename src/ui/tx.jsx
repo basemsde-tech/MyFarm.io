@@ -29,7 +29,7 @@ export function describe(r, { t, names, fmt }) {
     case 'opening':
       return { title: t('dz.openingRec'), sub: r.note || '', amountC: r.cashC || 0, icon: 'history', kind: t('dz.openingRec') };
     case 'capital':
-      return { title: names.person(r.personId), sub: t(r.kind === 'inject' ? 'pp.inject' : r.purpose === 'personal' ? 'pp.personal' : 'pp.cashOut'), amountC: r.amountC, icon: 'people', kind: t('t.capital') };
+      return { title: names.person(r.personId), sub: t(r.kind === 'inject' ? 'pp.inject' : r.purpose === 'personal' ? 'pp.personal' : 'pp.cashOut') + (r.account === 'outside' ? ` · ${t('cap.outsideShort')}` : ''), amountC: r.amountC, icon: 'people', kind: t('t.capital') };
     case 'milk':
       return { title: `${t('pr.milk')} · ${t(`prod.${r.session}`)}`, sub: (r.animalId ? names.animal(r.animalId) : t('prod.herdMode')) + (!r.animalId && r.species && r.species !== 'cow' ? ` · ${t(`sp.${r.species}`)}` : ''), qty: `${milkQ(r.liters)}`, icon: 'milk', kind: t('t.milk') };
     case 'milkUse':
@@ -273,7 +273,7 @@ export function RecordDrawer({ id, onClose }) {
 }
 
 function fieldName(f, t) {
-  const map = { amountC: 'amount', paidC: 'exp.paid', cashC: 'pay.cash', totalC: 'total', paidNowC: 'sale.payNow', lines: 'items', items: 'items', liters: 'qty', count: 'qty', day: 'date', customerId: 'sale.customer', supplierId: 'exp.supplier', personId: 'cap.person', category: 'exp.item', note: 'note', offsets: 'pay.offsets', source: 'exp.source', voided: 'status', costC: 'med.cost', session: 'prod.day' };
+  const map = { amountC: 'amount', paidC: 'exp.paid', cashC: 'pay.cash', totalC: 'total', paidNowC: 'sale.payNow', lines: 'items', items: 'items', liters: 'qty', count: 'qty', day: 'date', customerId: 'sale.customer', supplierId: 'exp.supplier', personId: 'cap.person', category: 'exp.item', note: 'note', offsets: 'pay.offsets', source: 'exp.source', account: 'account', voided: 'status', costC: 'med.cost', session: 'prod.day' };
   return map[f] ? t(map[f]) : f;
 }
 function fmtVal(v, f, { fmt, t, names }) {
@@ -286,6 +286,7 @@ function fmtVal(v, f, { fmt, t, names }) {
   if (f === 'offsets') return v.map((o) => `${t(`c.${o.category}`)} ${fmt(o.amountC)}`).join('، ') || '—';
   if (f === 'items') return Array.isArray(v) ? v.map((i) => `${i.desc || ''} ${fmtQty(i.qty)}×${fmt(i.priceC)}`.trim()).join('، ') || '—' : '—';
   if (f === 'voided') return v ? t('st.voided') : '—';
+  if (f === 'account') return v === 'outside' ? t('cap.outsideShort') : t('acc.cash');
   if (f === 'category') return t(`c.${v}`);
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);

@@ -45,7 +45,7 @@ function bump(map, id, field, by) {
 export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = {}) {
   const recs = (farm.records || []).filter((r) => live(r) && r.day <= to);
   const s = {
-    cashC: 0, bankC: 0, capitalC: 0,
+    cashC: 0, bankC: 0, outsideC: 0, capitalC: 0,
     cust: {}, sup: {}, people: {},
     payablesC: 0, revenueC: 0, expenseC: 0, expenseCashC: 0,
     flows: [], expenses: [],
@@ -56,8 +56,10 @@ export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = 
 
   const flow = (r, dir, amountC, account, kind, extra = {}) => {
     if (!amountC) return;
-    if (account === 'bank') s.bankC += dir * amountC; else s.cashC += dir * amountC;
-    s.flows.push({ id: r.id, day: r.day, at: r.createdAt, dir, amountC, account: account === 'bank' ? 'bank' : 'cash', kind, by: r.createdByName, ...extra });
+    // 'outside': money of a manager or funder who is not part of the cash box (their own pocket or bank).
+    const acct = account === 'bank' ? 'bank' : account === 'outside' ? 'outside' : 'cash';
+    if (acct === 'bank') s.bankC += dir * amountC; else if (acct === 'outside') s.outsideC += dir * amountC; else s.cashC += dir * amountC;
+    s.flows.push({ id: r.id, day: r.day, at: r.createdAt, dir, amountC, account: acct, kind, by: r.createdByName, ...extra });
   };
   const sourcePay = (r, amountC, kind, extra) => {
     if (r.source === 'customer') return; // a customer paid it for the farm: no drawer move
@@ -141,6 +143,7 @@ export function compute(farm, { to = '9999-12-31', from = '0000-00-00', now } = 
       case 'opening': {
         // Balances carried forward when old years were closed.
         flow(r, +1, r.cashC || 0, 'cash', 'opening');
+        flow(r, +1, r.outsideC || 0, 'outside', 'opening');
         s.capitalC += r.capitalC || 0;
         break;
       }
@@ -286,6 +289,7 @@ export function diffSnapshots(a, b, names = {}) {
   };
   add('cash', a.cashC, b.cashC);
   add('bank', a.bankC, b.bankC);
+  add('outside', a.outsideC, b.outsideC);
   add('capital', a.capitalC, b.capitalC);
   const ids = (x, y) => new Set([...Object.keys(x), ...Object.keys(y)]);
   for (const id of ids(a.cust, b.cust)) {
