@@ -4,7 +4,7 @@ import { LOGO } from './logo-data.js';
 import { useApp, KEYS, readJSON, MAX_BYTES, inFrame } from './store.jsx';
 import { Button, Icon, Empty, Seg, Select, TextInput, Check, Sheet, FilterPanel, DateInput, dayLabel, Avatar } from './kit.jsx';
 import { PageHead, downloadText, usePeriod } from './screens-money.jsx';
-import { backupEnvelope } from '../core/backup.mjs';
+import { backupEnvelope, cleanFileName } from '../core/backup.mjs';
 import { updateSettings } from '../core/commands.mjs';
 import { activityLog } from '../core/audit.mjs';
 import { toCSV } from '../core/reports.mjs';
@@ -115,11 +115,11 @@ export function useAutoBackup() {
   };
   const forget = async () => { await vault.del(K.backupDir(farmId)); setDir(null); setPerm('none'); mark({ folder: null }); };
   /** Share the backup file (phone: to Drive, WhatsApp, e-mail…) or download it. */
-  const shareNow = async () => {
+  const shareNow = async (custom) => {
     setBusy(true);
     try {
       const text = await backupText(farm, files);
-      const name = `mazraati-${slug(farm.settings.farmName)}-${isoDay()}.json`;
+      const name = cleanFileName(typeof custom === 'string' ? custom : '', defaultName());
       const file = typeof File !== 'undefined' ? new File([text], name, { type: 'application/json' }) : null;
       let method = 'download';
       if (file && navigator.canShare?.({ files: [file] })) {
@@ -135,7 +135,7 @@ export function useAutoBackup() {
    * First time: the user picks where it lives; after that the same file is overwritten.
    */
   const fileSupported = typeof window !== 'undefined' && 'showSaveFilePicker' in window && !inFrame && storageMode === 'idb';
-  const toFile = async () => {
+  const toFile = async (custom) => {
     setBusy(true);
     try {
       const text = await backupText(farm, files);
@@ -143,7 +143,7 @@ export function useAutoBackup() {
       if (h && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') h = null;
       if (!h) {
         try {
-          h = await window.showSaveFilePicker({ id: `mazraati-file-${farmId}`, suggestedName: `mazraati-${slug(farm.settings.farmName)}-backup.json`, types: [{ description: 'Mazraati backup', accept: { 'application/json': ['.json'] } }] });
+          h = await window.showSaveFilePicker({ id: `mazraati-file-${farmId}`, suggestedName: cleanFileName(typeof custom === 'string' ? custom : '', `mazraati-${slug(farm.settings.farmName)}-backup.json`), types: [{ description: 'Mazraati backup', accept: { 'application/json': ['.json'] } }] });
         } catch (e) { if (e?.name === 'AbortError') return false; throw e; }
         fileHandles.set(farmId, h);
         await vault.set(K.backupFile(farmId), h).catch(() => {}); // remembered for next time where the browser allows it
@@ -160,7 +160,9 @@ export function useAutoBackup() {
     } finally { setBusy(false); }
   };
   /** Save to a new file the user picks; it becomes the file replaced from then on. */
-  const toNewFile = async () => { fileHandles.delete(farmId); await vault.del(K.backupFile(farmId)).catch(() => {}); mark({ file: null }); return toFile(); };
+  const toNewFile = async (custom) => { fileHandles.delete(farmId); await vault.del(K.backupFile(farmId)).catch(() => {}); mark({ file: null }); return toFile(typeof custom === 'string' ? custom : ''); };
+  /** The usual name of a backup made today. */
+  const defaultName = () => `mazraati-${slug(farm.settings.farmName)}-${isoDay()}.json`;
   /** The best way to back up right now: the connected folder, the remembered file, or a download/share. */
   const backupNow = async () => {
     if (dir && perm !== 'none') {
@@ -170,7 +172,7 @@ export function useAutoBackup() {
     if (fileSupported) return toFile();
     return (await shareNow()) ? readBk(farmId).name : false;
   };
-  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, toFile, toNewFile, backupNow, fileSupported, supported: folderSupported() && storageMode === 'idb' };
+  return { state, due, dir, perm, busy, pickFolder, reconnect, forget, toFolder, shareNow, toFile, toNewFile, backupNow, defaultName, fileSupported, supported: folderSupported() && storageMode === 'idb' };
 }
 
 const BackupCtx = createContext(null);
@@ -253,7 +255,7 @@ export function BackupPanel({ canSet }) {
       {snaps.length > 0 && (
         <div className="sub-sec">
           <h3>{t('set.autoSnap')}</h3>
-          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB{x.label ? <b> · {x.label}</b> : null}</span>{canSet && <Button size="sm" onClick={async () => { await bk.backupNow(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}</div>)}
+          {snaps.map((x) => <div className="row-btns" key={x.at}><span className="num">{x.day} · {(x.size / 1024).toFixed(0)} KB{x.label ? <b> · {x.label}</b> : null}</span>{canSet && <Button size="sm" onClick={async () => { await bk.backupNow(); replaceFarm(x.farm); toast(t('set.importOk')); }}>{t('set.snapRestore')}</Button>}{canSet && <Button size="sm" variant="quiet" onClick={() => ui.open('restore', { preset: { text: JSON.stringify(backupEnvelope(x.farm, new Date(x.at || Date.now()))), name: `${x.day}${x.label ? ` · ${x.label}` : ''}` }, startParts: true })}>{t('pt.snapParts')}</Button>}</div>)}
         </div>
       )}
       <div className="sub-sec">
@@ -489,13 +491,17 @@ export function BackupNowDialog({ onClose }) {
   const { t, toast, lang } = useApp();
   const bk = useBackup();
   const [err, setErr] = useState('');
+  const [fname, setFname] = useState(() => bk.defaultName().replace(/\.json$/, ''));
   const folder = bk.dir && bk.perm !== 'none';
   const existing = folder ? `${bk.dir.name} / ${(bk.state.name || '').split('/').pop() || 'latest'}` : bk.fileSupported ? bk.state.file : null;
+  // A name matters whenever a new file is made: downloading, sharing, or saving to a new file.
+  const named = !folder;
   const last = bk.state.lastAt ? new Date(bk.state.lastAt).toLocaleString(lang === 'ar' ? 'ar-LB-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : null;
   const done = (name) => { if (name) { toast(t('bn.done', { f: `⁨${name}⁩` }), { sound: 'success' }); onClose(); } else setErr(t('lo.failed')); };
   const replace = async () => { setErr(''); done(await bk.backupNow()); };
-  const fresh = async () => { setErr(''); done(folder ? await bk.backupNow() : await bk.toNewFile()); };
-  const download = async () => { setErr(''); done((await bk.shareNow()) ? bk.state.name || 'backup.json' : false); };
+  const fresh = async () => { setErr(''); done(folder ? await bk.backupNow() : await bk.toNewFile(fname)); };
+  const download = async () => { setErr(''); done((await bk.shareNow(fname)) ? cleanFileName(fname, bk.defaultName()) : false); };
+  const first = async () => { setErr(''); done(await bk.toFile(fname)); };
   return (
     <Sheet title={t('bn.title')} onClose={onClose}>
       <div className="logoff">
@@ -508,10 +514,16 @@ export function BackupNowDialog({ onClose }) {
             <p className="muted small">{t('bn.why')}</p>
           </div>
         </div>
+        {named && (
+          <div className="field bn-name">
+            <TextInput label={t('bn.fileName')} value={fname} onChange={setFname} spellCheck={false} />
+            <div className="field-msg">{existing ? t('bn.nameNew', { f: cleanFileName(fname, bk.defaultName()) }) : t('bn.nameHint', { f: cleanFileName(fname, bk.defaultName()) })}</div>
+          </div>
+        )}
         {err && <div className="note bad">{err}</div>}
         <div className="lo-actions">
           {existing && <Button variant="primary" icon="check" onClick={replace} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.replace')}</Button>}
-          {!existing && bk.fileSupported && <Button variant="primary" icon="download" onClick={replace} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.choose')}</Button>}
+          {!existing && bk.fileSupported && <Button variant="primary" icon="download" onClick={first} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.choose')}</Button>}
           {!bk.fileSupported && !folder && <Button variant="primary" icon="download" onClick={download} disabled={bk.busy}>{bk.busy ? t('lo.saving') : t('bn.download')}</Button>}
           {existing && !folder && <Button icon="file" onClick={fresh} disabled={bk.busy}>{t('bn.newFile')}</Button>}
           <Button onClick={onClose} disabled={bk.busy}>{t('cancel')}</Button>

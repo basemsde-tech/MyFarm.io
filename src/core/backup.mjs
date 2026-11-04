@@ -26,3 +26,15 @@ export function normalise(f) {
   return syncAllAnimalSales(foldBank(ensureNumbers({ ...base, ...f, settings: { ...base.settings, ...f.settings, tax: { ...base.settings.tax, ...f.settings?.tax }, doc: { ...base.settings.doc, ...f.settings?.doc }, messaging: { ...base.settings.messaging, ...f.settings?.messaging }, security: { ...base.settings.security, ...f.settings?.security }, backup: { ...base.settings.backup, ...f.settings?.backup } } })));
 }
 
+
+/**
+ * A safe file name for a backup the user named: no folder or reserved characters, not too long,
+ * and always ending in .json. Empty falls back to `fallback`.
+ */
+export function cleanFileName(name, fallback = 'mazraati-backup.json') {
+  let n = String(name || '').normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim();
+  n = n.replace(/(\.json)+$/i, '').replace(/^[.\s-]+/, '').replace(/[.\s]+$/, '');
+  if (!n) return fallback;
+  if (n.length > 120) n = n.slice(0, 120).trim();
+  return `${n}.json`;
+}

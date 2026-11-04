@@ -1,14 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { useApp } from './store.jsx';
-import { Button, Icon, Pill, Sheet, Check } from './kit.jsx';
+import { Button, Icon, Pill, Sheet, Check, Seg } from './kit.jsx';
 import { readBackup, backupEnvelope } from '../core/backup.mjs';
 import { downloadText } from './screens-money.jsx';
 import { compute } from '../core/ledger.mjs';
-import { isPartFile } from '../core/partial.mjs';
+import { isPartFile, asPartFile } from '../core/partial.mjs';
 import { PartRestore } from './parts.jsx';
 
 /** Pick a backup file, review exactly what will be restored and how balances compare, then replace the farm. */
-export function RestoreSheet({ onClose, fromSetup, preset }) {
+export function RestoreSheet({ onClose, fromSetup, preset, startParts }) {
   const { t, lang, farm, replaceFarm, setPrefs, toast, fmt, today, files, logEvent } = useApp();
   const [res, setRes] = useState(null);
   const [error, setError] = useState('');
@@ -17,6 +17,9 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
   const [drag, setDrag] = useState(false);
   const [keepCopy, setKeepCopy] = useState(true);
   const [part, setPart] = useState(null);
+  // A full backup can restore the whole farm, or only chosen parts of it.
+  const [scope, setScope] = useState(startParts ? 'parts' : 'whole');
+  const partOfFull = React.useMemo(() => (res && scope === 'parts' ? asPartFile(res.farm, res.report?.exportedAt || null, res.files) : null), [res, scope]);
   const input = useRef(null);
   const hasData = farm.records.length > 0 || farm.customers.length > 0;
 
@@ -29,7 +32,7 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
   }, [preset?.text]); // eslint-disable-line react-hooks/exhaustive-deps
   const load = async (file) => {
     if (!file) return;
-    setError(''); setRes(null); setPart(null); setBusy(true); setFileName(file.name);
+    setError(''); setRes(null); setPart(null); setScope('whole'); setBusy(true); setFileName(file.name);
     try {
       const text = await file.text();
       // A selective backup (only some parts) restores into this farm instead of replacing it.
@@ -70,7 +73,7 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
 
   return (
     <Sheet title={t('rs.title')} sub={t('rs.sub')} onClose={onClose} wide
-      footer={res ? (
+      footer={res && scope === 'whole' ? (
         <div className="foot-btns">
           {hasData && !fromSetup && <Check label={t('rs.keepCopy')} checked={keepCopy} onChange={setKeepCopy} />}
           <Button onClick={() => { setRes(null); setFileName(''); }}>{t('rs.other')}</Button>
@@ -89,7 +92,14 @@ export function RestoreSheet({ onClose, fromSetup, preset }) {
         </label>
       )}
       {error && <div className="note bad"><Icon name="alert" size={16} />{error}</div>}
-      {res && (
+      {res && !fromSetup && (
+        <div className="rs-scope">
+          <Seg value={scope} onChange={setScope} options={[{ value: 'whole', label: t('pt.scopeWhole') }, { value: 'parts', label: t('pt.scopeParts') }]} />
+          <span className="muted small">{t(scope === 'whole' ? 'pt.scopeWholeHint' : 'pt.scopePartsHint')}</span>
+        </div>
+      )}
+      {partOfFull && <PartRestore env={partOfFull} fileName={fileName} fromSetup={fromSetup} onDone={onClose} onOther={() => { setRes(null); setFileName(''); setScope('whole'); }} />}
+      {res && scope === 'whole' && (
         <>
           <section className="restore-head">
             <div>

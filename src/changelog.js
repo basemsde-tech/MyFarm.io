@@ -2,6 +2,12 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.23.0', date: '2026-11-04', items: [
+    ['upload', 'استعادة أجزاء من أي نسخة، حتى الكاملة: مثلًا الحيوانات فقط دون الإنتاج', 'Restore only some parts from any backup, even a full one: for example Animals but not Production'],
+    ['calendar', 'نسخ واستعادة فترة محددة: هذا الشهر أو الماضي أو السنة أو تواريخ مخصصة', 'Back up and restore a period: this month, last month, this year or custom dates'],
+    ['edit', 'سمِّ ملف النسخة الاحتياطية كما تريد', 'Name your backup file as you like'],
+    ['history', 'نقاط الاستعادة: «استعادة أجزاء…» لاسترجاع جزء منها فقط', 'Restore points: “Restore parts…” to bring back only part of one'],
+  ] },
   { v: '3.22.0', date: '2026-11-03', items: [
     ['download', 'نسخ أجزاء مختارة: احفظ الحيوانات أو المبيعات أو الإنتاج أو غيرها وحدها', 'Back up chosen parts: save animals, sales, production or any other part on its own'],
     ['upload', 'استعادة جزء دون استبدال المزرعة: إضافة الناقص أو استبدال الأجزاء المختارة، مع معاينة الأرصدة قبل التغيير', 'Restore a part without replacing the farm: add what is missing or replace the chosen parts, with a preview of balances first'],

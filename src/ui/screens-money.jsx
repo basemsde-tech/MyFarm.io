@@ -47,7 +47,7 @@ export function PageHead({ title, actions, back, sub }) {
   );
 }
 
-function PeriodBar({ value, onChange, range, setRange, options = ['today', 'week', 'month', 'lastMonth', 'year', 'all', 'custom'] }) {
+export function PeriodBar({ value, onChange, range, setRange, options = ['today', 'week', 'month', 'lastMonth', 'year', 'all', 'custom'] }) {
   const { t } = useApp();
   return (
     <div className="period-bar">

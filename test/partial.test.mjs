@@ -103,3 +103,67 @@ test('the preview counts only real changes', async () => {
   const env = JSON.parse(JSON.stringify(partEnvelope(f, ['production'])));
   assert.deepEqual(partDiff(f, restoreParts(f, env, { mode: 'replace' })), {});
 });
+
+test('a period backup holds only that period, and replacing it leaves other months alone', async () => {
+  const { partCounts } = await import('../src/core/partial.mjs');
+  const f = farm();
+  const range = { from: '2026-10-01', to: '2026-10-31' };
+  const env = JSON.parse(JSON.stringify(partEnvelope(f, ['sales', 'production'], new Date(), null, range)));
+  assert.deepEqual(env.range, range);
+  assert.ok(env.farm.records.length > 0);
+  assert.ok(env.farm.records.every((r) => r.day >= range.from && r.day <= range.to));
+  assert.ok(env.farm.customers.length > 0, 'lists go in whole');
+  assert.equal(partCounts(f, range).sales.entries, env.farm.records.filter((r) => r.type === 'sale' || r.type === 'payment').length);
+  // On the device: October's sales were lost, and a November sale was added since.
+  const nov = f.records.find((r) => r.type === 'sale' && r.day >= '2026-11-01');
+  const sep = f.records.find((r) => r.type === 'sale' && r.day < '2026-10-01');
+  const lost = { ...f, records: f.records.filter((r) => !((r.type === 'sale' || r.type === 'payment') && r.day >= range.from && r.day <= range.to)) };
+  // replace: October comes back exactly; September and November stay.
+  const rep = normalise(restoreParts(lost, env, { mode: 'replace' }));
+  assert.deepEqual(balances(rep), balances(f));
+  if (nov) assert.ok(rep.records.some((r) => r.id === nov.id));
+  if (sep) assert.ok(rep.records.some((r) => r.id === sep.id));
+  assert.equal(rep.customers.length, f.customers.length);
+  // add does the same here.
+  assert.deepEqual(balances(normalise(restoreParts(lost, env, { mode: 'add' }))), balances(f));
+});
+
+test('a period file that is all time behaves like a full part file', () => {
+  const f = farm();
+  const env = partEnvelope(f, ['sales'], new Date(), null, { from: '0000-00-00', to: '9999-12-31' });
+  assert.equal(env.range, undefined);
+});
+
+test('backup file names are made safe', async () => {
+  const { cleanFileName } = await import('../src/core/backup.mjs');
+  assert.equal(cleanFileName('  My farm / Oct?.json '), 'My farm - Oct-.json');
+  assert.equal(cleanFileName('نسخة أكتوبر'), 'نسخة أكتوبر.json');
+  assert.equal(cleanFileName('..json'), 'mazraati-backup.json');
+  assert.equal(cleanFileName('', 'x.json'), 'x.json');
+  assert.equal(cleanFileName('Farm.JSON.json'), 'Farm.json');
+  assert.ok(cleanFileName('a'.repeat(300)).length <= 125);
+});
+
+test('from a full backup: restore only the animals, production stays as it is now', async () => {
+  const { asPartFile } = await import('../src/core/partial.mjs');
+  const f = farm();
+  const env = JSON.parse(JSON.stringify(asPartFile(f)));
+  const a0 = f.animals[0];
+  const milkNew = { ...f.records.find((r) => r.type === 'milk'), id: 'milk-today', day: '2026-11-02', liters: 7, updatedAt: '2099-01-01T00:00:00Z' };
+  const local = { ...f, animals: f.animals.map((a) => (a.id === a0.id ? { ...a, name: 'WRONG', updatedAt: '2099-01-01T00:00:00Z' } : a)), records: [...f.records, milkNew] };
+  const out = restoreParts(local, env, { mode: 'replace', parts: ['animals'] });
+  assert.equal(out.animals.find((a) => a.id === a0.id).name, a0.name);
+  assert.ok(out.records.some((r) => r.id === 'milk-today'), 'production untouched');
+  assert.equal(compute(out).milk.stockL, compute(local).milk.stockL);
+});
+
+test('a period picked on restore narrows what comes back', async () => {
+  const { asPartFile } = await import('../src/core/partial.mjs');
+  const f = farm();
+  const env = JSON.parse(JSON.stringify(asPartFile(f)));
+  const lost = { ...f, records: f.records.filter((r) => r.type !== 'sale' && r.type !== 'payment') };
+  const out = restoreParts(lost, env, { mode: 'add', parts: ['sales'], range: { from: '2026-10-01', to: '2026-10-31' } });
+  const back = out.records.filter((r) => r.type === 'sale' || r.type === 'payment');
+  assert.ok(back.length > 0);
+  assert.ok(back.every((r) => r.day >= '2026-10-01' && r.day <= '2026-10-31'));
+});

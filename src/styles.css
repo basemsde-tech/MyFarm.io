@@ -2209,3 +2209,4 @@ body.has-selbar .screen, body.has-selbar .win-body { padding-block-end: 150px; }
 .restore-counts .rc.bad b { color: var(--bad); }
 .pt-compare tr.pt-ch td { background: var(--gold-soft); }
 .pt-foot { position: sticky; inset-block-end: 0; background: var(--surface); padding-block: 10px 2px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+.rs-scope { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface-2); }

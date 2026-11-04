@@ -25,13 +25,19 @@ export const partOf = (r) => PART_KEYS.find((k) => PARTS[k].rec(r)) || null;
 // Owner lists for attached documents.
 const DOC_PART = { animals: 'animals', customers: 'sales', suppliers: 'suppliers', orders: 'suppliers', people: 'people', workers: 'production' };
 
-/** How much each part holds (live entries and list rows), for the picker. */
-export function partCounts(farm) {
+/** A period limits which entries go in. No period (or all time) = everything. */
+export const ALL_TIME = { from: '0000-00-00', to: '9999-12-31' };
+export const isAllTime = (range) => !range || ((range.from || ALL_TIME.from) <= '0000-00-00' && (range.to || ALL_TIME.to) >= '9999-12-31');
+const inRange = (range) => (r) => isAllTime(range) || (r.day >= (range.from || ALL_TIME.from) && r.day <= (range.to || ALL_TIME.to));
+
+/** How much each part holds (live entries in the period, and list rows), for the picker. */
+export function partCounts(farm, range) {
+  const ok = inRange(range);
   const out = {};
   for (const k of PART_KEYS) {
     const p = PARTS[k];
     out[k] = {
-      entries: (farm.records || []).filter((r) => !r.deletedAt && p.rec(r)).length,
+      entries: (farm.records || []).filter((r) => !r.deletedAt && p.rec(r) && ok(r)).length,
       rows: p.lists.reduce((s, l) => s + (farm[l] || []).filter((x) => !x.deletedAt).length, 0),
     };
   }
@@ -50,11 +56,15 @@ function refsOf(r) {
   return out;
 }
 
-/** A farm holding only the chosen parts (plus the rows they point at). */
-export function pickParts(farm, parts) {
+/**
+ * A farm holding only the chosen parts (plus the rows they point at). With a period, only entries
+ * dated in it go in; the lists (customers, animals…) always go in whole, so entries have their owners.
+ */
+export function pickParts(farm, parts, range) {
   const want = parts.filter((k) => PARTS[k]);
   const lists = new Set(want.flatMap((k) => PARTS[k].lists));
-  const records = (farm.records || []).filter((r) => want.some((k) => PARTS[k].rec(r)));
+  const ok = inRange(range);
+  const records = (farm.records || []).filter((r) => want.some((k) => PARTS[k].rec(r)) && ok(r));
   const out = { records, partial: true };
   for (const l of ['customers', 'suppliers', 'people', 'animals', 'workers', 'profiles', 'obligations', 'orders']) out[l] = lists.has(l) ? [...(farm[l] || [])] : [];
   // References: rows an included entry points at travel along so the file stands on its own.
@@ -76,8 +86,9 @@ export function pickParts(farm, parts) {
   return out;
 }
 
-export function partEnvelope(farm, parts, now = new Date(), files = null) {
-  const env = { app: 'mazraati', kind: 'farm-part', version: FARM_VERSION, exportedAt: now.toISOString(), parts: parts.filter((k) => PARTS[k]), farm: pickParts(farm, parts) };
+export function partEnvelope(farm, parts, now = new Date(), files = null, range = null) {
+  const env = { app: 'mazraati', kind: 'farm-part', version: FARM_VERSION, exportedAt: now.toISOString(), parts: parts.filter((k) => PARTS[k]), farm: pickParts(farm, parts, range) };
+  if (!isAllTime(range)) env.range = { from: range.from || ALL_TIME.from, to: range.to || ALL_TIME.to };
   if (files && Object.keys(files).length) env.files = files;
   return env;
 }
@@ -86,6 +97,20 @@ export const isPartFile = (data) => data?.kind === 'farm-part' && Array.isArray(
 
 const ts = (x) => x?.updatedAt || x?.createdAt || '';
 const LISTS = ['customers', 'suppliers', 'people', 'animals', 'workers', 'profiles', 'obligations', 'orders', 'documents'];
+
+/** The overlap of two periods (null = all time). */
+export function intersect(a, b) {
+  if (isAllTime(a)) return isAllTime(b) ? null : b;
+  if (isAllTime(b)) return a;
+  return { from: a.from > b.from ? a.from : b.from, to: a.to < b.to ? a.to : b.to };
+}
+
+/** A full backup seen as a part file holding every part (to restore only some of it). */
+export function asPartFile(fullFarm, exportedAt = null, files = null) {
+  const env = { app: 'mazraati', kind: 'farm-part', version: FARM_VERSION, exportedAt, parts: [...PART_KEYS], farm: pickParts(fullFarm, PART_KEYS), fromFull: true };
+  if (files && Object.keys(files).length) env.files = files;
+  return env;
+}
 
 /** Keeps document numbers moving forward past anything brought in. */
 function maxSeq(a = {}, b = {}) {
@@ -101,14 +126,20 @@ function maxSeq(a = {}, b = {}) {
  *  mode 'replace' — the chosen parts become exactly what the file has (entries and lists of those
  *                   parts that are not in the file are removed); rows brought only as references
  *                   are added if missing, never replaced.
+ *                   A file made for a period replaces only entries dated in that period; entries
+ *                   outside it, and the lists, are kept (lists only gain rows).
  * Nothing outside the file's parts changes. Purged ids (tombstones) stay purged.
  */
-export function restoreParts(local, part, { mode = 'add', parts } = {}) {
+export function restoreParts(local, part, { mode = 'add', parts, range: pickRange } = {}) {
   const chosen = (parts || part.parts || []).filter((k) => PARTS[k]);
   const pf = part.farm || part;
   const dead = new Set((local.tombstones || []).map((t) => t.id));
   const refs = pf.refs || {};
   const inChosen = (r) => chosen.some((k) => PARTS[k].rec(r));
+  // The period restored: the file's own period, narrowed further by the one picked on restore.
+  const range = intersect(part.range || null, pickRange || null);
+  const inPeriod = inRange(range);
+  const whole = isAllTime(range);
   const ownLists = new Set(chosen.flatMap((k) => PARTS[k].lists));
   const docOwned = (d) => chosen.includes(DOC_PART[d.owner?.list]);
   const next = { ...local };
@@ -123,12 +154,12 @@ export function restoreParts(local, part, { mode = 'add', parts } = {}) {
     }
     return [...map.values()];
   };
-  const incRecords = (pf.records || []).filter(inChosen);
-  next.records = merge(local.records || [], incRecords, mode === 'replace', (r) => !inChosen(r));
+  const incRecords = (pf.records || []).filter((r) => inChosen(r) && inPeriod(r));
+  next.records = merge(local.records || [], incRecords, mode === 'replace', (r) => !inChosen(r) || !inPeriod(r));
   for (const l of LISTS) {
     const inc = pf[l] || [];
-    if (l === 'documents') { next.documents = merge(local.documents || [], inc.filter(docOwned), mode === 'replace', (d) => !docOwned(d)); continue; }
-    if (ownLists.has(l)) next[l] = merge(local[l] || [], inc, mode === 'replace', () => false);
+    if (l === 'documents') { next.documents = merge(local.documents || [], inc.filter(docOwned), mode === 'replace' && whole, (d) => !docOwned(d)); continue; }
+    if (ownLists.has(l)) next[l] = merge(local[l] || [], inc, mode === 'replace' && whole, () => false);
     else {
       // Only references: add the ones this farm does not have.
       const have = new Set((local[l] || []).map((x) => x.id));
