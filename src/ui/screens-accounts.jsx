@@ -379,7 +379,7 @@ export function InvoiceRegister() {
               <thead><tr><th className="cell-sel"><SelGroup getEl={() => invTbl.current?.querySelector('tbody')} /></th><th>{t('doc.invoiceNo')}</th><th>{t('sale.customer')}</th><th>{t('doc.issued')}</th><th>{t('doc.due')}</th><th className="num">{t('total')}</th><th className="num">{t('doc.balanceDue')}</th><th>{t('status')}</th><th /></tr></thead>
               <tbody>
                 {rows.slice(0, limit).map((r) => (
-                  <tr key={r.sale.id} className={`clickable ${r.status === 'voided' ? 'is-void' : ''}`} onClick={() => ui.open('drawer', { id: r.sale.id })}>
+                  <tr key={r.sale.id} className={`clickable ${r.status === 'voided' ? 'is-void' : ''}`} data-ctx="record" data-id={r.sale.id} onClick={() => ui.open('drawer', { id: r.sale.id })}>
                     <td className="cell-sel" onClick={(e) => e.stopPropagation()}><SelBox item={{ key: r.sale.id, recId: r.sale.id, type: 'sale', typeLabel: t('t.sale'), label: t('t.sale'), amountC: r.totalC, skip: r.status === 'voided', extras: { paid: { label: t('doc.paidToDate'), c: r.paidC }, due: { label: t('sel.stillDue'), c: r.dueC } } }} /></td>
                     <td className="num"><b>{docNo(r.sale, farm.settings)}</b></td>
                     <td>{r.customerId ? names.customer(r.customerId) : <span className="muted">{t('sale.walkin')}</span>}</td>

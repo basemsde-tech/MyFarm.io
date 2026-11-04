@@ -2275,3 +2275,23 @@ body.has-selbar .screen, body.has-selbar .win-body { padding-block-end: 150px; }
 }
 @media (max-width: 720px) { .cash-tbl tfoot td { border: 0 !important; padding: 0 !important; } }
 @media (max-width: 480px) { .act-at { white-space: normal; text-align: end; max-inline-size: 42%; } }
+
+/* ───────── Right-click menu (3.26) ───────── */
+.ctx-menu { position: fixed; z-index: 120; min-inline-size: 230px; max-inline-size: 320px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--sh-3); padding: 5px; animation: rise-in .14s var(--ease); }
+.ctx-group + .ctx-group { border-top: 1px solid var(--line-2); margin-block-start: 4px; padding-block-start: 4px; }
+.ctx-head { font-size: .72rem; font-weight: 650; color: var(--muted); padding: 5px 10px 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-item { display: flex; align-items: center; gap: 10px; inline-size: 100%; border: 0; background: none; color: inherit; font: inherit; font-size: .88rem; text-align: start; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
+.ctx-item .ico { color: var(--muted); flex: none; }
+.ctx-item span { flex: 1; }
+.ctx-item kbd { font-size: .66rem; }
+.ctx-item:hover, .ctx-item:focus-visible { background: var(--teal-soft); outline: none; }
+.ctx-item:hover .ico, .ctx-item:focus-visible .ico { color: var(--teal); }
+.ctx-item:disabled { opacity: .45; cursor: default; background: none; }
+.ctx-item.danger { color: var(--bad); } .ctx-item.danger .ico { color: var(--bad); }
+.ctx-item.danger:hover { background: var(--bad-soft); }
+/* Tab drag: a clear marker where the tab will land. */
+.ws-tab { position: relative; }
+.ws-tab.dragging { opacity: .45; }
+.ws-tab.drop-before::before, .ws-tab.drop-after::after { content: ''; position: absolute; inset-block: 4px; inline-size: 3px; border-radius: 3px; background: var(--teal); box-shadow: 0 0 0 3px var(--teal-ring); }
+.ws-tab.drop-before::before { inset-inline-start: -5px; }
+.ws-tab.drop-after::after { inset-inline-end: -5px; }

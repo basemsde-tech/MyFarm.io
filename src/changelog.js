@@ -2,6 +2,11 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.26.0', date: '2026-11-05', items: [
+    ['people', 'حسابات العملاء والموردين في تبويبات باسمها، وإعادة فتحها تعود إلى تبويبها', 'Customer and supplier accounts open in tabs named after them; opening one again returns to its tab'],
+    ['more', 'قائمة بالزر الأيمن: إجراءات سريعة للحركة أو الحساب أو التبويب أو الصفحة، مع «تحديث»', 'Right-click menu: quick actions for an entry, account, tab or page, including Refresh'],
+    ['list', 'اسحب التبويبات لترتيبها، مع خط يبيّن مكانها، ويُحفظ الترتيب', 'Drag tabs into the order you like, with a marker showing where they land; the order is kept'],
+  ] },
   { v: '3.25.0', date: '2026-11-04', items: [
     ['calendar', 'صيغة تاريخ واحدة في كل التطبيق: الاثنين 1/1/2026', 'One date format across the app: Monday 1/1/2026'],
     ['cash', 'الصندوق جدول واضح: التاريخ، البيان، نقد داخل، نقد خارج، الرصيد', 'The cash box is a clear table: Date, Statement, Cash in, Cash out, Balance'],

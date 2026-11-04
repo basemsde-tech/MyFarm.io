@@ -383,7 +383,7 @@ function AnimalList() {
               const tl = a.repro?.serviceDay ? reproTimeline(a.species, a.repro.serviceDay, today, a.repro.check) : null;
               const next = tl && !tl.failed ? tl.steps.find((s) => s.key === tl.next) : null;
               return (
-                <button type="button" key={a.id} className={`animal-card sp-${a.species} ${['sold', 'dead'].includes(a.status) ? 'gone' : ''}`} onClick={() => nav('animals', a.id)}>
+                <button type="button" key={a.id} className={`animal-card sp-${a.species} ${['sold', 'dead'].includes(a.status) ? 'gone' : ''}`} data-ctx="party" data-list="animals" data-id={a.id} onClick={() => nav('animals', a.id)}>
                   <span className="ac-photo">{a.photo ? <img src={a.photo} alt="" /> : <Icon name={a.species === 'chicken' ? 'egg' : 'cow'} size={26} />}</span>
                   <span className="ac-body">
                     <span className="ac-tag num">{a.tag}</span>
@@ -725,6 +725,7 @@ export function SettingsScreen() {
           </div>
           <div className="field-msg">{t('set.paletteHint')}</div>
         </div>
+        <Check label={t('set.accountTabs')} hint={t('set.accountTabsHint')} checked={prefs.accountTabs !== false} onChange={(v) => setPrefs({ accountTabs: v })} />
         <ReadingPanel />
       </section>
     </>, words: [t('set.theme'), t('set.language'), t('set.palette'), t('set.sound'), t('rd.title'), t('rd.size'), t('rd.font'), t('set.dark')] },

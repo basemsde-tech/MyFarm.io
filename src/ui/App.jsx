@@ -30,6 +30,7 @@ import { NotifyProvider, NotificationBell } from './notify.jsx';
 import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { RefreshButton, RefreshedToast } from './refresh.jsx';
 import { applyReading } from '../fonts.mjs';
+import { ContextMenu } from './ctxmenu.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, BackupNowDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const SHEETS = {
@@ -413,7 +414,7 @@ function AccountMenu({ compact }) {
 /* ───────────── The desk ───────────── */
 function Shell() {
   const app = useApp();
-  const { t, route, nav, ui, prefs, setPrefs, actor, farm, demo, saveError, retrySave, undo, stack, replaceFarm, ws, wsApi, exitDemo } = app;
+  const { t, route, nav, ui, prefs, setPrefs, actor, farm, demo, saveError, retrySave, undo, stack, replaceFarm, ws, wsApi, exitDemo, viewN } = app;
   const bk = useBackup();
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [more, setMore] = useState(false);
@@ -476,7 +477,8 @@ function Shell() {
         {!online && <div className="banner warn"><Icon name="wifi" size={16} /><span>{t('offline')}</span></div>}
         {saveError && <div className="banner bad"><Icon name="alert" size={16} /><span>{t(`e.${saveError.code}`)}</span><button type="button" onClick={retrySave}>{t('e.retry')}</button></div>}
         {!demo && !prefs.dismissed?.deviceOnly && <div className="banner quiet"><span>{t('deviceOnly')}</span><button type="button" onClick={() => setPrefs({ dismissed: { ...prefs.dismissed, deviceOnly: true } })}>{t('dismiss')}</button></div>}
-        <main className="content" id="main"><ErrorBoundary key={routeKey(route)} where={`page:${routeKey(route)}`}><Screen /></ErrorBoundary></main>
+        <ContextMenu />
+        <main className="content" id="main"><ErrorBoundary key={`${routeKey(route)}#${viewN}`} where={`page:${routeKey(route)}`}><Screen /></ErrorBoundary></main>
         <WindowLayer />
         <Taskbar />
       </div>

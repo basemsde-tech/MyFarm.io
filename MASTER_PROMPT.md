@@ -277,3 +277,8 @@ Base specification: the "Mazraati full details prompt" (v2.9.59, First Season). 
 - src/core/dates.mjs: fullDate ("Monday 1/1/2026", Arabic weekday + isolated d/m/yyyy) and fullDateTime. kit dayLabel(day, lang) now always uses it (opts ignored); every toLocale date/time in the UI and messages goes through it. monthLabel unchanged.
 - Cash box: CashTable (screens-money.jsx) — Date · Statement (who/what + kind) · Cash in · Cash out · Balance, month separator rows with in/out, opening row, tfoot period total + closing; ticks for selection; stacked layout under 720px.
 - AmtPill (kit): green/red pill with a dot for money in/out; used in the cash table, RecordRow amounts with a direction, and person statements. `.ltr` keeps signs and $ in place in Arabic.
+
+## 35. 3.26 — Account tabs, right-click menu, tab reordering
+- ws.mjs wsNav(..., { accountTabs }): opening a customer / supplier / person account from elsewhere activates its existing tab or opens a new one (tab label = entity name via routeLabel). On when the tab bar shows (width > 720) and prefs.accountTabs !== false (Settings → Appearance and reading). wsCloseOthers, wsDuplicate added.
+- src/ui/ctxmenu.jsx: one document 'contextmenu' listener; targets by data-ctx (record rows incl. cash table / expenses / bills / invoices, party cards incl. animals, tabs) else the page. Skipped for text fields, sheets, documents, selected text, Shift, and touch-only devices. Refresh = store.refreshView(): waits for saves, re-reads the farm from the device, remounts the page (viewN in the page key).
+- Tabs: drag with a before/after marker (RTL aware), Ctrl+Shift+←/→, and Move left/right in the tab menu; order persists in mazraati-ws-v1.

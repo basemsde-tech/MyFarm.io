@@ -272,7 +272,7 @@ function CashTable({ rows, recById, byDay, newestFirst, opening, inC, outC, show
     const extra = main === kind ? '' : kind;
     const key = `${f.id}|${f.kind}|${f.account}`;
     body.push(
-      <tr key={key} className="ct-row clickable" onClick={() => ui.open('drawer', { id: f.id })}>
+      <tr key={key} className="ct-row clickable" data-ctx="record" data-id={f.id} onClick={() => ui.open('drawer', { id: f.id })}>
         <td className="ct-sel" onClick={(e) => e.stopPropagation()}>
           <SelBox item={{ key, recId: f.id, type: f.kind, typeLabel: kind, label: kind, amountC: f.amountC, sign: f.dir > 0 ? 1 : -1 }} />
         </td>
@@ -344,7 +344,7 @@ function SalesHome({ tab, setTab }) {
           {custSorted.length ? (
             <div className={`cards dv-${v.view}`}>
               {custSorted.map(({ c, last, status, due }) => (
-                <button type="button" key={c.id} className="party-card" onClick={() => nav('sales', c.id)}>
+                <button type="button" key={c.id} className="party-card" data-ctx="party" data-list="sales" data-id={c.id} onClick={() => nav('sales', c.id)}>
                   <div className="pc-top"><b>{c.name}</b><Pill status={status}>{t(`st.${status}`)}</Pill></div>
                   <div className="pc-amt num">{fmt(due || snap.cust[c.id]?.creditBalC || 0)}</div>
                   <div className="pc-sub">{c.accountNo} · {last ? `${t('cust.lastActivity')} ${dayLabel(last, lang)}` : c.phone}</div>
@@ -500,7 +500,7 @@ function ExpenseRow({ e, r, tab }) {
   const sel = useSelectable(item);
   const press = useRowPress(sel, () => ui.open('drawer', { id: e.id }));
   return (
-    <div className={`row ${sel?.on ? 'selected' : ''}`}>
+    <div className={`row ${sel?.on ? 'selected' : ''}`} data-ctx={r ? 'record' : undefined} data-id={r ? e.id : undefined}>
       <div className="row-mw">
         <button type="button" className="row-main" {...press}>
           <span className="row-ico emoji">{CATEGORY_ICON[e.category] || '•'}</span>
@@ -608,7 +608,7 @@ function SupplierList({ tab }) {
         {supSorted.length ? (
           <div className={`cards dv-${v.view}`}>
             {supSorted.map(({ s, due, status, last }) => (
-              <button type="button" key={s.id} className="party-card" onClick={() => nav('suppliers', s.id)}>
+              <button type="button" key={s.id} className="party-card" data-ctx="party" data-list="suppliers" data-id={s.id} onClick={() => nav('suppliers', s.id)}>
                 <div className="pc-top"><b>{s.name}</b><Pill status={status}>{t(`st.${status}`)}</Pill></div>
                 <div className="pc-amt num">{fmt(due)}</div>
                 <div className="pc-sub">{(s.tags || []).map((x) => t(`tag.${x}`)).join('، ')}{last && ` · ${dayLabel(last, lang)}`}</div>
@@ -669,7 +669,7 @@ function BillRow({ b, s }) {
   const sel = useSelectable(item);
   const press = useRowPress(sel, () => (b.record ? ui.open('drawer', { id: b.id }) : ui.open('supplier', { record: s })));
   return (
-    <div className={`row ${sel?.on ? 'selected' : ''}`}>
+    <div className={`row ${sel?.on ? 'selected' : ''}`} data-ctx={b.record ? 'record' : undefined} data-id={b.record ? b.id : undefined}>
       <div className="row-mw">
         <button type="button" className="row-main" {...press}>
           <span className="row-ico emoji">{CATEGORY_ICON[b.category] || '•'}</span>
@@ -705,7 +705,7 @@ function PeopleList() {
               const owed = snap.people[p.id]?.owedC || 0;
               const st = owed > 0 ? 'owedToThem' : owed < 0 ? 'owesFarm' : 'settled';
               return (
-                <button type="button" key={p.id} className="party-card" onClick={() => nav('people', p.id)}>
+                <button type="button" key={p.id} className="party-card" data-ctx="party" data-list="people" data-id={p.id} onClick={() => nav('people', p.id)}>
                   <div className="pc-top"><b>{p.name}</b><Pill tone={owed > 0 ? 'info' : owed < 0 ? 'warn' : 'good'}>{t(`ppl.${st}`)}</Pill></div>
                   <div className="pc-amt num">{fmt(Math.abs(owed))}</div>
                   <div className="pc-sub">{p.cashBox === false ? <span className="pc-out">{t('ppl.outsideTag')}</span> : null}{p.cashBox === false && p.phone ? ' · ' : ''}{p.phone}</div>

@@ -19,9 +19,19 @@ export function wsValid(ws) {
 export const activeTab = (ws) => ws.tabs.find((t) => t.id === ws.active) || ws.tabs[0];
 
 /** Navigate. A page that is already open in another tab is focused instead of opened twice. */
-export function wsNav(ws, route, { newTab = false, replace = false } = {}) {
+/** Customer, supplier and manager accounts can each live in their own tab, named after them. */
+export const isAccount = (r) => !!r?.id && ACCOUNT_LISTS.includes(r.name);
+const ACCOUNT_LISTS = ['sales', 'suppliers', 'people'];
+
+export function wsNav(ws, route, { newTab = false, replace = false, accountTabs = false } = {}) {
   const r = clean(route);
   const cur = activeTab(ws);
+  // Opening an account from elsewhere: go to its tab if it is open, otherwise give it a new one.
+  if (accountTabs && !newTab && !replace && isAccount(r) && !(cur.route.name === r.name && cur.route.id === r.id)) {
+    const own = ws.tabs.find((t) => t.route.name === r.name && t.route.id === r.id);
+    if (own) return { ...ws, active: own.id, tabs: r.tab && own.route.tab !== r.tab ? ws.tabs.map((t) => (t.id === own.id ? { ...t, route: r, back: [...t.back, t.route].slice(-30), fwd: [] } : t)) : ws.tabs };
+    return wsNav(ws, r, { newTab: true });
+  }
   if (!newTab && same(cur.route, r)) return ws;
   const open = ws.tabs.find((t) => same(t.route, r));
   if (open && !replace) return { ...ws, active: open.id };
@@ -134,4 +144,21 @@ export function installClickModifiers() {
 }
 export function clickModifiers() {
   return Date.now() - lastClick.at < 400 ? lastClick : { newTab: false, window: false };
+}
+
+/** Close every tab except one. */
+export function wsCloseOthers(ws, id) {
+  const keep = ws.tabs.find((t) => t.id === id);
+  return keep ? { ...ws, tabs: [keep], active: keep.id } : ws;
+}
+
+/** A second tab on the same page. */
+export function wsDuplicate(ws, id) {
+  const t = ws.tabs.find((x) => x.id === id);
+  if (!t) return ws;
+  const seq = ws.seq + 1;
+  const i = ws.tabs.findIndex((x) => x.id === id);
+  let tabs = [...ws.tabs.slice(0, i + 1), { id: `t${seq}`, route: t.route, back: [], fwd: [] }, ...ws.tabs.slice(i + 1)];
+  if (tabs.length > MAX_TABS) tabs = tabs.filter((x, j) => j !== tabs.findIndex((y) => y.id !== id && y.id !== `t${seq}`));
+  return { ...ws, tabs, active: `t${seq}`, seq };
 }

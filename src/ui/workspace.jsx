@@ -49,6 +49,17 @@ export function TabBar() {
   const { ws, wsApi, t, names, nav, route } = useApp();
   const cur = ws.tabs.find((x) => x.id === ws.active);
   const [dragId, setDragId] = useState(null);
+  const [drop, setDrop] = useState(null); // { id, after } — where the dragged tab will land
+  const rtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+  // Index to move to, given the tab under the pointer and which half of it.
+  const target = (overIdx, after) => {
+    const from = ws.tabs.findIndex((x) => x.id === dragId);
+    let to = overIdx + (after ? 1 : 0);
+    if (from < to) to -= 1;
+    return to;
+  };
+  const sideOf = (e) => { const r = e.currentTarget.getBoundingClientRect(); const right = e.clientX > r.left + r.width / 2; return rtl ? !right : right; };
+  const moveBy = (id, d) => { const i = ws.tabs.findIndex((x) => x.id === id); const j = i + d; if (i < 0 || j < 0 || j >= ws.tabs.length) return; wsApi.moveTab(id, j); };
   return (
     <div className="tabbar" role="tablist" aria-label={t('ws.tabs')}>
       <div className="tab-nav">
@@ -57,12 +68,20 @@ export function TabBar() {
       </div>
       <div className="tabs-scroll">
         {ws.tabs.map((tb, i) => (
-          <div key={tb.id} role="tab" aria-selected={tb.id === ws.active} tabIndex={0} draggable
-            className={`ws-tab ${tb.id === ws.active ? 'on' : ''} ${dragId === tb.id ? 'dragging' : ''}`}
-            onClick={() => wsApi.activate(tb.id)} onKeyDown={(e) => e.key === 'Enter' && wsApi.activate(tb.id)}
+          <div key={tb.id} role="tab" aria-selected={tb.id === ws.active} tabIndex={0} draggable data-ctx="tab" data-id={tb.id}
+            className={`ws-tab ${tb.id === ws.active ? 'on' : ''} ${dragId === tb.id ? 'dragging' : ''} ${drop?.id === tb.id && dragId && dragId !== tb.id ? (drop.after ? 'drop-after' : 'drop-before') : ''}`}
+            onClick={() => wsApi.activate(tb.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') wsApi.activate(tb.id);
+              // Ctrl+Shift+← / → moves the focused tab (keyboard reorder).
+              if (e.ctrlKey && e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); moveBy(tb.id, (e.key === 'ArrowRight') !== rtl ? 1 : -1); }
+            }}
             onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); wsApi.closeTab(tb.id); } }}
-            onDragStart={() => setDragId(tb.id)} onDragEnd={() => setDragId(null)}
-            onDragOver={(e) => e.preventDefault()} onDrop={() => { if (dragId) wsApi.moveTab(dragId, i); setDragId(null); }}
+            onDragStart={(e) => { setDragId(tb.id); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', tb.id); } catch { /* older browsers */ } }}
+            onDragEnd={() => { setDragId(null); setDrop(null); }}
+            onDragOver={(e) => { if (!dragId) return; e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch { /* ignore */ } const after = sideOf(e); if (drop?.id !== tb.id || drop?.after !== after) setDrop({ id: tb.id, after }); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDrop((d) => (d?.id === tb.id ? null : d)); }}
+            onDrop={(e) => { e.preventDefault(); if (dragId && dragId !== tb.id) wsApi.moveTab(dragId, target(i, sideOf(e))); setDragId(null); setDrop(null); }}
             title={routeLabel(tb.route, t, names)}>
             <Icon name={ROUTE_ICON[tb.route.name] || 'file'} size={15} />
             <span className="ws-tab-label">{routeLabel(tb.route, t, names)}</span>

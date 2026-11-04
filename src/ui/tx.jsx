@@ -475,7 +475,7 @@ export function RecordRow({ r, onOpen, right, dir, hideParty, className = '', ta
     </button>
   );
   return (
-    <div className={`row ${st?.on ? 'selected' : ''} ${r.voided ? 'is-void' : ''} ${className}`}>
+    <div className={`row ${st?.on ? 'selected' : ''} ${r.voided ? 'is-void' : ''} ${className}`} data-ctx="record" data-id={r.id}>
       {st ? <div className="row-mw">{main}<TickButton st={st} k={item.key} /></div> : main}
       {actions && <div className="row-actions">{actions}</div>}
     </div>

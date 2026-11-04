@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.25.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.26.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -269,6 +269,17 @@ function FarmProvider({ boot, children }) {
     }
     return !saving.current.busy && !saving.current.next;
   }, [flush]);
+  // Refresh: re-read the farm from this device (picks up changes saved elsewhere, e.g. another
+  // window) and redraw the page. Nothing unsaved is lost: pending saves finish first.
+  const [viewN, setViewN] = useState(0);
+  const refreshView = useCallback(async () => {
+    try {
+      await whenSaved();
+      const f = await loadFarmById(idRef.current);
+      if (f && (f.rev || 0) >= (farmRef.current?.rev || 0) && f !== farmRef.current) { farmRef.current = f; setFarm(f); }
+    } catch { /* the page still redraws */ }
+    setViewN((n) => n + 1);
+  }, [whenSaved]);
 
   /* ── Files (attached documents) ── */
   const files = useMemo(() => ({
@@ -401,6 +412,10 @@ function FarmProvider({ boot, children }) {
   }, [route]);
   const area = () => ({ w: Math.max(600, window.innerWidth - 300), h: Math.max(400, window.innerHeight - 140) });
   const canWindow = () => typeof window !== 'undefined' && window.innerWidth >= 1100;
+  // Accounts in their own tabs: on screens that show the tab bar, unless turned off in Settings.
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
+  const accountTabsOn = () => typeof window !== 'undefined' && window.innerWidth > 720 && prefsRef.current.accountTabs !== false;
   /** nav(name, id, tab, { newTab, window }) */
   useEffect(() => { WS.installClickModifiers(); }, []);
   const nav = useCallback((name, id, tab, given = {}) => {
@@ -408,8 +423,8 @@ function FarmProvider({ boot, children }) {
     const opts = { newTab: given.newTab ?? m.newTab, window: given.window ?? m.window };
     const r = { name, id, tab };
     if (opts.window && canWindow()) setWs((w) => WS.winOpen(w, r, area()));
-    else setWs((w) => WS.wsNav(w, r, { newTab: !!(opts.newTab || opts.window) }));
-  }, [setWs]);
+    else setWs((w) => WS.wsNav(w, r, { newTab: !!(opts.newTab || opts.window), accountTabs: accountTabsOn() }));
+  }, [setWs]); // eslint-disable-line react-hooks/exhaustive-deps
   const wsApi = useMemo(() => ({
     back: () => setWs(WS.wsBack), forward: () => setWs(WS.wsForward),
     activate: (id) => setWs((w) => WS.wsActivate(w, id)), closeTab: (id) => setWs((w) => WS.wsCloseTab(w, id)),
@@ -419,6 +434,7 @@ function FarmProvider({ boot, children }) {
     winFocus: (id) => setWs((w) => WS.winFocus(w, id)), winPatch: (id, p) => setWs((w) => WS.winPatch(w, id, p)),
     winToggle: (id, st) => setWs((w) => WS.winToggle(w, id, st)), winClose: (id) => setWs((w) => WS.winClose(w, id)),
     winDock: (id) => setWs((w) => WS.winDock(w, id)), canWindow,
+    closeOthers: (id) => setWs((w) => WS.wsCloseOthers(w, id)), duplicate: (id) => setWs((w) => WS.wsDuplicate(w, id)),
   }), [setWs]);
 
   const ui = useMemo(() => ({
@@ -431,7 +447,7 @@ function FarmProvider({ boot, children }) {
   const value = {
     farm: view, rawFarm: farm, snap, prefs, setPrefs, t, lang: prefs.lang, dir: prefs.lang === 'ar' ? 'rtl' : 'ltr', actor, today,
     commit, undo, replaceFarm, toast, toasts, setToasts, errText, fmt, names, route, nav, ui, stack, layer, ws, wsApi,
-    saveError, retrySave, whenSaved, demo, canUndo: undoRef.current.length > 0,
+    saveError, retrySave, whenSaved, refreshView, viewN, demo, canUndo: undoRef.current.length > 0,
     logEvent, files, enterDemo, exitDemo, farms: reg.farms, farmId, switchFarm, addFarm, removeFarm, cancelNewFarm, snapshots, saveRestorePoint, clearDeviceCopies, storageMode: boot.mode,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
