@@ -8,7 +8,7 @@ import { Button, Icon, Pill, Empty, Stat, Tabs, Seg, Grouped, Select, TextInput,
 import { RecordRow } from './tx.jsx';
 import { SelectScope, SelGroup } from './select.jsx';
 import { ReadingPanel } from './reading.jsx';
-import { celebrateMilk } from './cow.jsx';
+import { celebrate, KINDS as CEL_KINDS, SAMPLE as CEL_SAMPLE } from './celebrate.jsx';
 import { usesOrders } from '../core/orders.mjs';
 import { PageHead, usePeriod, downloadText } from './screens-money.jsx';
 import { live } from '../core/ledger.mjs';
@@ -115,11 +115,7 @@ function MilkDay({ day, setDay, recs }) {
       for (const r of add) n = addRecord(n, r, actor);
       return n;
     };
-    const was = initial();
-    const sum = (key) => (mode === 'herd' ? toL(v[key]) : animals.reduce((x, a) => x + toL(v.ani[a.id]?.[key] || 0), 0));
-    const moved = (key) => (mode === 'herd' ? String(v[key]) !== String(was[key]) : animals.some((a) => String(v.ani[a.id]?.[key] || 0) !== String(was.ani?.[a.id]?.[key] || 0)));
-    const ok = commit(op, { label: t('md.saved', { a: milkQ(totalL) }) });
-    if (ok) celebrateMilk({ am: moved('am') ? sum('am') : 0, pm: moved('pm') ? sum('pm') : 0 });
+    commit(op, { label: t('md.saved', { a: milkQ(totalL) }) });
   };
   const unit = t(kg ? 'u.kg' : 'u.L');
   const dLabel = day === today ? t('today') : day === shiftDay(today, -1) ? t('md.yesterday') : dayLabel(day, lang, { weekday: 'long', day: 'numeric', month: 'short' });
@@ -731,7 +727,17 @@ export function SettingsScreen() {
           <div className="field-msg">{t('set.paletteHint')}</div>
         </div>
         <Check label={t('set.playful')} hint={t('set.playfulHint')} checked={prefs.playful !== false} onChange={(v) => setPrefs({ playful: v })} />
-        <Check label={t('set.accountTabs')} hint={t('set.accountTabsHint')} checked={prefs.accountTabs === true} onChange={(v) => setPrefs({ accountTabs: v })} />
+        {prefs.playful !== false && <Check label={t('set.playfulSound')} hint={t('set.playfulSoundHint')} checked={prefs.playfulSound !== false} onChange={(v) => setPrefs({ playfulSound: v })} />}
+        {prefs.playful !== false && (
+          <div className="cel-kinds" role="group" aria-label={t('cel.which')}>
+            {CEL_KINDS.map((k) => (
+              <div key={k} className={`cel-kind ${prefs.playfulOff?.[k] ? 'off' : ''}`}>
+                <label><input type="checkbox" checked={!prefs.playfulOff?.[k]} onChange={(e) => setPrefs({ playfulOff: { ...(prefs.playfulOff || {}), [k]: !e.target.checked } })} /> {t(`cel.k.${k}`)}</label>
+                <button type="button" className="link small" disabled={!!prefs.playfulOff?.[k]} onClick={() => celebrate({ ...CEL_SAMPLE[k], preview: true })}>{t('cel.preview')}</button>
+              </div>
+            ))}
+          </div>
+        )}
         <ReadingPanel />
       </section>
     </>, words: [t('set.theme'), t('set.language'), t('set.palette'), t('set.sound'), t('rd.title'), t('rd.size'), t('rd.font'), t('set.dark')] },

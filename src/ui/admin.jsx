@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { celebrate } from './celebrate.jsx';
 import { fullDate, fullDateTime } from '../core/dates.mjs';
 import { isoDay } from '../core/species.mjs';
 import { LOGO } from './logo-data.js';
@@ -498,7 +499,7 @@ export function BackupNowDialog({ onClose }) {
   // A name matters whenever a new file is made: downloading, sharing, or saving to a new file.
   const named = !folder;
   const last = bk.state.lastAt ? fullDateTime(bk.state.lastAt, lang) : null;
-  const done = (name) => { if (name) { toast(t('bn.done', { f: `⁨${name}⁩` }), { sound: 'success' }); onClose(); } else setErr(t('lo.failed')); };
+  const done = (name) => { if (name) { toast(t('bn.done', { f: `⁨${name}⁩` }), { sound: 'success' }); celebrate({ kind: 'backup' }); onClose(); } else setErr(t('lo.failed')); };
   const replace = async () => { setErr(''); done(await bk.backupNow()); };
   const fresh = async () => { setErr(''); done(folder ? await bk.backupNow() : await bk.toNewFile(fname)); };
   const download = async () => { setErr(''); done((await bk.shareNow(fname)) ? cleanFileName(fname, bk.defaultName()) : false); };

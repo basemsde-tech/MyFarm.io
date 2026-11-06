@@ -31,7 +31,7 @@ import { UpdatePrompt, WhatsNewGate, WhatsNew } from './updates.jsx';
 import { RefreshButton, RefreshedToast } from './refresh.jsx';
 import { applyReading } from '../fonts.mjs';
 import { ContextMenu } from './ctxmenu.jsx';
-import { CowCelebration } from './cow.jsx';
+import { Celebration } from './celebrate.jsx';
 import { BackupProvider, useBackup, BackupBanner, RemoveFarmDialog, LogOffDialog, BackupNowDialog, FarmSwitch, attemptState, recordAttempt } from './admin.jsx';
 
 const SHEETS = {
@@ -479,7 +479,7 @@ function Shell() {
         {saveError && <div className="banner bad"><Icon name="alert" size={16} /><span>{t(`e.${saveError.code}`)}</span><button type="button" onClick={retrySave}>{t('e.retry')}</button></div>}
         {!demo && !prefs.dismissed?.deviceOnly && <div className="banner quiet"><span>{t('deviceOnly')}</span><button type="button" onClick={() => setPrefs({ dismissed: { ...prefs.dismissed, deviceOnly: true } })}>{t('dismiss')}</button></div>}
         <ContextMenu />
-        <CowCelebration />
+        <Celebration />
         <main className="content" id="main"><ErrorBoundary key={`${routeKey(route)}#${viewN}`} where={`page:${routeKey(route)}`}><Screen /></ErrorBoundary></main>
         <WindowLayer />
         <Taskbar />

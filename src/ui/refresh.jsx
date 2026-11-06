@@ -1,5 +1,6 @@
 // Refresh the app: look for a new version, clear the app's stored files (cache) and reload fresh.
 // Farm data is never touched: it lives in the device store (IndexedDB / localStorage), not in the cache.
+import { DancingCow } from './celebrate.jsx';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp, VERSION } from './store.jsx';
@@ -85,13 +86,13 @@ export async function refreshApp({ whenSaved, step = () => {} }) {
 
 /** Full-screen progress while refreshing. */
 function RefreshOverlay({ stage }) {
-  const { t } = useApp();
+  const { t, prefs } = useApp();
   const steps = ['save', 'check', 'clear', 'reload'];
   const at = steps.indexOf(stage);
   return createPortal(
     <div className="upd-overlay" role="status" aria-live="polite">
       <div className="upd-installing rf-card">
-        <span className="upd-spin" />
+        {prefs.playful !== false ? <DancingCow /> : <span className="upd-spin" />}
         <b>{t('rf.working')}</b>
         <ol className="rf-steps">
           {steps.map((s, i) => <li key={s} className={i < at ? 'done' : i === at ? 'on' : ''}><Icon name={i < at ? 'check' : 'more'} size={13} />{t(`rf.s.${s}`)}</li>)}

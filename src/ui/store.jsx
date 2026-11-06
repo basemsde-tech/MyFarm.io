@@ -13,9 +13,10 @@ import { fmtMoney } from '../core/money.mjs';
 import { isoDay } from '../core/species.mjs';
 import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
+import { pickCelebration } from '../core/celebrate.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.27.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.28.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -229,6 +230,12 @@ function FarmProvider({ boot, children }) {
       const sold = next.records.length > before.records.length && next.records.slice(before.records.length).some((r) => r.type === 'sale' && !r.deletedAt);
       toast(label, { sound: sold ? 'cash' : 'success', action: undoable ? { label: t('undo'), run: () => undo() } : null });
     }
+    // A playful moment for what was just saved (src/ui/celebrate.jsx decides whether it shows).
+    if (!silent && label) {
+      setTimeout(() => {
+        try { const c = pickCelebration(before, next); if (c) window.dispatchEvent(new CustomEvent('mz-celebrate', { detail: c })); } catch { /* never block a save */ }
+      }, 0);
+    }
     return next;
   }, [persist, toast, errText, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -412,24 +419,26 @@ function FarmProvider({ boot, children }) {
   }, [route]);
   const area = () => ({ w: Math.max(600, window.innerWidth - 300), h: Math.max(400, window.innerHeight - 140) });
   const canWindow = () => typeof window !== 'undefined' && window.innerWidth >= 1100;
-  // Accounts in their own tabs: on screens that show the tab bar, unless turned off in Settings.
-  const prefsRef = useRef(prefs);
-  prefsRef.current = prefs;
-  const accountTabsOn = () => typeof window !== 'undefined' && window.innerWidth > 720 && prefsRef.current.accountTabs === true; // off by default: accounts open as sub-tabs (acctstrip.jsx)
   /** nav(name, id, tab, { newTab, window }) */
   useEffect(() => { WS.installClickModifiers(); }, []);
   const nav = useCallback((name, id, tab, given = {}) => {
     const m = WS.clickModifiers();
     const opts = { newTab: given.newTab ?? m.newTab, window: given.window ?? m.window };
     const r = { name, id, tab };
-    if (opts.window && canWindow()) setWs((w) => WS.winOpen(w, r, area()));
-    else setWs((w) => WS.wsNav(w, r, { newTab: !!(opts.newTab || opts.window), accountTabs: accountTabsOn() }));
+    // Accounts open only as sub-tabs in their department, never as a main tab or window of their own.
+    if (WS.isAccount(r)) setWs((w) => WS.wsNav(w, r));
+    else if (opts.window && canWindow()) setWs((w) => WS.winOpen(w, r, area()));
+    else setWs((w) => WS.wsNav(w, r, { newTab: !!(opts.newTab || opts.window) }));
   }, [setWs]); // eslint-disable-line react-hooks/exhaustive-deps
   const wsApi = useMemo(() => ({
     back: () => setWs(WS.wsBack), forward: () => setWs(WS.wsForward),
     activate: (id) => setWs((w) => WS.wsActivate(w, id)), closeTab: (id) => setWs((w) => WS.wsCloseTab(w, id)),
     moveTab: (id, i) => setWs((w) => WS.wsMoveTab(w, id, i)),
-    openWindow: (r) => (canWindow() ? setWs((w) => WS.winOpen(w, r, area())) : setWs((w) => WS.wsNav(w, r, { newTab: true }))),
+    openWindow: (r0) => {
+      // An account opens its department, never a window of its own.
+      const r = WS.isAccount(r0) ? { name: r0.name, id: null, tab: null } : r0;
+      return canWindow() ? setWs((w) => WS.winOpen(w, r, area())) : setWs((w) => WS.wsNav(w, r, { newTab: true }));
+    },
     winNav: (id, r) => setWs((w) => WS.winNav(w, id, r)), winBack: (id) => setWs((w) => WS.winBack(w, id)),
     winFocus: (id) => setWs((w) => WS.winFocus(w, id)), winPatch: (id, p) => setWs((w) => WS.winPatch(w, id, p)),
     winToggle: (id, st) => setWs((w) => WS.winToggle(w, id, st)), winClose: (id) => setWs((w) => WS.winClose(w, id)),

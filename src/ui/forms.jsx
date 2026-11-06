@@ -8,7 +8,6 @@ import { PRODUCTS, EXPENSE_GROUPS, CATEGORY_UNIT, CATEGORY_ICON, OFFSET_TYPES, M
 import { validateRecord } from '../core/validate.mjs';
 import { cleanItems, itemAmountC, itemsTotalC, itemsQty } from '../core/items.mjs';
 import { capitalAccountFor } from '../core/people.mjs';
-import { celebrateMilk } from './cow.jsx';
 import { deleteRecords, updateSettings, newId } from '../core/commands.mjs';
 import { litresOf, saleMilkL, lToKg, kgToL, KG_PER_L } from '../core/milk.mjs';
 
@@ -448,7 +447,7 @@ export function MilkSheet({ record, onClose }) {
   const herdAnimals = parties.animals.filter((a) => SPECIES[a.species]?.product === 'milk');
   return (
     <Sheet title={record ? `${t('edit')} · ${t('t.milk')}` : t('new.milk')} onClose={onClose}
-      footer={recs.length ? <TxFooter recs={recs} editing={record} extraOp={extraOp} saveAndNew={m === 'animal'} onDone={(x) => { celebrateMilk({ am: recs.filter((r) => r.session === 'am').reduce((a, r) => a + r.liters, 0), pm: recs.filter((r) => r.session !== 'am').reduce((a, r) => a + r.liters, 0) }); if (x === 'close' || record) onClose(); else set({ liters: 0 }); }} /> : null}>
+      footer={recs.length ? <TxFooter recs={recs} editing={record} extraOp={extraOp} saveAndNew={m === 'animal'} onDone={(x) => { if (x === 'close' || record) onClose(); else set({ liters: 0 }); }} /> : null}>
       {!record && <Seg value={m} onChange={setM} options={[{ value: 'herd', label: t('prod.herdMode') }, { value: 'animal', label: t('prod.animalMode') }]} />}
       <div className="grid2">
         <DateInput label={t('date')} value={f.day} max={today} onChange={(v) => set({ day: v })} />

@@ -2363,3 +2363,104 @@ body.has-selbar .screen, body.has-selbar .win-body { padding-block-end: 150px; }
   .cow-overlay { animation: cow-fade .2s ease both !important; }
   .cow-drop { display: none; }
 }
+
+/* ───────── Playful moments, across the app (3.28) ───────── */
+.cel-layer { position: fixed; inset-inline: 0; inset-block-end: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 140; display: flex; justify-content: center; pointer-events: none; padding: 0 16px; animation: cow-fade .25s ease both, cow-out .4s ease 2.6s forwards; }
+.scene-clear.cel-layer, .scene-birth.cel-layer { animation: cow-fade .25s ease both, cow-out .4s ease 3.4s forwards; }
+@media (max-width: 720px) { .cel-layer { inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px)); } }
+.cel-card { pointer-events: auto; cursor: pointer; inline-size: min(300px, 100%); border-radius: 24px; overflow: hidden; background: var(--surface); box-shadow: 0 18px 48px rgba(0,0,0,.24), 0 0 0 1px var(--line-2); animation: cow-pop .55s cubic-bezier(.2, 1.4, .4, 1) both; }
+.cel-sky { position: relative; block-size: 168px; overflow: hidden; background: linear-gradient(180deg, #ffd9a0 0%, #ffeccc 55%, #fff6e6 100%); }
+.scene-milk-pm .cel-sky { background: linear-gradient(180deg, #3b3f7a 0%, #7a5fa8 55%, #e7a7a0 100%); }
+.scene-milk-both .cel-sky { background: linear-gradient(90deg, #ffd9a0 0%, #ffe9c4 45%, #8f74b8 55%, #4b4f8a 100%); }
+.scene-eggs .cel-sky { background: linear-gradient(180deg, #ffe7b3 0%, #fff3d6 60%, #fffaf0 100%); }
+.scene-sale .cel-sky, .scene-payment .cel-sky { background: linear-gradient(180deg, #c9f0dc 0%, #e8f8ef 60%, #f6fcf8 100%); }
+.scene-supplierPay .cel-sky { background: linear-gradient(180deg, #bfe3f7 0%, #e3f3fc 60%, #f5fbfe 100%); }
+.scene-clear .cel-sky { background: linear-gradient(160deg, #ffe08a 0%, #ffc7d1 50%, #c9b8ff 100%); }
+.scene-birth .cel-sky, .scene-animal .cel-sky { background: linear-gradient(180deg, #ffd6e2 0%, #ffeef3 60%, #fff8fa 100%); }
+.scene-backup .cel-sky { background: linear-gradient(180deg, #c6efe6 0%, #e7f8f4 60%, #f6fdfb 100%); }
+.scene-milk-pm .cow-hill { background: #4f7a5a; }
+.cel-sky .cow-hill { inset-block-end: -70px; }
+.cel-sky .cow-stage { inset-block-end: 6px; }
+.cel-sky .cow-svg { inline-size: 128px; block-size: 102px; }
+.cel-sky .cow-sun { inline-size: 54px; block-size: 54px; }
+.cel-hen { inline-size: 104px; block-size: 96px; animation: cel-peck .5s ease-in-out .3s 4; transform-origin: 50% 90%; }
+[dir="rtl"] .cel-hen { transform: scaleX(-1); animation-name: cel-peck-rtl; }
+.hen-wing { transform-origin: 60px 66px; animation: cel-flap .25s ease-in-out .3s 8 alternate; }
+.cel-basket { inline-size: 70px; block-size: 50px; margin-block-end: 6px; }
+.cel-egg { position: absolute; inline-size: 13px; block-size: 16px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #fff8ec; box-shadow: 0 0 0 1.5px #c9a27a; inset-block-end: 90px; inset-inline-start: calc(50% + 34px); opacity: 0; }
+.cel-egg.e1 { animation: cel-egg 1s ease-in .6s 2; } .cel-egg.e2 { animation: cel-egg 1s ease-in 1.1s 2; inset-inline-start: calc(50% + 48px); }
+.cel-coins { inline-size: 120px; block-size: 100px; animation: cow-hop .7s ease-in-out .3s 2; transform-origin: 50% 100%; }
+.cel-jar { inline-size: 86px; block-size: 104px; }
+.cel-coin { position: absolute; inline-size: 22px; block-size: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3b0, #f5c542 60%, #c9961c); box-shadow: 0 0 0 2px #9a7413; inset-block-end: 40px; inset-inline-start: calc(50% - 11px); opacity: 0; }
+.cel-coin.c1 { animation: cel-coin-up 1s cubic-bezier(.2, .8, .3, 1) .4s 2; --dx: -46px; }
+.cel-coin.c2 { animation: cel-coin-up 1s cubic-bezier(.2, .8, .3, 1) .6s 2; --dx: 6px; }
+.cel-coin.c3 { animation: cel-coin-up 1s cubic-bezier(.2, .8, .3, 1) .8s 2; --dx: 50px; }
+.cel-coin.drop { inset-block-end: 130px; }
+.cel-coin.drop.c1 { animation: cel-coin-drop .9s ease-in .4s 2; } .cel-coin.drop.c2 { animation: cel-coin-drop .9s ease-in .9s 2; }
+.cel-truck { inline-size: 150px; block-size: 84px; animation: cel-drive 2.6s ease-in-out .2s both; }
+[dir="rtl"] .cel-truck { animation-name: cel-drive-rtl; }
+.truck-wheels circle:nth-child(odd) { transform-box: fill-box; transform-origin: center; }
+.cel-shield { inline-size: 92px; block-size: 100px; animation: cow-pop .6s cubic-bezier(.2, 1.4, .4, 1) .15s both; }
+.shield-check { stroke-dasharray: 70; stroke-dashoffset: 70; animation: cel-draw .6s ease .6s forwards; }
+.cel-calf { inline-size: 132px; block-size: 104px; animation: cow-hop .7s ease-in-out .35s 3; transform-origin: 50% 100%; }
+[dir="rtl"] .cel-calf { transform: scaleX(-1); animation-name: cow-hop-rtl; }
+.calf-head { transform-origin: 35px 60px; animation: cow-nod 1s ease-in-out .3s 2; }
+.cel-badge { inline-size: 96px; block-size: 96px; border-radius: 50%; display: grid; place-items: center; margin-block-end: 16px; background: radial-gradient(circle at 35% 35%, #fff3b0, #f5c542 65%, #d49b1c); box-shadow: 0 0 0 6px rgba(255,255,255,.7), 0 10px 26px rgba(0,0,0,.18); animation: cow-pop .7s cubic-bezier(.2, 1.5, .4, 1) .1s both; }
+.cel-badge span { font-size: 3rem; font-weight: 900; color: #7a5a0c; }
+.cel-hearts i { position: absolute; inline-size: 14px; block-size: 14px; background: #ff6f91; transform: rotate(45deg); inset-block-end: 40px; opacity: 0; animation: cel-heart 2.2s ease-out infinite; }
+.cel-hearts i::before, .cel-hearts i::after { content: ''; position: absolute; inline-size: 14px; block-size: 14px; border-radius: 50%; background: inherit; }
+.cel-hearts i::before { inset-inline-start: -7px; } .cel-hearts i::after { inset-block-start: -7px; }
+.cel-hearts i:nth-child(1) { inset-inline-start: 22%; } .cel-hearts i:nth-child(2) { inset-inline-start: 40%; animation-delay: .5s; } .cel-hearts i:nth-child(3) { inset-inline-start: 62%; animation-delay: 1s; } .cel-hearts i:nth-child(4) { inset-inline-start: 80%; animation-delay: 1.5s; }
+.cel-sparkles i { position: absolute; inline-size: 10px; block-size: 10px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: cow-twinkle .8s ease-in-out infinite alternate; }
+.cel-sparkles i:nth-child(1) { top: 18px; inset-inline-start: 18%; } .cel-sparkles i:nth-child(2) { top: 40px; inset-inline-start: 78%; animation-delay: .3s; } .cel-sparkles i:nth-child(3) { top: 14px; inset-inline-start: 56%; animation-delay: .6s; } .cel-sparkles i:nth-child(4) { top: 66px; inset-inline-start: 10%; animation-delay: .2s; } .cel-sparkles i:nth-child(5) { top: 70px; inset-inline-start: 88%; animation-delay: .5s; }
+.cel-confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.cel-confetti i { position: absolute; top: -12px; inset-inline-start: calc(var(--i) * 3.6%); inline-size: 8px; block-size: 14px; border-radius: 2px; background: hsl(calc(var(--i) * 47), 85%, 60%); animation: cel-fall calc(2.2s + (var(--i) * .04s)) cubic-bezier(.3, .2, .6, 1) calc(var(--i) * .03s) both; }
+.cel-who { font-size: .86rem; color: var(--ink-2); font-weight: 550; }
+.cel-phrase { color: var(--muted); font-size: .8rem; margin-block-start: 2px; }
+.cel-card .cow-text { padding: 12px 14px 14px; }
+.cel-card .cow-litres { font-size: 1.75rem; }
+.cel-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface-2); }
+.cel-kind { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px; border-radius: 8px; }
+.cel-kind label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .88rem; }
+.cel-kind.off label { color: var(--muted); }
+.cel-kind input { accent-color: var(--teal); inline-size: 16px; block-size: 16px; }
+@keyframes cel-peck { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(14deg) translateY(4px); } }
+@keyframes cel-peck-rtl { 0%, 100% { transform: scaleX(-1) rotate(0); } 50% { transform: scaleX(-1) rotate(14deg) translateY(4px); } }
+@keyframes cel-flap { from { transform: rotate(0); } to { transform: rotate(-18deg); } }
+@keyframes cel-egg { 0% { opacity: 0; transform: translateY(-8px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(56px); } }
+@keyframes cel-coin-up { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), -90px) scale(1) rotate(200deg); } }
+@keyframes cel-coin-drop { 0% { opacity: 0; transform: translateY(-20px); } 20% { opacity: 1; } 85% { opacity: 1; transform: translateY(70px); } 100% { opacity: 0; transform: translateY(78px); } }
+@keyframes cel-drive { 0% { transform: translateX(-180px); } 35%, 70% { transform: translateX(0); } 100% { transform: translateX(200px); } }
+@keyframes cel-drive-rtl { 0% { transform: scaleX(-1) translateX(-180px); } 35%, 70% { transform: scaleX(-1) translateX(0); } 100% { transform: scaleX(-1) translateX(200px); } }
+@keyframes cel-draw { to { stroke-dashoffset: 0; } }
+@keyframes cel-heart { 0% { opacity: 0; transform: translateY(0) rotate(45deg) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-110px) rotate(45deg) scale(1.1); } }
+@keyframes cel-fall { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) {
+  .cel-layer, .cel-card, .cel-hen, .hen-wing, .cel-egg, .cel-coins, .cel-coin, .cel-truck, .cel-shield, .shield-check, .cel-calf, .calf-head, .cel-badge, .cel-hearts i, .cel-sparkles i, .cel-confetti i { animation: none !important; }
+  .cel-layer { animation: cow-fade .2s ease both !important; }
+  .shield-check { stroke-dashoffset: 0; }
+  .cel-confetti, .cel-egg, .cel-coin { display: none; }
+}
+/* Confetti: scattered start, drift and timing */
+.cel-confetti i { inset-inline-start: var(--x); animation: cel-fall2 var(--t) cubic-bezier(.3, .2, .6, 1) var(--d) both; }
+@keyframes cel-fall2 { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), 105vh) rotate(720deg); opacity: .8; } }
+
+/* The dancing cow (refresh and update) */
+.dance { position: relative; inline-size: 150px; block-size: 128px; margin-inline: auto; }
+.dance-floor { position: absolute; inset-inline: 18px; inset-block-end: 4px; block-size: 12px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,0,0,.18), transparent 70%); animation: dance-shadow .5s ease-in-out infinite alternate; }
+.dance-cow { position: absolute; inset-inline: 0; inset-block-end: 8px; display: flex; justify-content: center; animation: dance-sway 1s ease-in-out infinite; transform-origin: 50% 100%; }
+.dance-cow .cow-svg { inline-size: 132px; block-size: 106px; animation: dance-hop .5s ease-in-out infinite alternate; }
+.dance-cow .cow-tail { animation-duration: .2s; }
+.dance-cow .cow-head { animation: dance-head .5s ease-in-out infinite alternate; }
+.dance-notes i { position: absolute; font-style: normal; font-size: 1.2rem; color: var(--teal); opacity: 0; animation: dance-note 1.8s ease-out infinite; }
+.dance-notes i:nth-child(1) { inset-inline-start: 4px; top: 36px; } .dance-notes i:nth-child(2) { inset-inline-start: 120px; top: 20px; animation-delay: .45s; color: var(--gold); }
+.dance-notes i:nth-child(3) { inset-inline-start: 24px; top: 6px; animation-delay: .9s; color: #c94b6d; } .dance-notes i:nth-child(4) { inset-inline-start: 104px; top: 50px; animation-delay: 1.35s; color: #7c5cc4; }
+@keyframes dance-sway { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes dance-hop { from { transform: translateY(0) scaleY(1); } to { transform: translateY(-10px) scaleY(1.03); } }
+@keyframes dance-head { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+@keyframes dance-shadow { from { transform: scaleX(1); opacity: 1; } to { transform: scaleX(.75); opacity: .6; } }
+@keyframes dance-note { 0% { opacity: 0; transform: translateY(10px) scale(.7); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) rotate(14deg) scale(1.1); } }
+[dir="rtl"] .dance-cow .cow-svg { transform: scaleX(-1); animation-name: dance-hop-rtl; }
+@keyframes dance-hop-rtl { from { transform: scaleX(-1) translateY(0); } to { transform: scaleX(-1) translateY(-10px); } }
+.upd-installing .dance { margin-block-end: 2px; }
+@media (prefers-reduced-motion: reduce) { .dance-floor, .dance-cow, .dance-cow .cow-svg, .dance-cow .cow-head, .dance-cow .cow-tail, .dance-notes i { animation: none !important; } .dance-notes i { opacity: .8; } }

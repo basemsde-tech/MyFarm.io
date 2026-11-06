@@ -2,6 +2,12 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.28.0', date: '2026-11-06', items: [
+    ['milk', 'لحظات مرحة مع أصوات في كل التطبيق: بقرة، دجاجة، نقود، شاحنة، قصاصات ملونة، عجل، درع', 'Playful moments with sounds across the app: a cow, a hen, coins, a truck, confetti, a calf, a shield'],
+    ['refresh', 'بقرة ترقص أثناء التحديث', 'A dancing cow while the app refreshes or updates'],
+    ['gear', 'تحكم بكل نوع ومعاينته، وإيقاف الأصوات وحدها', 'Switch each kind on or off and preview it; sounds can be turned off on their own'],
+    ['people', 'الحسابات تبقى تبويبات فرعية داخل قسمها فقط', 'Accounts stay as sub-tabs inside their department only'],
+  ] },
   { v: '3.27.0', date: '2026-11-06', items: [
     ['people', 'الحسابات المفتوحة تبويبات فرعية ملوّنة داخل المبيعات والموردين والمديرين', 'Open accounts become colour-outlined sub-tabs inside Sales, Suppliers and Managers'],
     ['milk', 'بقرة مرحة تؤكد حفظ حليب الصباح والمساء (يمكن إيقافها من الإعدادات)', 'A playful cow confirms morning and evening milk when saved (can be turned off in Settings)'],

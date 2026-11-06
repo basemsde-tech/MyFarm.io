@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { DancingCow } from './celebrate.jsx';
 import { fullDate } from '../core/dates.mjs';
 import { createPortal } from 'react-dom';
 import { useApp, VERSION } from './store.jsx';
@@ -9,7 +10,7 @@ const FROM_KEY = 'mazraati-updated-from';
 
 /** "A new version is ready" card. The service worker announces itself through mz-update-ready. */
 export function UpdatePrompt() {
-  const { t } = useApp();
+  const { t, prefs } = useApp();
   const [ready, setReady] = useState(false);
   const [later, setLater] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -32,7 +33,7 @@ export function UpdatePrompt() {
   if (busy) {
     return createPortal(
       <div className="upd-overlay" role="status" aria-live="polite">
-        <div className="upd-installing"><span className="upd-spin" /><b>{t('upd.installing')}</b><span className="muted small">{t('upd.keepOpen')}</span></div>
+        <div className="upd-installing">{prefs.playful !== false ? <DancingCow /> : <span className="upd-spin" />}<b>{t('upd.installing')}</b><span className="muted small">{t('upd.keepOpen')}</span></div>
       </div>, document.body);
   }
   if (!ready || later) return null;

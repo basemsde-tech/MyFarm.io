@@ -21,6 +21,8 @@ export function entityName(r, names) {
   return '';
 }
 export function routeLabel(r, t, names) {
+  // Accounts live as sub-tabs inside their department: the main tab keeps the department's name.
+  if (r?.id && ['sales', 'suppliers', 'people'].includes(r.name)) return t(navLabel(r.name));
   return entityName(r, names) || t(navLabel(r.name));
 }
 

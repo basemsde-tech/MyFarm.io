@@ -88,10 +88,12 @@ export function ContextMenu() {
   const groups = [];
   const { target } = m;
   const canWin = wsApi.canWindow();
+  const acct = (r) => !!r.id && ACCOUNT[r.name];
   const openRoute = (r) => [
     { icon: 'chev', label: t('cm.open'), fn: () => nav(r.name, r.id, r.tab, { newTab: false }) },
-    { icon: 'plus', label: t('cm.newTab'), fn: () => nav(r.name, r.id, r.tab, { newTab: true }) },
-    canWin && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow({ name: r.name, id: r.id, tab: r.tab || null }) },
+    // Accounts stay as sub-tabs in their department: no main tab or window of their own.
+    !acct(r) && { icon: 'plus', label: t('cm.newTab'), fn: () => nav(r.name, r.id, r.tab, { newTab: true }) },
+    !acct(r) && canWin && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow({ name: r.name, id: r.id, tab: r.tab || null }) },
   ];
   const accountActions = (list, id) => {
     const out = [];
@@ -137,7 +139,7 @@ export function ContextMenu() {
         { icon: 'plus', label: t('cm.duplicate'), fn: () => wsApi.duplicate(tab.id) },
         ws.tabs.length > 1 && { icon: 'back', flip: true, label: t('cm.moveLeft'), disabled: ws.tabs[0].id === tab.id, fn: () => wsApi.moveTab(tab.id, ws.tabs.findIndex((x) => x.id === tab.id) - 1) },
         ws.tabs.length > 1 && { icon: 'chev', flip: true, label: t('cm.moveRight'), disabled: ws.tabs[ws.tabs.length - 1].id === tab.id, fn: () => wsApi.moveTab(tab.id, ws.tabs.findIndex((x) => x.id === tab.id) + 1) },
-        canWin && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow(tab.route) },
+        canWin && !acct(tab.route) && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow(tab.route) },
         ws.tabs.length > 1 && { icon: 'close', label: t('cm.closeTab'), fn: () => wsApi.closeTab(tab.id) },
         ws.tabs.length > 1 && { icon: 'close', label: t('cm.closeOthers'), fn: () => wsApi.closeOthers(tab.id) },
       ] });
@@ -152,8 +154,8 @@ export function ContextMenu() {
     { icon: 'refresh', label: t('cm.refresh'), fn: refresh },
     { icon: 'back', label: t('ws.back'), fn: wsApi.back, disabled: !cur?.back.length, flip: true },
     { icon: 'chev', label: t('ws.forward'), fn: wsApi.forward, disabled: !cur?.fwd.length, flip: true },
-    target.kind === 'page' && { icon: 'plus', label: t('cm.pageNewTab'), fn: () => nav(route.name, route.id, route.tab, { newTab: true }) },
-    target.kind === 'page' && canWin && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow(route) },
+    target.kind === 'page' && !acct(route) && { icon: 'plus', label: t('cm.pageNewTab'), fn: () => nav(route.name, route.id, route.tab, { newTab: true }) },
+    target.kind === 'page' && !acct(route) && canWin && { icon: 'popout', label: t('cm.window'), fn: () => wsApi.openWindow(route) },
     { icon: 'search', label: t('cm.search'), hint: 'Ctrl K', fn: () => ui.open('palette') },
     { icon: 'plus', label: t('cm.new'), hint: 'N', fn: () => ui.open('new') },
   ] });
