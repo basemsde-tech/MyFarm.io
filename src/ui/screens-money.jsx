@@ -8,6 +8,7 @@ import { Help } from './help.jsx';
 const GUIDE_FOR = { cash: 'cash', sales: 'sales', expenses: 'expenses', suppliers: 'suppliers', production: 'production', animals: 'animals', accounts: 'accounts', options: 'security', trash: 'edit', activity: 'security', people: 'payments' };
 import { RemindersPanel, useOverdue } from './reminders.jsx';
 import { OrdersList } from './orders.jsx';
+import { AccountStrip } from './acctstrip.jsx';
 import { Attachments } from './documents.jsx';
 import { orderList, poNo, usesOrders } from '../core/orders.mjs';
 import { itemsText } from '../core/items.mjs';
@@ -330,6 +331,7 @@ function SalesHome({ tab, setTab }) {
   const custSorted = sortRows(sortRows(custs, PARTY_SORT_C, 'name', 'asc'), PARTY_SORT_C, v.sort, v.dir);
   return (
     <div className="screen">
+      <AccountStrip list="sales" />
       <PageHead title={t('nav.sales')} actions={<><Button icon="plus" onClick={() => ui.open('customer')}>{t('sales.newCustomer')}</Button><Button variant="primary" icon="cart" onClick={() => ui.open('sale')}>{t('new.sale')}</Button></>} />
       <Tabs value={tab} onChange={setTab} tabs={[{ value: 'customers', label: t('sales.customers'), count: farm.customers.filter((c) => !c.archived).length }, { value: 'invoices', label: t('sales.invoices') }, { value: 'reminders', label: t('rem.tab'), count: overdue.filter((r) => r.remindNow).length || undefined }]} />
       {tab === 'customers' ? (
@@ -370,6 +372,7 @@ function CustomerAccount({ id, tab = 'activity' }) {
   const list = tab === 'statement' ? [] : recs.filter((r) => tab === 'activity' || (tab === 'invoices' ? r.type === 'sale' : r.type === 'payment'));
   return (
     <div className="screen">
+      <AccountStrip list="sales" />
       <PageHead back={() => nav('sales', null, 'customers')} title={c.name} sub={`${c.accountNo || ''}${c.phone ? ` · ${c.phone}` : ''}`}
         actions={<>
           <Button icon="file" onClick={() => ui.open('doc', { kind: 'statement', party: 'customer', partyId: id })}>{t('cust.statement')}</Button>
@@ -589,6 +592,7 @@ function SupplierList({ tab }) {
   const totalOver = rows.reduce((a, r) => a + r.over, 0);
   return (
     <div className="screen">
+      <AccountStrip list="suppliers" />
       <PageHead title={t('sup.title')} actions={<><Button icon="plus" onClick={() => ui.open('supplier')}>{t('sup.new')}</Button>{usesOrders(farm) && <Button icon="file" onClick={() => ui.open('order')}>{t('po.new')}</Button>}<Button variant="primary" icon="truck" onClick={() => ui.open('supplierPay')}>{t('sup.pay')}</Button></>} />
       <Tabs value={tab} onChange={(x) => nav('suppliers', null, x === 'suppliers' ? null : x)} tabs={[{ value: 'suppliers', label: t('sup.title'), count: farm.suppliers.filter((s) => !s.archived).length }, usesOrders(farm) && { value: 'orders', label: t('po.title'), count: activeOrders || undefined }].filter(Boolean)} />
       {tab === 'orders' && usesOrders(farm) ? <OrdersList /> : (<>
@@ -633,6 +637,7 @@ function SupplierAccount({ id, tab }) {
   const due = snap.sup[id]?.dueC || 0;
   return (
     <div className="screen">
+      <AccountStrip list="suppliers" />
       <PageHead back={() => nav('suppliers')} title={s.name} sub={(s.tags || []).map((x) => t(`tag.${x}`)).join('، ')}
         actions={<>
           <Button icon="file" onClick={() => ui.open('doc', { kind: 'statement', party: 'supplier', partyId: id })}>{t('cust.statement')}</Button>
@@ -695,6 +700,7 @@ function PeopleList() {
   const people = sortRows(farm.people.filter((p) => !p.archived), { name: (p) => p.name || '', due: (p) => Math.abs(snap.people[p.id]?.owedC || 0) }, v.sort, v.dir);
   return (
     <div className="screen">
+      <AccountStrip list="people" />
       <PageHead title={t('ppl.title')} actions={<><Button icon="plus" onClick={() => ui.open('person')}>{t('ppl.new')}</Button><Button variant="primary" icon="people" onClick={() => ui.open('capital')}>{t('new.person')}</Button></>} />
       <section className="stats-row"><Stat label={t('cash.capital')} value={fmt(snap.capitalC)} /></section>
       <section className="panel">
@@ -729,6 +735,7 @@ function PersonAccount({ id }) {
   const owed = snap.people[id]?.owedC || 0;
   return (
     <div className="screen">
+      <AccountStrip list="people" />
       <PageHead back={() => nav('people')} title={p.name} sub={[p.phone, p.cashBox === false ? t('ppl.outsideTag') : null].filter(Boolean).join(' · ')}
         actions={<><Button icon="file" onClick={() => ui.open('doc', { kind: 'statement', party: 'person', partyId: id })}>{t('cust.statement')}</Button><Button icon="edit" onClick={() => ui.open('person', { record: p })}>{t('edit')}</Button><Button icon="trash" variant="danger" onClick={() => ui.open('deleteMaster', { list: 'people', id, onDone: (m) => m !== 'archive' && nav('people') })}>{t('delete')}</Button></>} />
       <section className="account-head sticky-bal">

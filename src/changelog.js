@@ -2,6 +2,10 @@
 // Each item: [icon, Arabic, English]. Keep items short — one line each.
 
 export const CHANGELOG = [
+  { v: '3.27.0', date: '2026-11-06', items: [
+    ['people', 'الحسابات المفتوحة تبويبات فرعية ملوّنة داخل المبيعات والموردين والمديرين', 'Open accounts become colour-outlined sub-tabs inside Sales, Suppliers and Managers'],
+    ['milk', 'بقرة مرحة تؤكد حفظ حليب الصباح والمساء (يمكن إيقافها من الإعدادات)', 'A playful cow confirms morning and evening milk when saved (can be turned off in Settings)'],
+  ] },
   { v: '3.26.0', date: '2026-11-05', items: [
     ['people', 'حسابات العملاء والموردين في تبويبات باسمها، وإعادة فتحها تعود إلى تبويبها', 'Customer and supplier accounts open in tabs named after them; opening one again returns to its tab'],
     ['more', 'قائمة بالزر الأيمن: إجراءات سريعة للحركة أو الحساب أو التبويب أو الصفحة، مع «تحديث»', 'Right-click menu: quick actions for an entry, account, tab or page, including Refresh'],

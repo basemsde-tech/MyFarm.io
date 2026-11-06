@@ -2295,3 +2295,71 @@ body.has-selbar .screen, body.has-selbar .win-body { padding-block-end: 150px; }
 .ws-tab.drop-before::before, .ws-tab.drop-after::after { content: ''; position: absolute; inset-block: 4px; inline-size: 3px; border-radius: 3px; background: var(--teal); box-shadow: 0 0 0 3px var(--teal-ring); }
 .ws-tab.drop-before::before { inset-inline-start: -5px; }
 .ws-tab.drop-after::after { inset-inline-end: -5px; }
+
+/* ───────── Account sub-tabs (3.27) ───────── */
+.sub-strip { margin-block-end: 2px; }
+.sub-strip-in { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 2px 2px 8px; -webkit-overflow-scrolling: touch; }
+.sub-tab { --c: var(--teal); display: inline-flex; align-items: center; gap: 7px; flex: none; max-inline-size: 220px; block-size: 34px; padding-inline: 12px 6px; border-radius: 99px; border: 1.5px solid color-mix(in srgb, var(--c) 70%, transparent); background: var(--surface); color: var(--ink); font: inherit; font-size: .85rem; font-weight: 550; cursor: pointer; transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast); }
+.sub-tab:hover { background: color-mix(in srgb, var(--c) 9%, var(--surface)); }
+.sub-tab:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.sub-tab.on { background: color-mix(in srgb, var(--c) 16%, var(--surface)); border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent); }
+.sub-tab.home { --c: var(--line); padding-inline: 12px; color: var(--ink-2); border-style: dashed; border-color: var(--field-line); }
+.sub-tab.home.on { --c: var(--teal); border-style: solid; color: var(--ink); }
+.sub-tab.home .ico { color: var(--muted); }
+.sub-dot { inline-size: 9px; block-size: 9px; border-radius: 50%; background: var(--c); flex: none; }
+.sub-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-inline-size: 0; }
+.sub-x { inline-size: 22px; block-size: 22px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; flex: none; padding: 0; }
+.sub-x:hover { background: color-mix(in srgb, var(--c) 22%, transparent); color: var(--ink); }
+.sub-clear { flex: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: .78rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.sub-clear:hover { color: var(--bad); background: var(--bad-soft); }
+.st-c0 { --c: #1B8A75; } .st-c1 { --c: #C98A12; } .st-c2 { --c: #7C5CC4; } .st-c3 { --c: #C94B6D; }
+.st-c4 { --c: #2E86C1; } .st-c5 { --c: #5E9A1F; } .st-c6 { --c: #D9692B; } .st-c7 { --c: #4B5BC4; }
+
+/* ───────── Playful milk confirmation: the cow (3.27) ───────── */
+.cow-overlay { position: fixed; inset: 0; z-index: 140; display: grid; place-items: center; background: rgba(15, 25, 22, .28); backdrop-filter: blur(2px); animation: cow-fade .25s ease both, cow-out .35s ease 2.85s forwards; cursor: pointer; padding: 16px; }
+.cow-card { inline-size: min(340px, 100%); border-radius: 26px; overflow: hidden; background: var(--surface); box-shadow: 0 24px 60px rgba(0,0,0,.28); animation: cow-pop .55s cubic-bezier(.2, 1.4, .4, 1) both; }
+.cow-sky { position: relative; block-size: 200px; overflow: hidden; background: linear-gradient(180deg, #ffd9a0 0%, #ffeccc 55%, #fff6e6 100%); }
+.scene-pm .cow-sky { background: linear-gradient(180deg, #3b3f7a 0%, #7a5fa8 55%, #e7a7a0 100%); }
+.scene-both .cow-sky { background: linear-gradient(90deg, #ffd9a0 0%, #ffe9c4 45%, #8f74b8 55%, #4b4f8a 100%); }
+.cow-sun { position: absolute; inline-size: 64px; block-size: 64px; border-radius: 50%; background: radial-gradient(circle, #fff3b0 0%, #ffcc4d 60%, #ffb02e 100%); box-shadow: 0 0 40px 12px rgba(255, 196, 64, .55); inset-inline-start: 22px; inset-block-start: 26px; animation: cow-rise 1.4s ease-out both; }
+.cow-moon { position: absolute; inset-inline-end: 26px; inset-block-start: 22px; }
+.cow-moon span { display: block; inline-size: 46px; block-size: 46px; border-radius: 50%; box-shadow: -11px 6px 0 0 #fff4c8; transform: rotate(-20deg); animation: cow-rise 1.4s ease-out both; }
+.cow-moon i { position: absolute; inline-size: 4px; block-size: 4px; border-radius: 50%; background: #fff; animation: cow-twinkle 1.2s ease-in-out infinite alternate; }
+.cow-moon i:nth-of-type(1) { inset-inline-start: -40px; top: 8px; } .cow-moon i:nth-of-type(2) { inset-inline-start: -70px; top: 40px; animation-delay: .4s; } .cow-moon i:nth-of-type(3) { inset-inline-start: -16px; top: 62px; animation-delay: .8s; }
+.cow-hill { position: absolute; inset-inline: -20%; inset-block-end: -60px; block-size: 120px; border-radius: 50%; background: #8cc47a; }
+.scene-pm .cow-hill { background: #4f7a5a; }
+.cow-stage { position: absolute; inset-inline: 0; inset-block-end: 8px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.cow-svg { inline-size: 150px; block-size: 120px; animation: cow-hop .7s ease-in-out .35s 3; transform-origin: 50% 100%; }
+[dir="rtl"] .cow-svg { transform: scaleX(-1); animation-name: cow-hop-rtl; }
+.cow-tail { transform-origin: 150px 78px; animation: cow-wag .35s ease-in-out infinite alternate; }
+.cow-head { transform-origin: 52px 80px; animation: cow-nod 1s ease-in-out .3s 2; }
+.cow-eyes { transform-origin: 52px 52px; animation: cow-blink 3s ease-in-out .9s infinite; }
+.cow-bucket { inline-size: 48px; block-size: 52px; margin-block-end: 4px; }
+.cow-wave { animation: cow-wave 1s linear infinite; }
+.cow-moo { position: absolute; inset-block-start: -46px; inset-inline-start: calc(50% - 128px); z-index: 1; background: #fff; color: #3a2f2a; font-weight: 800; font-size: 1rem; padding: 6px 12px; border-radius: 16px; box-shadow: 0 6px 16px rgba(0,0,0,.15); animation: cow-moo .5s cubic-bezier(.2, 1.6, .4, 1) .55s both; }
+.cow-moo::after { content: ''; position: absolute; inset-block-end: -8px; inset-inline-start: 26px; border: 8px solid transparent; border-block-start-color: #fff; border-block-end: 0; }
+.cow-drop { position: absolute; inline-size: 9px; block-size: 12px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #fff; box-shadow: 0 0 0 1.5px #cfd8de; inset-block-end: 70px; opacity: 0; }
+.cow-drop.d1 { inset-inline-start: calc(50% + 50px); animation: cow-drop 1s ease-in .6s 2; }
+.cow-drop.d2 { inset-inline-start: calc(50% + 62px); animation: cow-drop 1s ease-in .9s 2; }
+.cow-drop.d3 { inset-inline-start: calc(50% + 74px); animation: cow-drop 1s ease-in 1.2s 2; }
+.cow-text { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 16px 18px; text-align: center; }
+.cow-text b { font-size: 1.05rem; }
+.cow-litres { font-size: 2rem; font-weight: 800; color: var(--teal); line-height: 1.15; }
+@keyframes cow-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cow-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes cow-pop { from { transform: scale(.6) translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cow-rise { from { transform: translateY(70px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cow-twinkle { from { opacity: .2; } to { opacity: 1; } }
+@keyframes cow-hop { 0%, 100% { transform: translateY(0) scaleY(1); } 30% { transform: translateY(0) scaleY(.94); } 55% { transform: translateY(-16px) scaleY(1.03); } }
+@keyframes cow-hop-rtl { 0%, 100% { transform: scaleX(-1) translateY(0); } 30% { transform: scaleX(-1) scaleY(.94); } 55% { transform: scaleX(-1) translateY(-16px); } }
+@keyframes cow-wag { from { transform: rotate(-14deg); } to { transform: rotate(16deg); } }
+@keyframes cow-nod { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(-8deg); } 70% { transform: rotate(5deg); } }
+@keyframes cow-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes cow-wave { from { transform: translateX(0); } to { transform: translateX(-15px); } }
+@keyframes cow-moo { from { transform: scale(0) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes cow-drop { 0% { opacity: 0; transform: translateY(-10px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(46px); } }
+@media (prefers-reduced-motion: reduce) {
+  .cow-overlay, .cow-card, .cow-sun, .cow-moon span, .cow-moon i, .cow-svg, .cow-tail, .cow-head, .cow-eyes, .cow-wave, .cow-moo, .cow-drop { animation: none !important; }
+  .cow-overlay { animation: cow-fade .2s ease both !important; }
+  .cow-drop { display: none; }
+}

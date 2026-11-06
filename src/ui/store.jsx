@@ -15,7 +15,7 @@ import { makeT } from '../i18n.js';
 import * as WS from './ws.mjs';
 
 export const KEYS = { ws: 'mazraati-ws-v1', farm: 'mazraati-farm-v4', held: 'mazraati-farm-v4-held', device: 'mazraati-device-v4', snaps: 'mazraati-snaps-v4', drafts: 'mazraati-drafts-v4', farms: 'mazraati-farms-v1', backups: 'mazraati-backups-v1', attempts: 'mazraati-attempts-v1', snapDay: 'mazraati-snapday-v1' };
-export const VERSION = { name: '3.26.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
+export const VERSION = { name: '3.27.0', season: { ar: 'الموسم الثاني', en: 'Second Season' } };
 export const MAX_BYTES = 4.6 * 1024 * 1024;
 
 export const storage = {
@@ -415,7 +415,7 @@ function FarmProvider({ boot, children }) {
   // Accounts in their own tabs: on screens that show the tab bar, unless turned off in Settings.
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
-  const accountTabsOn = () => typeof window !== 'undefined' && window.innerWidth > 720 && prefsRef.current.accountTabs !== false;
+  const accountTabsOn = () => typeof window !== 'undefined' && window.innerWidth > 720 && prefsRef.current.accountTabs === true; // off by default: accounts open as sub-tabs (acctstrip.jsx)
   /** nav(name, id, tab, { newTab, window }) */
   useEffect(() => { WS.installClickModifiers(); }, []);
   const nav = useCallback((name, id, tab, given = {}) => {
